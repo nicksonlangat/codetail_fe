@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: "standalone",
+  allowedDevOrigins: ["10.10.9.112"],
 };
 
 export default nextConfig;
