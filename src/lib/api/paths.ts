@@ -35,6 +35,12 @@ export interface McqOption {
   code: string | null;
 }
 
+export interface Example {
+  input: string;
+  output: string;
+  explanation: string | null;
+}
+
 export interface ProblemDetail {
   id: string;
   path_id: string;
@@ -46,8 +52,8 @@ export interface ProblemDetail {
   concept: string;
   time_estimate: string;
   description: string;
-  requirements: string[];
-  hints: string[];
+  function_signature: string;
+  examples: Example[];
   starter_code: string;
   mcq_options: McqOption[];
   explanation: string | null;

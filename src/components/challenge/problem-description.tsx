@@ -1,126 +1,114 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { Lightbulb, AlertTriangle } from "lucide-react";
+import { motion } from "framer-motion";
+import { AlertTriangle } from "lucide-react";
+import { TipTapRenderer } from "@/components/editors/tiptap-renderer";
 import type { ChallengeContent } from "@/types";
 
 interface ProblemDescriptionProps {
   content: ChallengeContent;
+  meta: { title: string; difficulty: string; type: string; concept: string };
+  diffColor: string;
+  typeLabel: string;
   showHints: boolean;
   onToggleHints: () => void;
 }
 
-export function ProblemDescription({
-  content,
-  showHints,
-  onToggleHints,
-}: ProblemDescriptionProps) {
-  const challengeType = content.type;
+export function ProblemDescription({ content, meta, diffColor, typeLabel }: ProblemDescriptionProps) {
+  const isHtml = content.description?.startsWith("<");
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="p-5 space-y-4">
-        {/* Description */}
-        <div>
-          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-2">
-            Description
-          </h2>
-          <div className="text-[13px] text-foreground leading-relaxed whitespace-pre-line">
-            {content.description?.split("```").map((part, i) =>
-              i % 2 === 1 ? (
-                <pre
-                  key={i}
-                  className="text-[11px] font-mono text-foreground/70 bg-secondary/50 rounded-lg p-3 my-2 overflow-x-auto leading-relaxed"
-                >
-                  {part.replace(/^python\n?/, "")}
-                </pre>
-              ) : (
-                <span key={i}>{part}</span>
-              ),
-            ) ?? "No description available for this challenge yet."}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="h-full overflow-y-auto"
+    >
+      <div className="px-7 py-6 space-y-5">
+        {/* Title + badges */}
+        <div className="space-y-2">
+          <h1 className="text-xl font-semibold tracking-tight leading-tight">
+            {meta.title}
+          </h1>
+          <div className="flex items-center gap-2">
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${diffColor}`}>
+              {meta.difficulty}
+            </span>
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+              {typeLabel}
+            </span>
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+              {meta.concept}
+            </span>
           </div>
         </div>
 
-        {/* Issue description for fix-code */}
-        {challengeType === "fix-code" && content.issueDescription && (
-          <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-destructive/10 ring-1 ring-destructive/20">
-            <AlertTriangle className="w-3.5 h-3.5 text-destructive flex-shrink-0 mt-0.5" />
-            <span className="text-[12px] text-foreground/80">
-              {content.issueDescription}
-            </span>
+        <div className="h-px bg-border/50" />
+
+        {/* Description */}
+        {isHtml ? (
+          <TipTapRenderer content={content.description} />
+        ) : (
+          <div className="text-[13px] text-foreground/80 leading-[1.7]">
+            {content.description ?? "No description available."}
           </div>
         )}
 
-        {/* Requirements */}
-        {content.requirements && content.requirements.length > 0 && (
+        {/* Issue description for fix-code */}
+        {content.type === "fix-code" && content.issueDescription && (
+          <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-destructive/10 ring-1 ring-destructive/20">
+            <AlertTriangle className="w-3.5 h-3.5 text-destructive flex-shrink-0 mt-0.5" />
+            <span className="text-[12px] text-foreground/80">{content.issueDescription}</span>
+          </div>
+        )}
+
+        {/* Function Signature */}
+        {content.functionSignature && (
           <div>
-            <h2 className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-2">
-              {challengeType === "fix-code" ? "Issues to Fix" : "Requirements"}
-            </h2>
-            <div className="space-y-1.5">
-              {content.requirements.map((req, i) => (
-                <div key={i} className="flex items-start gap-2">
-                  <span className="text-[10px] text-muted-foreground/40 font-mono tabular-nums mt-0.5 w-4">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span className="text-[12px] text-foreground/80 leading-relaxed">
-                    {req}
-                  </span>
-                </div>
-              ))}
+            <h3 className="text-[10px] font-semibold text-muted-foreground tracking-wide uppercase mb-2">
+              Function Signature
+            </h3>
+            <div className="font-mono text-[12px] border border-border bg-muted/30 rounded-lg p-3.5 overflow-x-auto">
+              <span className="text-primary">def</span>{" "}
+              <span className="text-foreground">{content.functionSignature.replace(/^(def|class)\s+/, "")}</span>
             </div>
           </div>
         )}
 
-        {/* Example output */}
-        {content.exampleOutput && (
-          <div>
-            <h2 className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 mb-2">
-              Example
-            </h2>
-            <pre className="text-[11px] font-mono text-foreground/70 bg-secondary/50 rounded-lg p-3 overflow-x-auto leading-relaxed">
-              {content.exampleOutput}
-            </pre>
-          </div>
-        )}
-
-        {/* Hints */}
-        {content.hints && content.hints.length > 0 && (
-          <div>
-            <button
-              onClick={onToggleHints}
-              className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors duration-75"
-            >
-              <Lightbulb className="w-3 h-3" />
-              {showHints
-                ? "Hide hints"
-                : `Show ${content.hints.length} hint${content.hints.length > 1 ? "s" : ""}`}
-            </button>
-            <AnimatePresence>
-              {showHints && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden"
-                >
-                  <div className="mt-2 space-y-1.5 pl-1">
-                    {content.hints.map((hint, i) => (
-                      <div
-                        key={i}
-                        className="flex items-start gap-2 text-[11px] text-muted-foreground"
-                      >
-                        <span className="text-primary/60">&#8226;</span>
-                        <span>{hint}</span>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+        {/* Examples */}
+        {content.examples?.length > 0 && (
+          <div className="space-y-3">
+            {content.examples.map((ex, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: i * 0.05 }}
+                className="rounded-lg border border-border bg-muted/30 p-3.5 space-y-2"
+              >
+                <h3 className="text-[10px] font-semibold text-muted-foreground tracking-wide uppercase">
+                  Example {i + 1}
+                </h3>
+                <div className="font-mono text-[11px] space-y-0.5 leading-relaxed">
+                  <p>
+                    <span className="text-muted-foreground select-none">Input: </span>
+                    <span className="text-foreground">{ex.input}</span>
+                  </p>
+                  <p>
+                    <span className="text-muted-foreground select-none">Output: </span>
+                    <span className="text-primary font-medium">{ex.output}</span>
+                  </p>
+                </div>
+                {ex.explanation && (
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    {ex.explanation}
+                  </p>
+                )}
+              </motion.div>
+            ))}
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

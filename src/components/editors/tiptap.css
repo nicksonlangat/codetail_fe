@@ -1,0 +1,137 @@
+/* ── TipTap read-only renderer styles ── */
+
+.tiptap {
+  outline: none;
+  font-size: 13px;
+  line-height: 1.7;
+  color: color-mix(in srgb, var(--foreground) 85%, transparent);
+  word-break: normal;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+/* Headings */
+.tiptap h1,
+.tiptap h2,
+.tiptap h3,
+.tiptap h4 {
+  font-weight: 600;
+  color: var(--foreground);
+  letter-spacing: -0.01em;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.tiptap h1 { font-size: 18px; }
+.tiptap h2 { font-size: 15px; }
+.tiptap h3 { font-size: 13px; }
+.tiptap h4 { font-size: 12px; }
+
+.tiptap h1:first-child,
+.tiptap h2:first-child,
+.tiptap h3:first-child {
+  margin-top: 0;
+}
+
+/* Paragraphs */
+.tiptap p {
+  margin: 0.5em 0;
+}
+
+/* Links */
+.tiptap a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Bold / Italic */
+.tiptap strong {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.tiptap em {
+  font-style: italic;
+}
+
+/* Inline code */
+.tiptap code {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+  padding: 3px 7px;
+  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--primary) 15%, transparent);
+  font-weight: 500;
+}
+
+/* Code blocks */
+.tiptap pre {
+  background: #131620;
+  color: #d4d8e8;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  padding: 14px 16px;
+  border-radius: 10px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+.tiptap pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  font-size: inherit;
+}
+
+/* Lists */
+.tiptap ul,
+.tiptap ol {
+  padding-left: 1.25em;
+  margin: 0.5em 0;
+}
+
+.tiptap ul {
+  list-style-type: disc;
+}
+
+.tiptap ol {
+  list-style-type: decimal;
+}
+
+.tiptap li {
+  font-size: 12px;
+  color: color-mix(in srgb, var(--foreground) 75%, transparent);
+  margin: 0.25em 0;
+}
+
+.tiptap li p {
+  margin: 0;
+}
+
+/* Blockquote */
+.tiptap blockquote {
+  border-left: 3px solid color-mix(in srgb, var(--primary) 30%, transparent);
+  padding-left: 12px;
+  margin: 12px 0;
+  color: var(--muted-foreground);
+  font-style: italic;
+}
+
+/* Horizontal rule */
+.tiptap hr {
+  border: none;
+  border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  margin: 16px 0;
+}
+
+/* Sup for constraints like 10^4 */
+.tiptap sup {
+  font-size: 0.75em;
+  vertical-align: super;
+}

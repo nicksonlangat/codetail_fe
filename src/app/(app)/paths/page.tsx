@@ -43,13 +43,13 @@ export default function PathsPage() {
             <div className="flex items-center justify-center py-16">
               <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
             </div>
-          ) : !paths?.length ? (
+          ) : !Array.isArray(paths) || !paths.length ? (
             <div className="text-center py-16">
               <p className="text-[13px] text-muted-foreground">No paths available for this stack yet.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-              {paths.map((path, i) => (
+              {(Array.isArray(paths) ? paths : []).map((path, i) => (
                 <motion.div
                   key={path.id}
                   initial={{ opacity: 0, y: 6 }}
