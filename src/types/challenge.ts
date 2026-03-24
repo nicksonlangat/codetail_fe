@@ -6,15 +6,20 @@ export interface McqOption {
   code?: string;
 }
 
+export interface ChallengeExample {
+  input: string;
+  output: string;
+  explanation?: string;
+}
+
 export interface ChallengeContent {
   problemId: string;
   title: string;
   type: ChallengeType;
   description: string;
-  requirements: string[];
-  hints: string[];
+  functionSignature: string;
+  examples: ChallengeExample[];
   starterCode: string;
-  exampleOutput?: string;
   options?: McqOption[];
   correctOptionId?: string;
   explanation?: string;

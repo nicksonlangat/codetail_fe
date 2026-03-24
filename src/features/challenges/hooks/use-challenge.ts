@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { ChallengeContent, Feedback, FeedbackStatus } from "@/types";
 import { generateFeedback } from "../services/feedback";
 
@@ -9,34 +9,23 @@ interface UseChallengeParams {
 }
 
 export function useChallenge({ content }: UseChallengeParams) {
-  const [code, setCode] = useState(
-    content?.starterCode ?? "# Write your solution here\n",
-  );
+  const [code, setCode] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState<FeedbackStatus>("idle");
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [showHints, setShowHints] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [mcqSubmitted, setMcqSubmitted] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  // Set starter code when content loads
+  useEffect(() => {
+    if (content && !initialized) {
+      setCode(content.starterCode || "");
+      setInitialized(true);
+    }
+  }, [content, initialized]);
 
   const challengeType = content?.type ?? "code";
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === "Tab") {
-        e.preventDefault();
-        const ta = e.currentTarget;
-        const start = ta.selectionStart;
-        const end = ta.selectionEnd;
-        const newCode =
-          code.substring(0, start) + "    " + code.substring(end);
-        setCode(newCode);
-        requestAnimationFrame(() => {
-          ta.selectionStart = ta.selectionEnd = start + 4;
-        });
-      }
-    },
-    [code],
-  );
 
   const handleSubmit = useCallback(() => {
     if (challengeType === "mcq") {
@@ -53,7 +42,7 @@ export function useChallenge({ content }: UseChallengeParams) {
   }, [challengeType, code, content?.problemId]);
 
   const handleReset = useCallback(() => {
-    setCode(content?.starterCode ?? "# Write your solution here\n");
+    setCode(content?.starterCode ?? "");
     setFeedback(null);
     setFeedbackStatus("idle");
     setSelectedOption(null);
@@ -68,11 +57,13 @@ export function useChallenge({ content }: UseChallengeParams) {
   }, []);
 
   const resetForNavigation = useCallback(() => {
+    setCode("");
     setFeedback(null);
     setFeedbackStatus("idle");
     setSelectedOption(null);
     setMcqSubmitted(false);
     setShowHints(false);
+    setInitialized(false);
   }, []);
 
   const toggleHints = useCallback(() => {
@@ -96,7 +87,7 @@ export function useChallenge({ content }: UseChallengeParams) {
     handleSubmit,
     handleReset,
     handleRetake,
-    handleKeyDown,
+    handleKeyDown: undefined, // Monaco handles its own keyboard
     resetForNavigation,
   };
 }

@@ -1,0 +1,68 @@
+/* ── Notes editor styles ── */
+
+.notes-editor {
+  color: var(--foreground);
+}
+
+.notes-editor p {
+  margin: 0.4em 0;
+}
+
+.notes-editor strong {
+  font-weight: 600;
+}
+
+.notes-editor h2 {
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.3em;
+}
+
+.notes-editor code {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: var(--primary);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.notes-editor pre {
+  background: #131620;
+  color: #d4d8e8;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 11px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+
+.notes-editor pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+}
+
+.notes-editor ul { list-style-type: disc; padding-left: 1.2em; }
+.notes-editor ol { list-style-type: decimal; padding-left: 1.2em; }
+.notes-editor li { margin: 0.2em 0; }
+
+.notes-editor blockquote {
+  border-left: 3px solid var(--primary);
+  padding-left: 12px;
+  color: var(--muted-foreground);
+  font-style: italic;
+  margin: 8px 0;
+}
+
+/* Placeholder */
+.notes-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--muted-foreground);
+  opacity: 0.4;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
