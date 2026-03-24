@@ -2,170 +2,133 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Code2, Eye, EyeOff, CheckCircle2 } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader2, Check, X } from "lucide-react";
+
+const spring = { type: "spring" as const, stiffness: 400, damping: 25 };
+const inputCls = "w-full h-[38px] rounded-[10px] border border-border bg-card px-3 pr-10 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/60 focus:ring-[3px] focus:ring-primary/8 transition-all duration-500";
+
+const rules = [
+  { key: "len", label: "8+ chars", test: (p: string) => p.length >= 8 },
+  { key: "up", label: "Uppercase", test: (p: string) => /[A-Z]/.test(p) },
+  { key: "low", label: "Lowercase", test: (p: string) => /[a-z]/.test(p) },
+  { key: "num", label: "Number", test: (p: string) => /[0-9]/.test(p) },
+  { key: "spc", label: "Special", test: (p: string) => /[^A-Za-z0-9]/.test(p) },
+];
+
+function strengthColor(score: number) {
+  if (score <= 20) return "bg-red-500";
+  if (score <= 40) return "bg-orange-500";
+  if (score <= 60) return "bg-yellow-500";
+  if (score <= 80) return "bg-green-500";
+  return "bg-primary";
+}
 
 export default function ResetPasswordPage() {
-  const router = useRouter();
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [pw, setPw] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
-  const passwordsMatch = password.length > 0 && password === confirmPassword;
-  const passwordStrength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3;
-  const strengthLabels = ["", "Weak", "Good", "Strong"];
-  const strengthColors = ["", "bg-destructive", "bg-amber-500", "bg-emerald-500"];
+  const met = rules.map((r) => r.test(pw));
+  const score = pw.length === 0 ? 0 : met.filter(Boolean).length * 20;
+  const match = pw.length > 0 && pw === confirm;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordsMatch && passwordStrength >= 2) {
-      setDone(true);
-    }
+    if (!match || score < 60) return;
+    setLoading(true);
+    await new Promise((r) => setTimeout(r, 800));
+    setLoading(false);
+    setDone(true);
   };
 
-  if (done) {
-    return (
-      <div className="w-full max-w-[420px] px-6">
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-8 h-8 rounded-[10px] bg-primary flex items-center justify-center">
-            <Code2 className="w-4.5 h-4.5 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-semibold tracking-tight">codetail</span>
-        </div>
-
-        <Card>
-          <CardContent className="pt-6 text-center space-y-4">
-            <div className="mx-auto h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <CheckCircle2 className="h-7 w-7 text-primary" />
-            </div>
-
-            <div className="space-y-1">
-              <h1 className="text-xl font-semibold tracking-tight">Password reset!</h1>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Your password has been successfully updated. You can now sign in with your new password.
-              </p>
-            </div>
-
-            <Link href="/signin" className={cn(buttonVariants(), "w-full h-10 font-medium text-sm gap-2 group")}>
-                Back to sign in
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full max-w-[420px] px-6">
-      {/* Branding */}
-      <div className="flex items-center justify-center gap-2 mb-8">
-        <div className="w-8 h-8 rounded-[10px] bg-primary flex items-center justify-center">
-          <Code2 className="w-4.5 h-4.5 text-primary-foreground" />
-        </div>
-        <span className="text-xl font-semibold tracking-tight">codetail</span>
-      </div>
+    <div>
+      <AnimatePresence mode="wait">
+        {!done ? (
+          <motion.div key="form" initial={{ opacity: 1 }} exit={{ opacity: 0, x: -16 }} transition={spring}>
+            <Link href="/forgot-password" className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/60 hover:text-muted-foreground cursor-pointer transition-all duration-500 mb-6">
+              <ArrowLeft className="w-3 h-3" /> Back
+            </Link>
 
-      <Card>
-        <CardHeader className="pb-4">
-          <Link
-            href="/forgot-password"
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit mb-4"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back
-          </Link>
+            <div className="mb-8">
+              <h1 className="text-[22px] font-semibold tracking-tight leading-tight">New password</h1>
+              <p className="text-[13px] text-muted-foreground mt-1">Choose something strong</p>
+            </div>
 
-          <div className="space-y-1">
-            <h1 className="text-xl font-semibold tracking-tight">Set new password</h1>
-            <p className="text-sm text-muted-foreground">
-              Choose a strong password to secure your account.
-            </p>
-          </div>
-        </CardHeader>
-
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="password">New password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter new password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-10 pr-10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {password.length > 0 && (
-                <div className="flex items-center gap-2 pt-1">
-                  <div className="flex-1 flex gap-1">
-                    {[1, 2, 3].map((level) => (
-                      <div
-                        key={level}
-                        className={`h-1 flex-1 rounded-full transition-colors ${
-                          level <= passwordStrength ? strengthColors[passwordStrength] : "bg-border"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">{strengthLabels[passwordStrength]}</span>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-foreground/70">Password</label>
+                <div className="relative">
+                  <input type={showPw ? "text" : "password"} placeholder="New password" value={pw} onChange={(e) => setPw(e.target.value)} className={inputCls} />
+                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/30 hover:text-muted-foreground/60 cursor-pointer transition-all duration-500">
+                    {showPw ? <EyeOff className="w-[14px] h-[14px]" /> : <Eye className="w-[14px] h-[14px]" />}
+                  </button>
                 </div>
-              )}
-            </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="confirm-password">Confirm password</Label>
-              <div className="relative">
-                <Input
-                  id="confirm-password"
-                  type={showConfirm ? "text" : "password"}
-                  placeholder="Confirm new password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="h-10 pr-10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+                <AnimatePresence>
+                  {pw.length > 0 && (
+                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                      <div className="pt-2 space-y-2">
+                        <div className="h-[3px] rounded-full bg-border/40 overflow-hidden">
+                          <motion.div className={`h-full rounded-full ${strengthColor(score)}`} animate={{ width: `${score}%` }} transition={spring} />
+                        </div>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1">
+                          {rules.map((r, i) => (
+                            <div key={r.key} className="flex items-center gap-1">
+                              <motion.span animate={{ scale: met[i] ? 1 : 0.8, opacity: met[i] ? 1 : 0.3 }} transition={spring}
+                                className={`w-[14px] h-[14px] rounded-full flex items-center justify-center ${met[i] ? "bg-primary/10 text-primary" : "text-muted-foreground"}`}>
+                                {met[i] ? <Check className="w-[8px] h-[8px]" /> : <X className="w-[8px] h-[8px]" />}
+                              </motion.span>
+                              <span className={`text-[10px] ${met[i] ? "text-foreground/70" : "text-muted-foreground/30"}`}>{r.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-              {confirmPassword.length > 0 && !passwordsMatch && (
-                <p className="text-[10px] text-destructive mt-1">Passwords don&apos;t match</p>
-              )}
-            </div>
 
-            <Button
-              type="submit"
-              className="w-full h-10 font-medium text-sm gap-2 group mt-2"
-              disabled={!passwordsMatch || passwordStrength < 2}
-            >
-              Reset password
-              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-foreground/70">Confirm</label>
+                <div className="relative">
+                  <input type={showConfirm ? "text" : "password"} placeholder="Confirm password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className={inputCls} />
+                  <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/30 hover:text-muted-foreground/60 cursor-pointer transition-all duration-500">
+                    {showConfirm ? <EyeOff className="w-[14px] h-[14px]" /> : <Eye className="w-[14px] h-[14px]" />}
+                  </button>
+                </div>
+                {confirm.length > 0 && !match && (
+                  <p className="text-[10px] text-destructive">Doesn&apos;t match</p>
+                )}
+              </div>
+
+              <motion.button type="submit" disabled={loading || !match || score < 60}
+                whileHover={loading ? {} : { y: -1 }} whileTap={loading ? {} : { scale: 0.985 }} transition={spring}
+                className="w-full h-[38px] rounded-[10px] bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-medium cursor-pointer transition-all duration-500 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_1px_3px_0_rgba(0,0,0,0.1)] hover:shadow-[0_4px_16px_0_hsl(164_70%_40%/0.25)]">
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Reset password"}
+              </motion.button>
+            </form>
+          </motion.div>
+        ) : (
+          <motion.div key="done" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={spring}>
+            <motion.div className="w-10 h-10 rounded-xl bg-primary/8 flex items-center justify-center mb-4"
+              initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ ...spring, delay: 0.1 }}>
+              <Check className="w-5 h-5 text-primary" />
+            </motion.div>
+
+            <h1 className="text-[22px] font-semibold tracking-tight leading-tight">Password updated</h1>
+            <p className="text-[13px] text-muted-foreground mt-1">You can now sign in with your new password</p>
+
+            <Link href="/signin" className="inline-flex items-center gap-1.5 mt-4 text-[12px] text-primary font-medium hover:text-primary/80 cursor-pointer transition-all duration-500">
+              Sign in <ArrowRight className="w-3 h-3" />
+            </Link>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

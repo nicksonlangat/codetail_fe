@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Sun, Moon, LogOut, Settings, User } from "lucide-react";
+import { useAuthStore } from "@/stores/auth-store";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -19,7 +20,9 @@ import { cn } from "@/lib/utils";
 
 export function TopBar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
+  const { user, logout } = useAuthStore();
 
   const toggleTheme = () => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
@@ -73,15 +76,15 @@ export function TopBar() {
             <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "rounded-full")}>
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                    AC
+                    {user?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() ?? "?"}
                   </AvatarFallback>
                 </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               <div className="px-2 py-1.5">
-                <p className="text-sm font-medium">Alex Chen</p>
+                <p className="text-sm font-medium">{user?.name ?? "Guest"}</p>
                 <p className="text-xs text-muted-foreground">
-                  alex@codetail.dev
+                  {user?.email ?? ""}
                 </p>
               </div>
               <DropdownMenuSeparator />
@@ -94,7 +97,7 @@ export function TopBar() {
                 Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { logout(); router.push("/signin"); }} className="cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
                 Log out
               </DropdownMenuItem>

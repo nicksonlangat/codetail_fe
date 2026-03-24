@@ -2,108 +2,71 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Code2, Mail } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Loader2, Mail } from "lucide-react";
+
+const spring = { type: "spring" as const, stiffness: 400, damping: 25 };
+const inputCls = "w-full h-[38px] rounded-[10px] border border-border bg-card px-3 text-[13px] text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/60 focus:ring-[3px] focus:ring-primary/8 transition-all duration-500";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) setSubmitted(true);
+    if (!email) return;
+    setLoading(true);
+    await new Promise((r) => setTimeout(r, 800));
+    setLoading(false);
+    setSent(true);
   };
 
   return (
-    <div className="w-full max-w-[420px] px-6">
-      {/* Branding */}
-      <div className="flex items-center justify-center gap-2 mb-8">
-        <div className="w-8 h-8 rounded-[10px] bg-primary flex items-center justify-center">
-          <Code2 className="w-4.5 h-4.5 text-primary-foreground" />
-        </div>
-        <span className="text-xl font-semibold tracking-tight">codetail</span>
-      </div>
+    <div>
+      <Link href="/signin" className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/60 hover:text-muted-foreground cursor-pointer transition-all duration-500 mb-6">
+        <ArrowLeft className="w-3 h-3" /> Back to sign in
+      </Link>
 
-      <Card>
-        <CardHeader className="pb-4">
-          <Link
-            href="/signin"
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit mb-4"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back to sign in
-          </Link>
-
-          {!submitted ? (
-            <div className="space-y-1">
-              <h1 className="text-xl font-semibold tracking-tight">Reset your password</h1>
-              <p className="text-sm text-muted-foreground">
-                Enter the email associated with your account and we&apos;ll send a reset link.
-              </p>
+      <AnimatePresence mode="wait">
+        {!sent ? (
+          <motion.div key="form" initial={{ opacity: 1 }} exit={{ opacity: 0, x: -16 }} transition={spring}>
+            <div className="mb-8">
+              <h1 className="text-[22px] font-semibold tracking-tight leading-tight">Reset password</h1>
+              <p className="text-[13px] text-muted-foreground mt-1">We&apos;ll send you a reset link</p>
             </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Mail className="h-6 w-6 text-primary" />
-              </div>
-              <div className="space-y-1">
-                <h1 className="text-xl font-semibold tracking-tight">Check your email</h1>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  We sent a password reset link to{" "}
-                  <span className="text-foreground font-medium">{email}</span>.
-                </p>
-              </div>
-            </div>
-          )}
-        </CardHeader>
 
-        <CardContent>
-          {!submitted ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="email">Email address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="h-10"
-                  required
-                />
+                <label className="text-[12px] font-medium text-foreground/70">Email</label>
+                <input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
               </div>
 
-              <Button type="submit" className="w-full h-10 font-medium text-sm gap-2 group">
-                Send reset link
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Button>
+              <motion.button type="submit" disabled={loading || !email}
+                whileHover={loading ? {} : { y: -1 }} whileTap={loading ? {} : { scale: 0.985 }} transition={spring}
+                className="w-full h-[38px] rounded-[10px] bg-primary hover:bg-primary/90 text-primary-foreground text-[13px] font-medium cursor-pointer transition-all duration-500 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_1px_3px_0_rgba(0,0,0,0.1)] hover:shadow-[0_4px_16px_0_hsl(164_70%_40%/0.25)]">
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send reset link"}
+              </motion.button>
             </form>
-          ) : (
-            <div className="space-y-3">
-              <Link href="/reset-password" className={cn(buttonVariants(), "w-full h-10 font-medium text-sm gap-2 group")}>
-                  Continue to reset
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
+          </motion.div>
+        ) : (
+          <motion.div key="sent" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={spring}>
+            <motion.div className="w-10 h-10 rounded-xl bg-primary/8 flex items-center justify-center mb-4"
+              initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ ...spring, delay: 0.1 }}>
+              <Mail className="w-5 h-5 text-primary" />
+            </motion.div>
 
-              <Button
-                variant="ghost"
-                className="w-full h-10 text-sm text-muted-foreground"
-                onClick={() => setSubmitted(false)}
-              >
-                Try a different email
-              </Button>
+            <h1 className="text-[22px] font-semibold tracking-tight leading-tight">Check your inbox</h1>
+            <p className="text-[13px] text-muted-foreground mt-1">
+              Reset link sent to <span className="text-foreground font-medium">{email}</span>
+            </p>
 
-              <p className="text-xs text-center text-muted-foreground">
-                Didn&apos;t receive it? Check your spam folder.
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            <button onClick={() => setSent(false)} className="mt-4 text-[11px] text-muted-foreground/60 hover:text-muted-foreground cursor-pointer transition-all duration-500">
+              Try a different email
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
