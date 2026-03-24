@@ -22,3 +22,17 @@ export async function runCode(problemId: string, code: string) {
   });
   return res.data;
 }
+
+export interface HintResponse {
+  hint: string;
+  hint_number: number;
+  level: string;
+}
+
+export async function getHint(problemId: string, code: string) {
+  const res = await apiClient.post<HintResponse>("/submissions/hint", {
+    problem_id: problemId,
+    code,
+  });
+  return res.data;
+}

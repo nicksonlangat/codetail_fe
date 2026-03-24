@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { FlaskConical, Lightbulb, Bot, BookOpen } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { FlaskConical, Lightbulb, Bot, BookOpen, Loader2 } from "lucide-react";
 import type { ChallengeExample } from "@/types";
 import { TestCasesPanel, type TestCaseResult } from "./test-cases-panel";
+import { getHint, type HintResponse } from "@/lib/api/submissions";
+import { UpgradeModal } from "@/components/paywall/upgrade-modal";
 
 type Tab = "tests" | "hints" | "review" | "solution";
 
@@ -15,14 +17,50 @@ const tabs: { id: Tab; label: string; icon: typeof FlaskConical }[] = [
   { id: "solution", label: "Solution", icon: BookOpen },
 ];
 
+const spring = { type: "spring" as const, stiffness: 400, damping: 25 };
+
+const levelColor: Record<string, string> = {
+  gentle: "bg-green-500/10 text-green-500",
+  medium: "bg-yellow-500/10 text-yellow-600",
+  strong: "bg-orange-500/10 text-orange-500",
+};
+
 interface BottomPanelProps {
+  problemId: string;
+  code: string;
   examples: ChallengeExample[];
   testResults: TestCaseResult[];
   running: boolean;
+  initialHints?: HintResponse[];
 }
 
-export function BottomPanel({ examples, testResults, running }: BottomPanelProps) {
+export function BottomPanel({ problemId, code, examples, testResults, running, initialHints = [] }: BottomPanelProps) {
   const [active, setActive] = useState<Tab>("tests");
+  const [hints, setHints] = useState<HintResponse[]>(initialHints);
+  const [loadingHint, setLoadingHint] = useState(false);
+  const [hintError, setHintError] = useState("");
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState("");
+
+  const handleGetHint = async () => {
+    if (loadingHint) return;
+    setLoadingHint(true);
+    setHintError("");
+    try {
+      const hint = await getHint(problemId, code);
+      setHints((prev) => [...prev, hint]);
+    } catch (err: any) {
+      const detail = err.response?.data?.detail || "Failed to get hint";
+      if (err.response?.status === 429) {
+        setUpgradeReason(detail);
+        setShowUpgrade(true);
+      } else {
+        setHintError(detail);
+      }
+    } finally {
+      setLoadingHint(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -41,6 +79,9 @@ export function BottomPanel({ examples, testResults, running }: BottomPanelProps
             >
               <Icon className="w-3 h-3" />
               {tab.label}
+              {tab.id === "hints" && hints.length > 0 && (
+                <span className="text-[9px] bg-primary/10 text-primary px-1 rounded-full">{hints.length}</span>
+              )}
               {isActive && (
                 <motion.div
                   layoutId="bottom-tab"
@@ -61,13 +102,54 @@ export function BottomPanel({ examples, testResults, running }: BottomPanelProps
 
         {active === "hints" && (
           <div className="p-4 space-y-3">
-            <p className="text-[12px] text-muted-foreground">
-              Stuck? Click below to get a contextual hint from AI based on your current code.
-            </p>
-            <button className="flex items-center gap-1.5 text-[11px] font-medium text-primary bg-primary/10 hover:bg-primary/15 px-3 py-1.5 rounded-lg cursor-pointer transition-all duration-500">
-              <Lightbulb className="w-3 h-3" />
-              Get Hint
-            </button>
+            {/* Previous hints */}
+            <AnimatePresence>
+              {hints.map((h, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ ...spring, delay: i * 0.05 }}
+                  className="rounded-lg border border-border bg-muted/30 p-3 space-y-1.5"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                      Hint {h.hint_number}
+                    </span>
+                    <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${levelColor[h.level] ?? ""}`}>
+                      {h.level}
+                    </span>
+                  </div>
+                  <p className="text-[12px] text-foreground/80 leading-relaxed">{h.hint}</p>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            {/* Error */}
+            {hintError && (
+              <p className="text-[11px] text-destructive">{hintError}</p>
+            )}
+
+            {/* Get hint button */}
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={handleGetHint}
+              disabled={loadingHint}
+              className="flex items-center gap-1.5 text-[11px] font-medium text-primary bg-primary/10 hover:bg-primary/15 px-3 py-1.5 rounded-lg cursor-pointer transition-all duration-500 disabled:opacity-50"
+            >
+              {loadingHint ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Lightbulb className="w-3 h-3" />
+              )}
+              {hints.length === 0 ? "Get Hint" : "Get Another Hint"}
+            </motion.button>
+
+            {hints.length === 0 && (
+              <p className="text-[11px] text-muted-foreground/50">
+                Hints are Socratic — they guide your thinking without giving the answer. Each hint gets progressively more specific.
+              </p>
+            )}
           </div>
         )}
 
@@ -95,6 +177,8 @@ export function BottomPanel({ examples, testResults, running }: BottomPanelProps
           </div>
         )}
       </div>
+
+      <UpgradeModal open={showUpgrade} onClose={() => setShowUpgrade(false)} trigger={upgradeReason} />
     </div>
   );
 }

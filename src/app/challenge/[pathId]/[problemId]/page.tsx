@@ -18,6 +18,7 @@ import { McqPanel } from "@/components/challenge/mcq-panel";
 import { CodePanel } from "@/components/challenge/code-panel";
 import type { ChallengeContent, ChallengeType } from "@/types";
 import { runCode } from "@/lib/api/submissions";
+import { getProgress } from "@/lib/api/progress";
 import type { TestCaseResult } from "@/components/challenge/test-cases-panel";
 
 const typeConfig: Record<string, { icon: typeof Code; label: string }> = {
@@ -71,6 +72,12 @@ export default function ChallengePage() {
     enabled: !!pathSlug,
   });
 
+  const { data: progress } = useQuery({
+    queryKey: ["progress", problemId],
+    queryFn: () => getProgress(problemId),
+    enabled: !!problemId,
+  });
+
   const content = useMemo(() => problem ? apiToContent(problem) : undefined, [problem]);
 
   const {
@@ -78,7 +85,7 @@ export default function ChallengePage() {
     selectedOption, setSelectedOption, mcqSubmitted, mcqCorrect,
     challengeType, handleSubmit, handleReset, handleRetake, handleKeyDown,
     resetForNavigation,
-  } = useChallenge({ content });
+  } = useChallenge({ content, savedCode: progress?.code });
 
   const [testResults, setTestResults] = useState<TestCaseResult[]>([]);
   const [running, setRunning] = useState(false);
@@ -189,12 +196,13 @@ export default function ChallengePage() {
               mcqSubmitted={mcqSubmitted} mcqCorrect={mcqCorrect} handleSubmit={handleSubmit}
               handleRetake={handleRetake} nextProblem={nextProblem} navigateTo={navigateTo} />
           ) : (
-            <CodePanel code={code} onCodeChange={setCode}
+            <CodePanel problemId={problem.id} code={code} onCodeChange={setCode}
               onReset={handleReset} onRun={handleRun} onSubmit={handleRun}
               running={running}
               examples={content.examples ?? []}
               testResults={testResults}
-              challengeType={challengeType} />
+              challengeType={challengeType}
+              initialHints={progress?.saved_hints ?? []} />
           )}
         </ResizablePanel>
       </ResizablePanelGroup>

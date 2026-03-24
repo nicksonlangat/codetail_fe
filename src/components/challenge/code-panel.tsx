@@ -13,6 +13,7 @@ import { BottomPanel } from "./bottom-panel";
 import type { TestCaseResult } from "./test-cases-panel";
 
 interface CodePanelProps {
+  problemId: string;
   code: string;
   onCodeChange: (c: string) => void;
   onReset: () => void;
@@ -22,9 +23,11 @@ interface CodePanelProps {
   examples: ChallengeExample[];
   testResults: TestCaseResult[];
   challengeType: ChallengeType;
+  initialHints?: { hint: string; hint_number: number; level: string }[];
 }
 
 export function CodePanel({
+  problemId,
   code,
   onCodeChange,
   onReset,
@@ -34,6 +37,7 @@ export function CodePanel({
   examples,
   testResults,
   challengeType,
+  initialHints = [],
 }: CodePanelProps) {
   return (
     <ResizablePanelGroup orientation="vertical" className="h-full">
@@ -80,7 +84,7 @@ export function CodePanel({
 
       {/* Bottom: Test Cases */}
       <ResizablePanel defaultSize={40} minSize={15}>
-        <BottomPanel examples={examples} testResults={testResults} running={running} />
+        <BottomPanel problemId={problemId} code={code} examples={examples} testResults={testResults} running={running} initialHints={initialHints} />
       </ResizablePanel>
     </ResizablePanelGroup>
   );

@@ -1,14 +1,18 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import type { ChallengeContent, Feedback, FeedbackStatus } from "@/types";
 import { generateFeedback } from "../services/feedback";
+import { saveCode as apiSaveCode } from "@/lib/api/progress";
+
+const STORAGE_PREFIX = "codetail-code-";
 
 interface UseChallengeParams {
   content: ChallengeContent | undefined;
+  savedCode?: string | null;
 }
 
-export function useChallenge({ content }: UseChallengeParams) {
+export function useChallenge({ content, savedCode }: UseChallengeParams) {
   const [code, setCode] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState<FeedbackStatus>("idle");
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -16,14 +20,38 @@ export function useChallenge({ content }: UseChallengeParams) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [mcqSubmitted, setMcqSubmitted] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Set starter code when content loads
+  const problemId = content?.problemId;
+  const storageKey = problemId ? `${STORAGE_PREFIX}${problemId}` : null;
+
+  // Load code: savedCode from API > localStorage > starter code
   useEffect(() => {
-    if (content && !initialized) {
-      setCode(content.starterCode || "");
-      setInitialized(true);
+    if (!content || initialized) return;
+
+    if (savedCode) {
+      setCode(savedCode);
+    } else {
+      const local = storageKey ? localStorage.getItem(storageKey) : null;
+      setCode(local ?? content.starterCode ?? "");
     }
-  }, [content, initialized]);
+    setInitialized(true);
+  }, [content, savedCode, initialized, storageKey]);
+
+  // Auto-save (debounced 1s)
+  useEffect(() => {
+    if (!problemId || !storageKey || !initialized) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+
+    saveTimer.current = setTimeout(() => {
+      localStorage.setItem(storageKey, code);
+      apiSaveCode(problemId, code).catch(() => {});
+    }, 1000);
+
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, [code, problemId, storageKey, initialized]);
 
   const challengeType = content?.type ?? "code";
 
@@ -43,11 +71,13 @@ export function useChallenge({ content }: UseChallengeParams) {
 
   const handleReset = useCallback(() => {
     setCode(content?.starterCode ?? "");
+    if (storageKey) localStorage.removeItem(storageKey);
+    if (problemId) apiSaveCode(problemId, content?.starterCode ?? "").catch(() => {});
     setFeedback(null);
     setFeedbackStatus("idle");
     setSelectedOption(null);
     setMcqSubmitted(false);
-  }, [content?.starterCode]);
+  }, [content?.starterCode, storageKey, problemId]);
 
   const handleRetake = useCallback(() => {
     setFeedback(null);
@@ -87,7 +117,7 @@ export function useChallenge({ content }: UseChallengeParams) {
     handleSubmit,
     handleReset,
     handleRetake,
-    handleKeyDown: undefined, // Monaco handles its own keyboard
+    handleKeyDown: undefined,
     resetForNavigation,
   };
 }
