@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -17,6 +17,8 @@ import { LeftPanel } from "@/components/challenge/left-panel";
 import { McqPanel } from "@/components/challenge/mcq-panel";
 import { CodePanel } from "@/components/challenge/code-panel";
 import type { ChallengeContent, ChallengeType } from "@/types";
+import { runCode } from "@/lib/api/submissions";
+import type { TestCaseResult } from "@/components/challenge/test-cases-panel";
 
 const typeConfig: Record<string, { icon: typeof Code; label: string }> = {
   write_code: { icon: Code, label: "Write Code" },
@@ -77,6 +79,29 @@ export default function ChallengePage() {
     challengeType, handleSubmit, handleReset, handleRetake, handleKeyDown,
     resetForNavigation,
   } = useChallenge({ content });
+
+  const [testResults, setTestResults] = useState<TestCaseResult[]>([]);
+  const [running, setRunning] = useState(false);
+
+  const handleRun = useCallback(async () => {
+    if (!problem || running) return;
+    setRunning(true);
+    setTestResults([]);
+    try {
+      const res = await runCode(problem.id, code);
+      setTestResults(res.test_results.map((tr) => ({
+        input: tr.input,
+        expected: tr.expected,
+        actual: tr.actual,
+        passed: tr.passed,
+      })));
+    } catch (err: any) {
+      const detail = err.response?.data?.detail;
+      setTestResults([{ input: "", expected: "", actual: detail || "Error running code", passed: false }]);
+    } finally {
+      setRunning(false);
+    }
+  }, [problem, code, running]);
 
   const unlocked = useMemo(() => Array.isArray(siblings) ? siblings.filter((s) => !s.locked) : [], [siblings]);
   const currentIdx = unlocked.findIndex((p) => p.id === problemId);
@@ -165,10 +190,10 @@ export default function ChallengePage() {
               handleRetake={handleRetake} nextProblem={nextProblem} navigateTo={navigateTo} />
           ) : (
             <CodePanel code={code} onCodeChange={setCode}
-              onReset={handleReset} onRun={handleSubmit} onSubmit={handleSubmit}
-              running={feedbackStatus === "evaluating"}
+              onReset={handleReset} onRun={handleRun} onSubmit={handleRun}
+              running={running}
               examples={content.examples ?? []}
-              testResults={[]}
+              testResults={testResults}
               challengeType={challengeType} />
           )}
         </ResizablePanel>
