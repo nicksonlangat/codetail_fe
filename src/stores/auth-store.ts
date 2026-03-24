@@ -5,32 +5,48 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  avatarUrl?: string;
+  is_verified: boolean;
 }
 
 interface AuthState {
   user: User | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
-  login: (user: User) => void;
+  setTokens: (access: string, refresh: string) => void;
+  setUser: (user: User) => void;
+  login: (user: User, access: string, refresh: string) => void;
   logout: () => void;
 }
-
-const MOCK_USER: User = {
-  id: "1",
-  name: "Alex Chen",
-  email: "alex@codetail.dev",
-  avatarUrl: undefined,
-};
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      user: MOCK_USER,
-      isAuthenticated: true,
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      isAuthenticated: false,
 
-      login: (user: User) => set({ user, isAuthenticated: true }),
+      setTokens: (access, refresh) =>
+        set({ accessToken: access, refreshToken: refresh }),
 
-      logout: () => set({ user: null, isAuthenticated: false }),
+      setUser: (user) => set({ user }),
+
+      login: (user, access, refresh) =>
+        set({
+          user,
+          accessToken: access,
+          refreshToken: refresh,
+          isAuthenticated: true,
+        }),
+
+      logout: () =>
+        set({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          isAuthenticated: false,
+        }),
     }),
     {
       name: "codetail-auth",
