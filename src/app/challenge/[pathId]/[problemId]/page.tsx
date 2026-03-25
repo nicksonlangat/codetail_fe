@@ -18,7 +18,7 @@ import { McqPanel } from "@/components/challenge/mcq-panel";
 import { CodePanel } from "@/components/challenge/code-panel";
 import type { ChallengeContent, ChallengeType } from "@/types";
 import { UpgradeModal } from "@/components/paywall/upgrade-modal";
-import { runCode } from "@/lib/api/submissions";
+import { runCode, getReview } from "@/lib/api/submissions";
 import { getProgress } from "@/lib/api/progress";
 import type { TestCaseResult } from "@/components/challenge/test-cases-panel";
 
@@ -83,7 +83,8 @@ export default function ChallengePage() {
 
   const {
     code, setCode, feedbackStatus, feedback, showHints, toggleHints,
-    selectedOption, setSelectedOption, mcqSubmitted, mcqCorrect,
+    selectedOption, setSelectedOption, mcqSubmitted, mcqSubmitting, mcqCorrect,
+    mcqCorrectAnswer, mcqExplanation,
     challengeType, handleSubmit, handleReset, handleRetake, handleKeyDown,
     resetForNavigation,
   } = useChallenge({ content, savedCode: progress?.code });
@@ -98,6 +99,8 @@ export default function ChallengePage() {
     }
   }, [progress, resultsLoaded]);
   const [running, setRunning] = useState(false);
+
+  const isDjango = problem?.stack === "django";
 
   const handleRun = useCallback(async () => {
     if (!problem || running) return;
@@ -212,8 +215,15 @@ export default function ChallengePage() {
 
         <ResizablePanel defaultSize={50} minSize={25}>
           {challengeType === "mcq" ? (
-            <McqPanel content={content} selectedOption={selectedOption} onSelect={setSelectedOption}
-              mcqSubmitted={mcqSubmitted} mcqCorrect={mcqCorrect} handleSubmit={handleSubmit}
+            <McqPanel
+              content={{
+                ...content,
+                correctOptionId: mcqCorrectAnswer ?? undefined,
+                explanation: mcqExplanation ?? content.explanation,
+              }}
+              selectedOption={selectedOption} onSelect={setSelectedOption}
+              mcqSubmitted={mcqSubmitted} mcqSubmitting={mcqSubmitting}
+              mcqCorrect={mcqCorrect} handleSubmit={handleSubmit}
               handleRetake={handleRetake} nextProblem={nextProblem} navigateTo={navigateTo} />
           ) : (
             <CodePanel problemId={problem.id} code={code} onCodeChange={setCode}
@@ -222,6 +232,8 @@ export default function ChallengePage() {
               examples={content.examples ?? []}
               testResults={testResults}
               challengeType={challengeType}
+              stack={problem.stack}
+              files={problem.files ?? []}
               initialHints={progress?.saved_hints ?? []}
               initialReview={progress?.last_review ?? null}
               initialSolution={progress?.last_solution ?? null} />

@@ -23,6 +23,20 @@ export async function runCode(problemId: string, code: string) {
   return res.data;
 }
 
+export interface McqSubmitResponse {
+  correct: boolean;
+  correct_answer: string;
+  explanation: string | null;
+}
+
+export async function submitMcq(problemId: string, selectedAnswer: string) {
+  const res = await apiClient.post<McqSubmitResponse>("/submissions/mcq", {
+    problem_id: problemId,
+    selected_answer: selectedAnswer,
+  });
+  return res.data;
+}
+
 export interface HintResponse {
   hint: string;
   hint_number: number;

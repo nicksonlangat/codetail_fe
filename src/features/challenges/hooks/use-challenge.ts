@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import type { ChallengeContent, Feedback, FeedbackStatus } from "@/types";
 import { generateFeedback } from "../services/feedback";
 import { saveCode as apiSaveCode } from "@/lib/api/progress";
+import { submitMcq } from "@/lib/api/submissions";
 
 const STORAGE_PREFIX = "codetail-code-";
 
@@ -19,6 +20,9 @@ export function useChallenge({ content, savedCode }: UseChallengeParams) {
   const [showHints, setShowHints] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [mcqSubmitted, setMcqSubmitted] = useState(false);
+  const [mcqCorrectAnswer, setMcqCorrectAnswer] = useState<string | null>(null);
+  const [mcqExplanation, setMcqExplanation] = useState<string | null>(null);
+  const [mcqSubmitting, setMcqSubmitting] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -55,9 +59,20 @@ export function useChallenge({ content, savedCode }: UseChallengeParams) {
 
   const challengeType = content?.type ?? "code";
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     if (challengeType === "mcq") {
-      setMcqSubmitted(true);
+      if (!selectedOption || !problemId || mcqSubmitting) return;
+      setMcqSubmitting(true);
+      try {
+        const result = await submitMcq(problemId, selectedOption);
+        setMcqCorrectAnswer(result.correct_answer);
+        setMcqExplanation(result.explanation ?? null);
+        setMcqSubmitted(true);
+      } catch {
+        // Silently fail — user can retry
+      } finally {
+        setMcqSubmitting(false);
+      }
       return;
     }
     setFeedbackStatus("evaluating");
@@ -67,7 +82,7 @@ export function useChallenge({ content, savedCode }: UseChallengeParams) {
       setFeedback(result);
       setFeedbackStatus(result.status);
     }, 2200);
-  }, [challengeType, code, content?.problemId]);
+  }, [challengeType, code, content?.problemId, selectedOption, problemId, mcqSubmitting]);
 
   const handleReset = useCallback(() => {
     setCode(content?.starterCode ?? "");
@@ -84,6 +99,8 @@ export function useChallenge({ content, savedCode }: UseChallengeParams) {
     setFeedbackStatus("idle");
     setSelectedOption(null);
     setMcqSubmitted(false);
+    setMcqCorrectAnswer(null);
+    setMcqExplanation(null);
   }, []);
 
   const resetForNavigation = useCallback(() => {
@@ -92,6 +109,8 @@ export function useChallenge({ content, savedCode }: UseChallengeParams) {
     setFeedbackStatus("idle");
     setSelectedOption(null);
     setMcqSubmitted(false);
+    setMcqCorrectAnswer(null);
+    setMcqExplanation(null);
     setShowHints(false);
     setInitialized(false);
   }, []);
@@ -100,7 +119,7 @@ export function useChallenge({ content, savedCode }: UseChallengeParams) {
     setShowHints((prev) => !prev);
   }, []);
 
-  const mcqCorrect = content?.correctOptionId === selectedOption;
+  const mcqCorrect = mcqCorrectAnswer ? selectedOption === mcqCorrectAnswer : false;
 
   return {
     code,
@@ -112,7 +131,10 @@ export function useChallenge({ content, savedCode }: UseChallengeParams) {
     selectedOption,
     setSelectedOption,
     mcqSubmitted,
+    mcqSubmitting,
     mcqCorrect,
+    mcqCorrectAnswer,
+    mcqExplanation,
     challengeType,
     handleSubmit,
     handleReset,

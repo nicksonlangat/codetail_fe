@@ -34,13 +34,16 @@ interface BottomPanelProps {
   examples: ChallengeExample[];
   testResults: TestCaseResult[];
   running: boolean;
+  stack?: string;
+  triggerReview?: number;
   initialHints?: HintResponse[];
   initialReview?: ReviewData | null;
   initialSolution?: string | null;
 }
 
-export function BottomPanel({ problemId, code, examples, testResults, running, initialHints = [], initialReview = null, initialSolution = null }: BottomPanelProps) {
-  const [active, setActive] = useState<Tab>("tests");
+export function BottomPanel({ problemId, code, examples, testResults, running, stack = "python", triggerReview = 0, initialHints = [], initialReview = null, initialSolution = null }: BottomPanelProps) {
+  const isDjango = stack === "django";
+  const [active, setActive] = useState<Tab>(isDjango ? "review" : "tests");
   const [hints, setHints] = useState<HintResponse[]>([]);
   const [hintsLoaded, setHintsLoaded] = useState(false);
   const [review, setReview] = useState<ReviewResponse | null>(null);
@@ -96,6 +99,32 @@ export function BottomPanel({ problemId, code, examples, testResults, running, i
     }
   };
 
+  // When parent triggers a review (e.g. Django "Submit for Review" button)
+  useEffect(() => {
+    if (triggerReview > 0 && !loadingReview && code.trim()) {
+      setActive("review");
+      handleGetReviewInner();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [triggerReview]);
+
+  const handleGetReviewInner = async () => {
+    if (loadingReview || !code.trim()) return;
+    setLoadingReview(true);
+    try {
+      const result = await getReview(problemId, code);
+      setReview(result);
+    } catch (err: any) {
+      const detail = err.response?.data?.detail || "Failed to get review";
+      if (err.response?.status === 429) {
+        setUpgradeReason(detail);
+        setShowUpgrade(true);
+      }
+    } finally {
+      setLoadingReview(false);
+    }
+  };
+
   const handleGetReview = async () => {
     if (loadingReview || !code.trim()) return;
     setLoadingReview(true);
@@ -139,7 +168,7 @@ export function BottomPanel({ problemId, code, examples, testResults, running, i
     <div className="flex flex-col h-full overflow-hidden">
       {/* Tab bar */}
       <div className="flex items-center gap-0 px-2 border-b border-border/40 bg-card/50 flex-shrink-0">
-        {tabs.map((tab) => {
+        {tabs.filter((tab) => !(isDjango && tab.id === "tests")).map((tab) => {
           const Icon = tab.icon;
           const isActive = active === tab.id;
           return (

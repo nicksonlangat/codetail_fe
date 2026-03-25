@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Send, RotateCw, ChevronRight } from "lucide-react";
+import { Send, RotateCw, ChevronRight, Loader2 } from "lucide-react";
 import type { ChallengeContent } from "@/types";
 import { McqOptions } from "./mcq-options";
 
@@ -10,6 +10,7 @@ interface McqPanelProps {
   selectedOption: string | null;
   onSelect: (id: string) => void;
   mcqSubmitted: boolean;
+  mcqSubmitting?: boolean;
   mcqCorrect: boolean;
   handleSubmit: () => void;
   handleRetake: () => void;
@@ -22,6 +23,7 @@ export function McqPanel({
   selectedOption,
   onSelect,
   mcqSubmitted,
+  mcqSubmitting = false,
   mcqCorrect,
   handleSubmit,
   handleRetake,
@@ -45,11 +47,11 @@ export function McqPanel({
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={handleSubmit}
-            disabled={!selectedOption}
+            disabled={!selectedOption || mcqSubmitting}
             className="flex items-center gap-1.5 text-[12px] font-medium text-primary-foreground px-4 py-2 rounded-md bg-primary hover:bg-primary/90 disabled:opacity-40 transition-all duration-75"
           >
-            <Send className="w-3.5 h-3.5" />
-            Submit Answer
+            {mcqSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+            {mcqSubmitting ? "Checking..." : "Submit Answer"}
           </motion.button>
         </div>
       )}

@@ -43,6 +43,12 @@ export interface Example {
   explanation: string | null;
 }
 
+export interface ProblemFile {
+  name: string;
+  language: string;
+  starter_code: string;
+}
+
 export interface ProblemDetail {
   id: string;
   path_id: string;
@@ -60,6 +66,7 @@ export interface ProblemDetail {
   mcq_options: McqOption[];
   explanation: string | null;
   issue_description: string | null;
+  files: ProblemFile[];
   sort_order: number;
   created_at: string;
 }
