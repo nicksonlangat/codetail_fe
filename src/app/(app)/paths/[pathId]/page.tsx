@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Clock, Loader2, Lock } from "lucide-react";
+import { ArrowLeft, Clock, Loader2, Lock, CheckCircle2, Circle, Minus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getPath, getPathProblems, type ProblemListItem } from "@/lib/api/paths";
 import { getIcon } from "@/lib/icons";
@@ -147,6 +147,15 @@ function ProblemRow({ problem, pathSlug }: { problem: ProblemListItem & { idx: n
   return (
     <Link href={`/challenge/${pathSlug}/${problem.id}`} className="block cursor-pointer">
       <div className="w-full text-left flex items-center gap-3 px-3 py-2.5 hover:bg-secondary/40 transition-all duration-500 group">
+        {/* Status indicator */}
+        {problem.user_status === "solved" ? (
+          <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+        ) : problem.user_status === "attempted" ? (
+          <Minus className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+        ) : (
+          <Circle className="w-4 h-4 text-muted-foreground/20 flex-shrink-0" />
+        )}
+
         <span className="text-[11px] font-mono tabular-nums w-5 text-muted-foreground">
           {String(problem.idx + 1).padStart(2, "0")}
         </span>
@@ -157,6 +166,14 @@ function ProblemRow({ problem, pathSlug }: { problem: ProblemListItem & { idx: n
           </span>
           <span className="text-[10px] text-muted-foreground/40 hidden sm:inline">{problem.concept}</span>
         </div>
+
+        {problem.best_score != null && problem.best_score > 0 && (
+          <span className={`text-[10px] font-mono tabular-nums font-medium ${
+            problem.best_score >= 90 ? "text-green-500" : problem.best_score >= 50 ? "text-yellow-500" : "text-red-500"
+          }`}>
+            {problem.best_score}%
+          </span>
+        )}
 
         <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-secondary text-muted-foreground/60">
           {typeLabel[problem.type] ?? problem.type}

@@ -36,3 +36,32 @@ export async function getHint(problemId: string, code: string) {
   });
   return res.data;
 }
+
+export interface ReviewResponse {
+  score: number;
+  summary: string;
+  strengths: string[];
+  issues: string[];
+  suggestions: string[];
+  improved_code: string | null;
+}
+
+export async function getReview(problemId: string, code: string) {
+  const res = await apiClient.post<ReviewResponse>("/submissions/review", {
+    problem_id: problemId,
+    code,
+  });
+  return res.data;
+}
+
+export interface SolutionResponse {
+  html: string;
+  unlocked_reason: string;
+}
+
+export async function getSolution(problemId: string) {
+  const res = await apiClient.post<SolutionResponse>("/submissions/solution", {
+    problem_id: problemId,
+  });
+  return res.data;
+}

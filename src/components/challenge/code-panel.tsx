@@ -24,6 +24,8 @@ interface CodePanelProps {
   testResults: TestCaseResult[];
   challengeType: ChallengeType;
   initialHints?: { hint: string; hint_number: number; level: string }[];
+  initialReview?: any;
+  initialSolution?: string | null;
 }
 
 export function CodePanel({
@@ -38,13 +40,13 @@ export function CodePanel({
   testResults,
   challengeType,
   initialHints = [],
+  initialReview = null,
+  initialSolution = null,
 }: CodePanelProps) {
   return (
     <ResizablePanelGroup orientation="vertical" className="h-full">
-      {/* Top: Editor */}
       <ResizablePanel defaultSize={60} minSize={20}>
         <div className="flex flex-col h-full min-h-0">
-          {/* Toolbar */}
           <div className="flex items-center justify-between px-3 h-9 border-b border-border/40 bg-card/50 flex-shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-medium text-muted-foreground">Python</span>
@@ -56,7 +58,6 @@ export function CodePanel({
                 </span>
               )}
             </div>
-
             <div className="flex items-center gap-1.5">
               <button onClick={onReset}
                 className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer transition-all duration-500"
@@ -75,16 +76,19 @@ export function CodePanel({
               </motion.button>
             </div>
           </div>
-
           <CodeEditor code={code} onChange={onCodeChange} />
         </div>
       </ResizablePanel>
 
       <ResizableHandle className="h-1 bg-border/40 hover:bg-primary/30 transition-colors cursor-row-resize" />
 
-      {/* Bottom: Test Cases */}
       <ResizablePanel defaultSize={40} minSize={15}>
-        <BottomPanel problemId={problemId} code={code} examples={examples} testResults={testResults} running={running} initialHints={initialHints} />
+        <BottomPanel
+          problemId={problemId} code={code}
+          examples={examples} testResults={testResults} running={running}
+          initialHints={initialHints} initialReview={initialReview}
+          initialSolution={initialSolution}
+        />
       </ResizablePanel>
     </ResizablePanelGroup>
   );

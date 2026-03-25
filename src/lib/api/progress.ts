@@ -6,6 +6,13 @@ export interface SavedHint {
   hint_number: number;
 }
 
+export interface SavedTestResult {
+  input: string;
+  expected: string;
+  actual: string;
+  passed: boolean;
+}
+
 export interface ProgressResponse {
   problem_id: string;
   code: string | null;
@@ -13,6 +20,20 @@ export interface ProgressResponse {
   attempts: number;
   best_score: number;
   saved_hints: SavedHint[];
+  last_run_results: SavedTestResult[];
+  last_run_passed: boolean | null;
+  last_run_score: number | null;
+  last_review: ReviewData | null;
+  last_solution: string | null;
+}
+
+export interface ReviewData {
+  score: number;
+  summary: string;
+  strengths: string[];
+  issues: string[];
+  suggestions: string[];
+  improved_code: string | null;
 }
 
 export async function saveCode(problemId: string, code: string) {

@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FlaskConical, Lightbulb, Bot, BookOpen, Loader2 } from "lucide-react";
 import type { ChallengeExample } from "@/types";
 import { TestCasesPanel, type TestCaseResult } from "./test-cases-panel";
-import { getHint, type HintResponse } from "@/lib/api/submissions";
+import { getHint, getReview, getSolution, type HintResponse, type ReviewResponse } from "@/lib/api/submissions";
+import type { ReviewData } from "@/lib/api/progress";
 import { UpgradeModal } from "@/components/paywall/upgrade-modal";
+import { TipTapRenderer } from "@/components/editors/tiptap-renderer";
+import { CheckCircle2, XCircle, ArrowRight } from "lucide-react";
 
 type Tab = "tests" | "hints" | "review" | "solution";
 
@@ -32,18 +35,49 @@ interface BottomPanelProps {
   testResults: TestCaseResult[];
   running: boolean;
   initialHints?: HintResponse[];
+  initialReview?: ReviewData | null;
+  initialSolution?: string | null;
 }
 
-export function BottomPanel({ problemId, code, examples, testResults, running, initialHints = [] }: BottomPanelProps) {
+export function BottomPanel({ problemId, code, examples, testResults, running, initialHints = [], initialReview = null, initialSolution = null }: BottomPanelProps) {
   const [active, setActive] = useState<Tab>("tests");
-  const [hints, setHints] = useState<HintResponse[]>(initialHints);
+  const [hints, setHints] = useState<HintResponse[]>([]);
+  const [hintsLoaded, setHintsLoaded] = useState(false);
+  const [review, setReview] = useState<ReviewResponse | null>(null);
+  const [reviewLoaded, setReviewLoaded] = useState(false);
+  const [loadingReview, setLoadingReview] = useState(false);
+  const [solutionHtml, setSolutionHtml] = useState<string | null>(null);
+  const [solutionLoaded, setSolutionLoaded] = useState(false);
+  const [loadingSolution, setLoadingSolution] = useState(false);
+
+  useEffect(() => {
+    if (initialHints.length > 0 && !hintsLoaded) {
+      setHints(initialHints);
+      setHintsLoaded(true);
+    }
+  }, [initialHints, hintsLoaded]);
+
+  useEffect(() => {
+    if (initialReview && !reviewLoaded) {
+      setReview(initialReview as ReviewResponse);
+      setReviewLoaded(true);
+    }
+  }, [initialReview, reviewLoaded]);
+
+  useEffect(() => {
+    if (initialSolution && !solutionLoaded) {
+      setSolutionHtml(initialSolution);
+      setSolutionLoaded(true);
+    }
+  }, [initialSolution, solutionLoaded]);
+
   const [loadingHint, setLoadingHint] = useState(false);
   const [hintError, setHintError] = useState("");
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState("");
 
   const handleGetHint = async () => {
-    if (loadingHint) return;
+    if (loadingHint || loadingReview) return;
     setLoadingHint(true);
     setHintError("");
     try {
@@ -61,6 +95,45 @@ export function BottomPanel({ problemId, code, examples, testResults, running, i
       setLoadingHint(false);
     }
   };
+
+  const handleGetReview = async () => {
+    if (loadingReview || !code.trim()) return;
+    setLoadingReview(true);
+    try {
+      const result = await getReview(problemId, code);
+      setReview(result);
+    } catch (err: any) {
+      const detail = err.response?.data?.detail || "Failed to get review";
+      if (err.response?.status === 429) {
+        setUpgradeReason(detail);
+        setShowUpgrade(true);
+      }
+    } finally {
+      setLoadingReview(false);
+    }
+  };
+
+  const handleGetSolution = async () => {
+    if (loadingSolution) return;
+    setLoadingSolution(true);
+    try {
+      const result = await getSolution(problemId);
+      setSolutionHtml(result.html);
+    } catch (err: any) {
+      const detail = err.response?.data?.detail || "Failed to get solution";
+      if (err.response?.status === 429) {
+        setUpgradeReason(detail);
+        setShowUpgrade(true);
+      } else if (err.response?.status === 403) {
+        // Not enough attempts — show inline message, not upgrade modal
+        setSolutionHtml(null);
+        setHintError(detail);
+      }
+    } finally {
+      setLoadingSolution(false);
+    }
+  };
+
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -154,26 +227,107 @@ export function BottomPanel({ problemId, code, examples, testResults, running, i
         )}
 
         {active === "review" && (
-          <div className="p-4 space-y-3">
-            <p className="text-[12px] text-muted-foreground">
-              Submit your code first, then get detailed AI feedback on your approach, style, and correctness.
-            </p>
-            <button className="flex items-center gap-1.5 text-[11px] font-medium text-primary bg-primary/10 hover:bg-primary/15 px-3 py-1.5 rounded-lg cursor-pointer transition-all duration-500">
-              <Bot className="w-3 h-3" />
-              Request AI Review
-            </button>
+          <div className="p-4 space-y-4">
+            {review ? (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                {/* Score + summary */}
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold font-mono ${
+                    review.score >= 90 ? "bg-green-500/10 text-green-500"
+                    : review.score >= 70 ? "bg-primary/10 text-primary"
+                    : review.score >= 50 ? "bg-yellow-500/10 text-yellow-600"
+                    : "bg-red-500/10 text-red-500"
+                  }`}>
+                    {review.score}
+                  </div>
+                  <p className="text-[13px] text-foreground flex-1">{review.summary}</p>
+                </div>
+
+                {/* Strengths */}
+                {review.strengths?.length > 0 && (
+                  <div>
+                    <h4 className="text-[10px] font-semibold uppercase tracking-wide text-green-500 mb-1.5">Strengths</h4>
+                    <div className="space-y-1">
+                      {review.strengths.map((s, i) => (
+                        <div key={i} className="flex items-start gap-1.5 text-[11px]">
+                          <CheckCircle2 className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
+                          <span className="text-foreground/80">{s}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Issues */}
+                {review.issues?.length > 0 && (
+                  <div>
+                    <h4 className="text-[10px] font-semibold uppercase tracking-wide text-red-500 mb-1.5">Issues</h4>
+                    <div className="space-y-1">
+                      {review.issues.map((s, i) => (
+                        <div key={i} className="flex items-start gap-1.5 text-[11px]">
+                          <XCircle className="w-3 h-3 text-red-500 flex-shrink-0 mt-0.5" />
+                          <span className="text-foreground/80">{s}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Suggestions */}
+                {review.suggestions?.length > 0 && (
+                  <div>
+                    <h4 className="text-[10px] font-semibold uppercase tracking-wide text-primary mb-1.5">Next Steps</h4>
+                    <div className="space-y-1">
+                      {review.suggestions.map((s, i) => (
+                        <div key={i} className="flex items-start gap-1.5 text-[11px]">
+                          <ArrowRight className="w-3 h-3 text-primary flex-shrink-0 mt-0.5" />
+                          <span className="text-foreground/80">{s}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Re-review button */}
+                <motion.button whileTap={{ scale: 0.97 }} onClick={handleGetReview} disabled={loadingReview}
+                  className="flex items-center gap-1.5 text-[11px] font-medium text-primary bg-primary/10 hover:bg-primary/15 px-3 py-1.5 rounded-lg cursor-pointer transition-all duration-500 disabled:opacity-50">
+                  {loadingReview ? <Loader2 className="w-3 h-3 animate-spin" /> : <Bot className="w-3 h-3" />}
+                  Review Again
+                </motion.button>
+              </motion.div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-[12px] text-muted-foreground">
+                  Get detailed AI feedback on your code — correctness, style, patterns, and craft.
+                </p>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={handleGetReview} disabled={loadingReview || !code.trim()}
+                  className="flex items-center gap-1.5 text-[11px] font-medium text-primary bg-primary/10 hover:bg-primary/15 px-3 py-1.5 rounded-lg cursor-pointer transition-all duration-500 disabled:opacity-50">
+                  {loadingReview ? <Loader2 className="w-3 h-3 animate-spin" /> : <Bot className="w-3 h-3" />}
+                  Request AI Review
+                </motion.button>
+              </div>
+            )}
           </div>
         )}
 
         {active === "solution" && (
           <div className="p-4 space-y-3">
-            <p className="text-[12px] text-muted-foreground">
-              Try solving the problem first. The solution will be available after 3 attempts or when you solve it.
-            </p>
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/40">
-              <BookOpen className="w-3 h-3" />
-              Locked — solve or attempt 3 times to unlock
-            </div>
+            {solutionHtml ? (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <TipTapRenderer content={solutionHtml} />
+              </motion.div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-[12px] text-muted-foreground">
+                  View the model solution with a step-by-step explanation of the approach, key insights, and complexity analysis.
+                </p>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={handleGetSolution} disabled={loadingSolution}
+                  className="flex items-center gap-1.5 text-[11px] font-medium text-primary bg-primary/10 hover:bg-primary/15 px-3 py-1.5 rounded-lg cursor-pointer transition-all duration-500 disabled:opacity-50">
+                  {loadingSolution ? <Loader2 className="w-3 h-3 animate-spin" /> : <BookOpen className="w-3 h-3" />}
+                  View Solution
+                </motion.button>
+              </div>
+            )}
           </div>
         )}
       </div>

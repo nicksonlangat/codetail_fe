@@ -27,6 +27,8 @@ export interface ProblemListItem {
   time_estimate: string;
   sort_order: number;
   locked: boolean;
+  user_status: string | null;
+  best_score: number | null;
 }
 
 export interface McqOption {
