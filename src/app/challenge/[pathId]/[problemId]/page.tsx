@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -17,6 +17,10 @@ import { LeftPanel } from "@/components/challenge/left-panel";
 import { McqPanel } from "@/components/challenge/mcq-panel";
 import { CodePanel } from "@/components/challenge/code-panel";
 import type { ChallengeContent, ChallengeType } from "@/types";
+import { UpgradeModal } from "@/components/paywall/upgrade-modal";
+import { runCode } from "@/lib/api/submissions";
+import { getProgress } from "@/lib/api/progress";
+import type { TestCaseResult } from "@/components/challenge/test-cases-panel";
 
 const typeConfig: Record<string, { icon: typeof Code; label: string }> = {
   write_code: { icon: Code, label: "Write Code" },
@@ -69,6 +73,12 @@ export default function ChallengePage() {
     enabled: !!pathSlug,
   });
 
+  const { data: progress } = useQuery({
+    queryKey: ["progress", problemId],
+    queryFn: () => getProgress(problemId),
+    enabled: !!problemId,
+  });
+
   const content = useMemo(() => problem ? apiToContent(problem) : undefined, [problem]);
 
   const {
@@ -76,12 +86,47 @@ export default function ChallengePage() {
     selectedOption, setSelectedOption, mcqSubmitted, mcqCorrect,
     challengeType, handleSubmit, handleReset, handleRetake, handleKeyDown,
     resetForNavigation,
-  } = useChallenge({ content });
+  } = useChallenge({ content, savedCode: progress?.code });
+
+  const [testResults, setTestResults] = useState<TestCaseResult[]>([]);
+  const [resultsLoaded, setResultsLoaded] = useState(false);
+
+  useEffect(() => {
+    if (progress?.last_run_results?.length && !resultsLoaded) {
+      setTestResults(progress.last_run_results.map((r) => ({ input: r.input, expected: r.expected, actual: r.actual, passed: r.passed })));
+      setResultsLoaded(true);
+    }
+  }, [progress, resultsLoaded]);
+  const [running, setRunning] = useState(false);
+
+  const handleRun = useCallback(async () => {
+    if (!problem || running) return;
+    setRunning(true);
+    setTestResults([]);
+    try {
+      const res = await runCode(problem.id, code);
+      setTestResults(res.test_results.map((tr) => ({
+        input: tr.input,
+        expected: tr.expected,
+        actual: tr.actual,
+        passed: tr.passed,
+      })));
+    } catch (err: any) {
+      const detail = err.response?.data?.detail;
+      setTestResults([{ input: "", expected: "", actual: detail || "Error running code", passed: false }]);
+    } finally {
+      setRunning(false);
+    }
+  }, [problem, code, running]);
 
   const unlocked = useMemo(() => Array.isArray(siblings) ? siblings.filter((s) => !s.locked) : [], [siblings]);
+  const hasLocked = useMemo(() => Array.isArray(siblings) ? siblings.some((s) => s.locked) : false, [siblings]);
   const currentIdx = unlocked.findIndex((p) => p.id === problemId);
   const prevProblem = currentIdx > 0 ? unlocked[currentIdx - 1] : null;
   const nextProblem = currentIdx >= 0 && currentIdx < unlocked.length - 1 ? unlocked[currentIdx + 1] : null;
+  const isLastFree = currentIdx === unlocked.length - 1 && hasLocked;
+
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   const navigateTo = (id: string) => {
     resetForNavigation();
@@ -136,10 +181,17 @@ export default function ChallengePage() {
           <span className="text-[10px] text-muted-foreground/50 font-mono tabular-nums">
             {currentIdx + 1}/{unlocked.length}
           </span>
-          <button onClick={() => nextProblem && navigateTo(nextProblem.id)} disabled={!nextProblem}
-            className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md ring-1 ring-border/60 hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all duration-500">
-            Next <ChevronRight className="w-3 h-3" />
-          </button>
+          {isLastFree ? (
+            <button onClick={() => setShowUpgrade(true)}
+              className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md bg-primary/10 text-primary hover:bg-primary/15 cursor-pointer transition-all duration-500">
+              Unlock more <ChevronRight className="w-3 h-3" />
+            </button>
+          ) : (
+            <button onClick={() => nextProblem && navigateTo(nextProblem.id)} disabled={!nextProblem}
+              className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md ring-1 ring-border/60 hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all duration-500">
+              Next <ChevronRight className="w-3 h-3" />
+            </button>
+          )}
           <div className="w-px h-4 bg-border/40 mx-1" />
           <ThemeToggle />
         </div>
@@ -164,15 +216,24 @@ export default function ChallengePage() {
               mcqSubmitted={mcqSubmitted} mcqCorrect={mcqCorrect} handleSubmit={handleSubmit}
               handleRetake={handleRetake} nextProblem={nextProblem} navigateTo={navigateTo} />
           ) : (
-            <CodePanel code={code} onCodeChange={setCode}
-              onReset={handleReset} onRun={handleSubmit} onSubmit={handleSubmit}
-              running={feedbackStatus === "evaluating"}
+            <CodePanel problemId={problem.id} code={code} onCodeChange={setCode}
+              onReset={handleReset} onRun={handleRun} onSubmit={handleRun}
+              running={running}
               examples={content.examples ?? []}
-              testResults={[]}
-              challengeType={challengeType} />
+              testResults={testResults}
+              challengeType={challengeType}
+              initialHints={progress?.saved_hints ?? []}
+              initialReview={progress?.last_review ?? null}
+              initialSolution={progress?.last_solution ?? null} />
           )}
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      <UpgradeModal
+        open={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        trigger="You've completed all free problems in this path. Upgrade to Pro to unlock the rest."
+      />
     </div>
   );
 }
