@@ -7,8 +7,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Code2, LayoutDashboard, Route, Sparkles, BookOpen,
   Settings, Plus, Search, Command, User, Bookmark,
-  BarChart3, Flame, LogOut,
+  BarChart3, Flame, LogOut, Sun, Moon,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useAuthStore } from "@/stores/auth-store";
 import { GenerateChallengeDialog } from "@/components/layout/generate-challenge-dialog";
 
@@ -38,6 +39,7 @@ export function TopBar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
+  const { resolvedTheme, setTheme } = useTheme();
   const [generateOpen, setGenerateOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -101,6 +103,13 @@ export function TopBar() {
             <kbd className="flex items-center gap-0.5 text-[9px] text-muted-foreground/60 ml-2">
               <Command className="w-2.5 h-2.5" />K
             </kbd>
+          </button>
+
+          {/* Theme toggle */}
+          <button onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50 cursor-pointer transition-colors duration-75">
+            <Sun className="w-4 h-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute w-4 h-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           </button>
 
           {/* New Challenge */}
