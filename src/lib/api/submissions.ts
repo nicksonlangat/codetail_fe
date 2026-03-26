@@ -39,32 +39,20 @@ export async function submitMcq(problemId: string, selectedAnswer: string) {
 
 // Practice (AI-generated)
 export interface GenerateRequest {
-  stack: string;
+  path_slug: string;
   concept?: string;
-  difficulty?: string;
   problem_type?: string;
 }
 
 export async function generatePractice(req: GenerateRequest) {
-  const res = await apiClient.post<import("./paths").ProblemDetail>("/practice/generate", req);
+  const res = await apiClient.post<import("./paths").ProblemDetail>("/practice/generate", req, {
+    timeout: 60000, // AI generation can take 20-30s
+  });
   return res.data;
 }
 
-export interface PracticeHistoryItem {
-  id: string;
-  title: string;
-  stack: string;
-  concept: string;
-  difficulty: string;
-  type: string;
-  created_at: string;
-  best_score: number | null;
-}
-
-export async function getPracticeHistory(stack?: string, limit = 20, offset = 0) {
-  const params: Record<string, string | number> = { limit, offset };
-  if (stack) params.stack = stack;
-  const res = await apiClient.get<{ items: PracticeHistoryItem[]; total: number }>("/practice/history", { params });
+export async function getGeneratedProblems(pathSlug: string) {
+  const res = await apiClient.get<import("./paths").ProblemListItem[]>(`/practice/paths/${pathSlug}/generated`);
   return res.data;
 }
 
