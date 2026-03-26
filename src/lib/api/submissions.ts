@@ -37,6 +37,37 @@ export async function submitMcq(problemId: string, selectedAnswer: string) {
   return res.data;
 }
 
+// Practice (AI-generated)
+export interface GenerateRequest {
+  stack: string;
+  concept?: string;
+  difficulty?: string;
+  problem_type?: string;
+}
+
+export async function generatePractice(req: GenerateRequest) {
+  const res = await apiClient.post<import("./paths").ProblemDetail>("/practice/generate", req);
+  return res.data;
+}
+
+export interface PracticeHistoryItem {
+  id: string;
+  title: string;
+  stack: string;
+  concept: string;
+  difficulty: string;
+  type: string;
+  created_at: string;
+  best_score: number | null;
+}
+
+export async function getPracticeHistory(stack?: string, limit = 20, offset = 0) {
+  const params: Record<string, string | number> = { limit, offset };
+  if (stack) params.stack = stack;
+  const res = await apiClient.get<{ items: PracticeHistoryItem[]; total: number }>("/practice/history", { params });
+  return res.data;
+}
+
 export interface HintResponse {
   hint: string;
   hint_number: number;
