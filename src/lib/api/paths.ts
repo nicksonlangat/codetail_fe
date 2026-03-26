@@ -67,6 +67,7 @@ export interface ProblemDetail {
   explanation: string | null;
   issue_description: string | null;
   files: ProblemFile[];
+  is_generated: boolean;
   sort_order: number;
   created_at: string;
 }
