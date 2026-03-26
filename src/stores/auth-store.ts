@@ -6,6 +6,7 @@ export interface User {
   name: string;
   email: string;
   is_verified: boolean;
+  tier?: "free" | "pro";
 }
 
 interface AuthState {
