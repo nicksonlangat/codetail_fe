@@ -37,6 +37,32 @@ export async function submitMcq(problemId: string, selectedAnswer: string) {
   return res.data;
 }
 
+// Practice (AI-generated)
+export interface GenerateRequest {
+  path_slug: string;
+  concept?: string;
+  problem_type?: string;
+}
+
+export async function generatePractice(req: GenerateRequest) {
+  const res = await apiClient.post<import("./paths").ProblemDetail>("/practice/generate", req, {
+    timeout: 60000, // AI generation can take 20-30s
+  });
+  return res.data;
+}
+
+export async function enrichProblem(problemId: string) {
+  const res = await apiClient.post<import("./paths").ProblemDetail>("/practice/enrich", {
+    problem_id: problemId,
+  }, { timeout: 60000 });
+  return res.data;
+}
+
+export async function getGeneratedProblems(pathSlug: string) {
+  const res = await apiClient.get<import("./paths").ProblemListItem[]>(`/practice/paths/${pathSlug}/generated`);
+  return res.data;
+}
+
 export interface HintResponse {
   hint: string;
   hint_number: number;
@@ -47,7 +73,7 @@ export async function getHint(problemId: string, code: string) {
   const res = await apiClient.post<HintResponse>("/submissions/hint", {
     problem_id: problemId,
     code,
-  });
+  }, { timeout: 30000 });
   return res.data;
 }
 
@@ -64,7 +90,7 @@ export async function getReview(problemId: string, code: string) {
   const res = await apiClient.post<ReviewResponse>("/submissions/review", {
     problem_id: problemId,
     code,
-  });
+  }, { timeout: 30000 });
   return res.data;
 }
 
@@ -76,6 +102,6 @@ export interface SolutionResponse {
 export async function getSolution(problemId: string) {
   const res = await apiClient.post<SolutionResponse>("/submissions/solution", {
     problem_id: problemId,
-  });
+  }, { timeout: 30000 });
   return res.data;
 }

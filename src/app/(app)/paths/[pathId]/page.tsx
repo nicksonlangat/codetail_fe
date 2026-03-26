@@ -1,15 +1,17 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getPath, getPathProblems, type ProblemListItem } from "@/lib/api/paths";
+import { getGeneratedProblems } from "@/lib/api/submissions";
 import { getIcon } from "@/lib/icons";
 import { Badge } from "@/components/ui/badge";
 import { ProblemCardList } from "@/components/paths/problem-card";
+import { GenerateChallengeDialog } from "@/components/layout/generate-challenge-dialog";
 
 const spring = { type: "spring" as const, stiffness: 300, damping: 30 };
 
@@ -26,6 +28,14 @@ export default function PathDetailPage() {
     queryFn: () => getPathProblems(slug),
     enabled: !!path,
   });
+
+  const { data: generated, refetch: refetchGenerated } = useQuery({
+    queryKey: ["generated-problems", slug],
+    queryFn: () => getGeneratedProblems(slug),
+    enabled: !!path,
+  });
+
+  const [generateOpen, setGenerateOpen] = useState(false);
 
   const isLoading = pathLoading || problemsLoading;
 
@@ -108,6 +118,56 @@ export default function PathDetailPage() {
           <ProblemCardList problems={section.problems} pathSlug={slug} />
         </motion.div>
       ))}
+
+      {/* AI Generated section */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ ...spring, delay: 0.3 }}
+        className="mb-6"
+      >
+        <div className="flex items-center gap-2 mb-2 px-1">
+          <Sparkles className="w-3 h-3 text-primary" />
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-primary/80">
+            AI Generated
+          </span>
+          <div className="flex-1 h-px bg-border" />
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setGenerateOpen(true)}
+            className="flex items-center gap-1 text-[10px] font-medium text-primary hover:text-primary/80 cursor-pointer transition-all duration-500"
+          >
+            <Sparkles className="w-3 h-3" /> Generate New
+          </motion.button>
+        </div>
+
+        {generated && generated.length > 0 ? (
+          <ProblemCardList
+            problems={generated.map((p, i) => ({ ...p, idx: (problems?.length ?? 0) + i }))}
+            pathSlug={slug}
+          />
+        ) : (
+          <div className="rounded-lg border border-dashed border-border/60 p-5 text-center">
+            <p className="text-[12px] text-muted-foreground mb-2">No AI-generated challenges yet</p>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setGenerateOpen(true)}
+              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-primary-foreground bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-lg cursor-pointer transition-all duration-500"
+            >
+              <Sparkles className="w-3 h-3" /> Generate Your First Challenge
+            </motion.button>
+          </div>
+        )}
+      </motion.div>
+
+      <GenerateChallengeDialog
+        open={generateOpen}
+        onClose={() => { setGenerateOpen(false); refetchGenerated(); }}
+        pathSlug={slug}
+        pathStack={path.stack}
+      />
     </main>
   );
 }

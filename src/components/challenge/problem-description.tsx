@@ -1,9 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Sparkles, Loader2 } from "lucide-react";
 import { TipTapRenderer } from "@/components/editors/tiptap-renderer";
+import { enrichProblem } from "@/lib/api/submissions";
 import type { ChallengeContent } from "@/types";
+
+const chipSpring = { type: "spring" as const, stiffness: 400, damping: 25 };
 
 interface ProblemDescriptionProps {
   content: ChallengeContent;
@@ -12,10 +16,27 @@ interface ProblemDescriptionProps {
   typeLabel: string;
   showHints: boolean;
   onToggleHints: () => void;
+  isGenerated?: boolean;
+  onEnriched?: (updated: any) => void;
 }
 
-export function ProblemDescription({ content, meta, diffColor, typeLabel }: ProblemDescriptionProps) {
+export function ProblemDescription({ content, meta, diffColor, typeLabel, isGenerated = false, onEnriched }: ProblemDescriptionProps) {
   const isHtml = content.description?.startsWith("<");
+  const [enriching, setEnriching] = useState(false);
+
+  const needsEnrichment = isGenerated && (!content.examples || content.examples.length === 0);
+
+  const handleEnrich = async () => {
+    setEnriching(true);
+    try {
+      const updated = await enrichProblem(content.problemId);
+      onEnriched?.(updated);
+    } catch {
+      // Silently fail — user can retry
+    } finally {
+      setEnriching(false);
+    }
+  };
 
   return (
     <motion.div
@@ -27,9 +48,16 @@ export function ProblemDescription({ content, meta, diffColor, typeLabel }: Prob
       <div className="px-7 py-6 space-y-5">
         {/* Title + badges */}
         <div className="space-y-2">
-          <h1 className="text-xl font-semibold tracking-tight leading-tight">
-            {meta.title}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold tracking-tight leading-tight">
+              {meta.title}
+            </h1>
+            {isGenerated && (
+              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                AI Generated
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${diffColor}`}>
               {meta.difficulty}
@@ -107,6 +135,30 @@ export function ProblemDescription({ content, meta, diffColor, typeLabel }: Prob
               </motion.div>
             ))}
           </div>
+        )}
+
+        {/* Enrich button — shown when AI-generated problem is missing examples/test cases */}
+        {needsEnrichment && (
+          <motion.div
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4 space-y-2"
+          >
+            <p className="text-[12px] text-muted-foreground">
+              This challenge is missing examples and test cases.
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              transition={chipSpring}
+              onClick={handleEnrich}
+              disabled={enriching}
+              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-50 px-3 py-1.5 rounded-lg cursor-pointer transition-all duration-500"
+            >
+              {enriching ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+              {enriching ? "Enriching..." : "Enrich Challenge"}
+            </motion.button>
+          </motion.div>
         )}
       </div>
     </motion.div>

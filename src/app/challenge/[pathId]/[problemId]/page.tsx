@@ -208,6 +208,7 @@ export default function ChallengePage() {
             meta={{ title: problem.title, difficulty: problem.difficulty, type: problem.type, concept: problem.concept }}
             showHints={showHints}
             onToggleHints={toggleHints}
+            isGenerated={problem.is_generated ?? false}
           />
         </ResizablePanel>
 
