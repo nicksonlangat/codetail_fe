@@ -53,6 +53,27 @@ export async function getStreak() {
   return res.data;
 }
 
+export interface DayPoint {
+  date: string;
+  value: number;
+}
+
+export interface StatsResponse {
+  total_solved: number;
+  total_attempted: number;
+  total_paths: number;
+  accuracy: number;
+  avg_score: number;
+  solved_per_day: DayPoint[];
+  accuracy_per_day: DayPoint[];
+  score_per_day: DayPoint[];
+}
+
+export async function getStats() {
+  const res = await apiClient.get<StatsResponse>("/progress/stats/me");
+  return res.data;
+}
+
 export async function saveNotes(problemId: string, notes: string) {
   const res = await apiClient.patch<ProgressResponse>(`/progress/${problemId}`, { notes });
   return res.data;

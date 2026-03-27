@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ProgressSummary } from "@/components/dashboard/progress-summary";
+import { SparklineStats } from "@/components/dashboard/sparkline-stats";
 import { AiInsight } from "@/components/dashboard/ai-insight";
 import { StreakCard } from "@/components/dashboard/streak-card";
 import { HeatmapCard } from "@/components/dashboard/heatmap-card";
@@ -29,9 +29,7 @@ export default function DashboardPage() {
         <p className="text-[12px] text-muted-foreground mt-0.5">
           Here&apos;s your learning progress.
         </p>
-        <div className="mt-3">
-          <ProgressSummary />
-        </div>
+        <SparklineStats />
       </motion.div>
 
       <div className="h-px bg-border/40" />
