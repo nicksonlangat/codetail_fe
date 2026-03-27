@@ -2,6 +2,14 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Hide scrollbars globally */
+* {
+  scrollbar-width: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -126,8 +134,8 @@
   --accent-foreground: #1fad87;
   --destructive: hsl(0 68% 55%);
   --destructive-foreground: #FFFFFF;
-  --border: #E4E8EB;
-  --input: #E4E8EB;
+  --border: #D0D5DA;
+  --input: #D0D5DA;
   --ring: #1fad87;
   --radius: 0.5rem;
 

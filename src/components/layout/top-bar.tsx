@@ -10,7 +10,9 @@ import {
   BarChart3, Flame, LogOut, Sun, Moon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth-store";
+import { getStreak } from "@/lib/api/progress";
 import { GenerateChallengeDialog } from "@/components/layout/generate-challenge-dialog";
 
 const navItems = [
@@ -30,7 +32,7 @@ const menuItems: MenuItem[] = [
   { type: "separator" },
   { icon: BarChart3, label: "My Progress" },
   { icon: Bookmark, label: "Saved Problems" },
-  { icon: Flame, label: "Streak", badge: "7 days" },
+  { icon: Flame, label: "Streak", badge: "__streak__" },
   { type: "separator" },
   { icon: LogOut, label: "Log out", destructive: true },
 ];
@@ -41,6 +43,12 @@ export function TopBar() {
   const { user, logout } = useAuthStore();
   const { resolvedTheme, setTheme } = useTheme();
   const [generateOpen, setGenerateOpen] = useState(false);
+  const { data: streak } = useQuery({
+    queryKey: ["streak"],
+    queryFn: getStreak,
+    enabled: !!user,
+    staleTime: 60000,
+  });
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -177,7 +185,9 @@ export function TopBar() {
                           <span className="flex-1 text-left">{item.label}</span>
                           {item.badge && (
                             <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
-                              {item.badge}
+                              {item.badge === "__streak__"
+                                ? `${streak?.current_streak ?? 0} days`
+                                : item.badge}
                             </span>
                           )}
                           {item.shortcut && (

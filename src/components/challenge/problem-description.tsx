@@ -96,7 +96,7 @@ export function ProblemDescription({ content, meta, diffColor, typeLabel, isGene
             <h3 className="text-[10px] font-semibold text-muted-foreground tracking-wide uppercase mb-2">
               Function Signature
             </h3>
-            <div className="font-mono text-[12px] border border-border bg-muted/30 rounded-lg p-3.5 overflow-x-auto">
+            <div className="font-mono text-[12px] border border-border/50 bg-muted rounded-lg p-3.5 overflow-x-auto">
               <span className="text-primary">def</span>{" "}
               <span className="text-foreground">{content.functionSignature.replace(/^(def|class)\s+/, "")}</span>
             </div>
@@ -112,7 +112,7 @@ export function ProblemDescription({ content, meta, diffColor, typeLabel, isGene
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: i * 0.05 }}
-                className="rounded-lg border border-border bg-muted/30 p-3.5 space-y-2"
+                className="rounded-lg border border-border/50 bg-muted p-3.5 space-y-2"
               >
                 <h3 className="text-[10px] font-semibold text-muted-foreground tracking-wide uppercase">
                   Example {i + 1}
