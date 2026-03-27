@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, X, Sparkles, Zap, Code2, Database, Layout, Webhook, Flame, Bot, BookOpen, Infinity } from "lucide-react";
+import { CheckCircle2, X, Sparkles, Zap, Code2, Database, Layout, Webhook, Flame, Bot, BookOpen, Infinity, Loader2 } from "lucide-react";
 import { useEffect } from "react";
+import { useCheckout } from "@/hooks/use-checkout";
 
 const spring = { type: "spring" as const, stiffness: 400, damping: 30 };
 
@@ -27,6 +29,9 @@ const paths = [
 ];
 
 export function UpgradeModal({ open, onClose, trigger }: UpgradeModalProps) {
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const { startCheckout, loading: checkoutLoading } = useCheckout();
+
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
@@ -116,15 +121,33 @@ export function UpgradeModal({ open, onClose, trigger }: UpgradeModalProps) {
               </div>
             </div>
 
-            {/* CTA */}
-            <div className="px-6 pb-4">
+            {/* Billing toggle + CTA */}
+            <div className="px-6 pb-4 space-y-3">
+              <div className="flex items-center justify-center gap-2">
+                <button onClick={() => setBillingCycle("monthly")}
+                  className={`text-[11px] font-medium px-3 py-1.5 rounded-lg cursor-pointer transition-all duration-500 ${
+                    billingCycle === "monthly" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  }`}>Monthly</button>
+                <button onClick={() => setBillingCycle("yearly")}
+                  className={`text-[11px] font-medium px-3 py-1.5 rounded-lg cursor-pointer transition-all duration-500 ${
+                    billingCycle === "yearly" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  }`}>
+                  Yearly <span className="text-[9px] ml-1 opacity-80">Save $18</span>
+                </button>
+              </div>
+
               <motion.button
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.98 }}
                 transition={spring}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold hover:bg-primary/90 cursor-pointer transition-colors duration-100">
-                <Zap className="w-4 h-4" />
-                Upgrade to Pro — $9/mo
+                disabled={checkoutLoading}
+                onClick={() => startCheckout("pro", billingCycle)}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold hover:bg-primary/90 disabled:opacity-50 cursor-pointer transition-colors duration-100">
+                {checkoutLoading ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+                ) : (
+                  <><Zap className="w-4 h-4" /> Upgrade to Pro — {billingCycle === "monthly" ? "$9/mo" : "$90/yr"}</>
+                )}
               </motion.button>
             </div>
 
