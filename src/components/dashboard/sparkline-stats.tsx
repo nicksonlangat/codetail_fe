@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getStats, type DayPoint } from "@/lib/api/progress";
 import { useAuthStore } from "@/stores/auth-store";
+import { GenerateChallengeDialog } from "@/components/layout/generate-challenge-dialog";
 
 const spring = { type: "spring" as const, stiffness: 400, damping: 25 };
 const entranceSpring = { type: "spring" as const, stiffness: 300, damping: 30 };
@@ -126,6 +127,7 @@ function WelcomeState() {
   const { user } = useAuthStore();
   const firstName = user?.name?.split(" ")[0] || "there";
   const [hoveredPath, setHoveredPath] = useState<string | null>(null);
+  const [generateOpen, setGenerateOpen] = useState(false);
 
   return (
     <motion.div
@@ -221,17 +223,20 @@ function WelcomeState() {
         </div>
 
         <div className="px-6 pb-6 flex justify-center">
-          <motion.div
+          <motion.button
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             transition={spring}
-            className="flex items-center gap-2 text-[12px] font-medium text-muted-foreground hover:text-foreground px-4 py-2 rounded-lg bg-muted hover:bg-secondary cursor-pointer transition-all duration-500"
+            onClick={() => setGenerateOpen(true)}
+            className="flex items-center gap-2 text-[13px] font-medium text-primary-foreground bg-primary hover:bg-primary/90 px-5 py-2.5 rounded-lg shadow-sm cursor-pointer transition-colors duration-100"
           >
-            <Sparkles className="w-3.5 h-3.5 text-primary" />
-            Generate an AI challenge
-          </motion.div>
+            <Sparkles className="w-4 h-4" />
+            Generate an AI Challenge
+          </motion.button>
         </div>
       </div>
+
+      <GenerateChallengeDialog open={generateOpen} onClose={() => setGenerateOpen(false)} />
     </motion.div>
   );
 }
