@@ -4,11 +4,18 @@ import { motion } from "framer-motion";
 import { Sparkles, ArrowRight, X } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { getDashboard } from "@/lib/api/progress";
 
 export function AiInsight() {
-  const [visible, setVisible] = useState(true);
+  const [dismissed, setDismissed] = useState(false);
+  const { data: dashboard } = useQuery({
+    queryKey: ["dashboard"],
+    queryFn: getDashboard,
+    staleTime: 30000,
+  });
 
-  if (!visible) return null;
+  if (dismissed || !dashboard?.next_problem_path_slug) return null;
 
   return (
     <motion.div
@@ -22,11 +29,11 @@ export function AiInsight() {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[13px] text-foreground leading-relaxed">
-          You&apos;re 3 problems away from completing{" "}
-          <span className="font-medium">Arrays &amp; Strings</span>.
+          You&apos;re {dashboard.remaining_in_closest} problem{dashboard.remaining_in_closest !== 1 ? "s" : ""} away from completing{" "}
+          <span className="font-medium">{dashboard.next_problem_path_title}</span>.
           <Link
-            href="/paths/arrays-strings"
-            className="inline-flex items-center gap-0.5 text-primary font-medium ml-1 hover:underline underline-offset-2"
+            href={`/paths/${dashboard.next_problem_path_slug}`}
+            className="inline-flex items-center gap-0.5 text-primary font-medium ml-1 hover:underline underline-offset-2 cursor-pointer"
           >
             Continue path <ArrowRight className="w-3 h-3" />
           </Link>
@@ -36,8 +43,8 @@ export function AiInsight() {
         </p>
       </div>
       <button
-        onClick={() => setVisible(false)}
-        className="p-1 rounded text-muted-foreground hover:text-foreground transition-colors duration-75 shrink-0"
+        onClick={() => setDismissed(true)}
+        className="p-1 rounded text-muted-foreground hover:text-foreground cursor-pointer transition-colors duration-75 shrink-0"
       >
         <X className="w-3.5 h-3.5" />
       </button>

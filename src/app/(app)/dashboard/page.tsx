@@ -8,7 +8,8 @@ import { AiInsight } from "@/components/dashboard/ai-insight";
 import { StreakCard } from "@/components/dashboard/streak-card";
 import { HeatmapCard } from "@/components/dashboard/heatmap-card";
 import { BadgesCard } from "@/components/dashboard/badges-card";
-import { ContinueList } from "@/components/dashboard/continue-list";
+import { WeakAreas } from "@/components/dashboard/weak-areas";
+import { TodayChallenges } from "@/components/dashboard/today-challenges";
 import { ActivityTable } from "@/components/dashboard/activity-table";
 import { PremiumBanner } from "@/components/dashboard/premium-banner";
 
@@ -49,17 +50,20 @@ export default function DashboardPage() {
         <HeatmapCard />
       </div>
 
+      {/* Weak areas — both free and pro */}
+      <WeakAreas />
+
       {/* Badges + Premium upsell */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <BadgesCard />
         <PremiumBanner />
       </div>
 
-      <ContinueList />
-
-      <div className="h-px bg-border/40" />
-
-      <ActivityTable />
+      {/* Today's Challenges + Activity side by side */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TodayChallenges />
+        <ActivityTable />
+      </div>
     </main>
   );
 }
