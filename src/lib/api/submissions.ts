@@ -58,6 +58,27 @@ export async function enrichProblem(problemId: string) {
   return res.data;
 }
 
+export interface TodayChallengeItem {
+  id: string;
+  title: string;
+  stack: string;
+  concept: string;
+  difficulty: string;
+  type: string;
+  attempted: boolean;
+}
+
+export interface TodayResponse {
+  problems: TodayChallengeItem[];
+  stack: string;
+  sent_at: string | null;
+}
+
+export async function getTodayChallenges() {
+  const res = await apiClient.get<TodayResponse>("/practice/today");
+  return res.data;
+}
+
 export async function getGeneratedProblems(pathSlug: string) {
   const res = await apiClient.get<import("./paths").ProblemListItem[]>(`/practice/paths/${pathSlug}/generated`);
   return res.data;

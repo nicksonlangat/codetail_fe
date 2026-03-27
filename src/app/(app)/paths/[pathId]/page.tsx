@@ -53,10 +53,52 @@ export default function PathDetailPage() {
     return result;
   }, [problems]);
 
+  const shimmer = "bg-muted relative overflow-hidden before:absolute before:inset-0 before:translate-x-[-100%] before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent before:animate-[shimmer_1.5s_infinite]";
+
   if (isLoading) {
     return (
-      <main className="flex items-center justify-center py-20">
-        <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+      <main className="max-w-5xl mx-auto px-6 lg:px-8 py-8">
+        <div className="bg-card rounded-xl border border-border/50 p-6">
+
+        {/* Path header skeleton */}
+        <div className="mb-6">
+          <div className={`h-3 w-16 rounded ${shimmer}`} />
+        </div>
+        <div className="mb-8 space-y-2">
+          <div className="flex items-center gap-2.5">
+            <div className={`w-7 h-7 rounded-lg ${shimmer}`} />
+            <div className={`h-5 w-48 rounded ${shimmer}`} />
+            <div className={`h-4 w-16 rounded-full ${shimmer}`} />
+          </div>
+          <div className={`h-3 w-72 rounded ${shimmer}`} />
+          <div className={`h-2.5 w-20 rounded mt-1 ${shimmer}`} />
+        </div>
+
+        {/* Section skeletons */}
+        {[1, 2].map((s) => (
+          <div key={s} className="mb-6">
+            <div className="flex items-center gap-2 mb-3 px-1">
+              <div className={`h-2.5 w-20 rounded ${shimmer}`} />
+              <div className="flex-1 h-px bg-border" />
+            </div>
+            <div className="space-y-2">
+              {[1, 2, 3].map((p) => (
+                <div key={p} className="rounded-lg border border-border/50 bg-muted/60 p-4 flex items-center gap-3">
+                  <div className={`w-6 h-6 rounded-md ${shimmer}`} />
+                  <div className="flex-1 space-y-1.5">
+                    <div className={`h-3.5 w-44 rounded ${shimmer}`} />
+                    <div className="flex gap-2">
+                      <div className={`h-2.5 w-12 rounded-full ${shimmer}`} />
+                      <div className={`h-2.5 w-20 rounded-full ${shimmer}`} />
+                    </div>
+                  </div>
+                  <div className={`h-3 w-3 rounded ${shimmer}`} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+        </div>
       </main>
     );
   }
