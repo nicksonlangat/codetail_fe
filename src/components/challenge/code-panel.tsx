@@ -119,7 +119,7 @@ export function CodePanel({
       <ResizablePanel defaultSize={60} minSize={20}>
         <div className="flex flex-col h-full min-h-0">
           {/* Header */}
-          <div className="flex items-center justify-between px-3 h-9 border-b border-border/40 bg-card/50 flex-shrink-0">
+          <div className="flex items-center justify-between px-3 h-10 border-b border-border bg-muted/50 dark:bg-card/50 dark:border-border/40 flex-shrink-0">
             <div className="flex items-center gap-0">
               {isMultiFile ? (
                 /* Multi-file tabs */
@@ -176,7 +176,7 @@ export function CodePanel({
         </div>
       </ResizablePanel>
 
-      <ResizableHandle className="h-1 bg-border/40 hover:bg-primary/30 transition-colors cursor-row-resize" />
+      <ResizableHandle className="h-1 bg-border hover:bg-primary/30 transition-colors cursor-row-resize" />
 
       <ResizablePanel defaultSize={40} minSize={15}>
         <BottomPanel

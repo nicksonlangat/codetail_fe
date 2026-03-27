@@ -161,41 +161,41 @@ export default function ChallengePage() {
   return (
     <div className="flex flex-col h-screen bg-background" key={problemId}>
       {/* Top bar — navigation only */}
-      <div className="flex items-center justify-between h-10 px-6 border-b border-border/60 bg-card/50 flex-shrink-0">
+      <div className="flex items-center justify-between h-14 px-6 border-b border-border/60 bg-card/50 flex-shrink-0">
         <Link href={`/paths/${pathSlug}`}
-          className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer transition-all duration-500">
-          <ArrowLeft className="w-3 h-3" />
+          className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-all duration-500">
+          <ArrowLeft className="w-4 h-4" />
           {path?.title ?? pathSlug}
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <button onClick={() => prevProblem && navigateTo(prevProblem.id)} disabled={!prevProblem}
-            className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md ring-1 ring-border/60 hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all duration-500">
-            <ChevronLeft className="w-3 h-3" /> Prev
+            className="flex items-center gap-1 text-[12px] font-medium px-2.5 py-1.5 rounded-md ring-1 ring-border/60 hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all duration-500">
+            <ChevronLeft className="w-3.5 h-3.5" /> Prev
           </button>
-          <div className="flex items-center gap-1 px-1">
+          <div className="flex items-center gap-1.5 px-1">
             {unlocked.map((p, i) => (
               <button key={p.id} onClick={() => navigateTo(p.id)} title={`${i + 1}. ${p.title}`}
-                className={`w-2 h-2 rounded-full cursor-pointer transition-all duration-500 ${
+                className={`w-2.5 h-2.5 rounded-full cursor-pointer transition-all duration-500 ${
                   p.id === problemId ? "bg-primary scale-125" : i < currentIdx ? "bg-primary/40" : "bg-border"
                 }`} />
             ))}
           </div>
-          <span className="text-[10px] text-muted-foreground/50 font-mono tabular-nums">
+          <span className="text-[11px] text-muted-foreground/50 font-mono tabular-nums">
             {currentIdx + 1}/{unlocked.length}
           </span>
           {isLastFree ? (
             <button onClick={() => setShowUpgrade(true)}
-              className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md bg-primary/10 text-primary hover:bg-primary/15 cursor-pointer transition-all duration-500">
-              Unlock more <ChevronRight className="w-3 h-3" />
+              className="flex items-center gap-1 text-[12px] font-medium px-2.5 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/15 cursor-pointer transition-all duration-500">
+              Unlock more <ChevronRight className="w-3.5 h-3.5" />
             </button>
           ) : (
             <button onClick={() => nextProblem && navigateTo(nextProblem.id)} disabled={!nextProblem}
-              className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md ring-1 ring-border/60 hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all duration-500">
-              Next <ChevronRight className="w-3 h-3" />
+              className="flex items-center gap-1 text-[12px] font-medium px-2.5 py-1.5 rounded-md ring-1 ring-border/60 hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all duration-500">
+              Next <ChevronRight className="w-3.5 h-3.5" />
             </button>
           )}
-          <div className="w-px h-4 bg-border/40 mx-1" />
+          <div className="w-px h-5 bg-border/40 mx-1" />
           <ThemeToggle />
         </div>
       </div>
@@ -209,10 +209,11 @@ export default function ChallengePage() {
             showHints={showHints}
             onToggleHints={toggleHints}
             isGenerated={problem.is_generated ?? false}
+            initialNotes={progress?.notes ?? null}
           />
         </ResizablePanel>
 
-        <ResizableHandle className="w-1 bg-border/40 hover:bg-primary/30 transition-colors cursor-col-resize" />
+        <ResizableHandle className="w-1 bg-border hover:bg-primary/30 transition-colors cursor-col-resize" />
 
         <ResizablePanel defaultSize={50} minSize={25}>
           {challengeType === "mcq" ? (

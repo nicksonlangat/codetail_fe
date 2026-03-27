@@ -23,9 +23,10 @@ interface LeftPanelProps {
   onToggleHints: () => void;
   isGenerated?: boolean;
   onEnriched?: (updated: any) => void;
+  initialNotes?: string | null;
 }
 
-export function LeftPanel({ content, meta, showHints, onToggleHints, isGenerated = false, onEnriched }: LeftPanelProps) {
+export function LeftPanel({ content, meta, showHints, onToggleHints, isGenerated = false, onEnriched, initialNotes }: LeftPanelProps) {
   const [active, setActive] = useState<Tab>("description");
 
   const diffColor = meta.difficulty === "easy"
@@ -44,7 +45,7 @@ export function LeftPanel({ content, meta, showHints, onToggleHints, isGenerated
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Tab bar */}
-      <div className="flex items-center gap-0 px-5 border-b border-border/40 bg-card/50 flex-shrink-0">
+      <div className="flex items-center gap-0 px-5 border-b border-border bg-muted/50 dark:bg-card/50 dark:border-border/40 flex-shrink-0">
         {([
           { id: "description" as Tab, label: "Description", icon: FileText },
           { id: "notes" as Tab, label: "Notes", icon: StickyNote },
@@ -79,7 +80,7 @@ export function LeftPanel({ content, meta, showHints, onToggleHints, isGenerated
           <ProblemDescription content={content} meta={meta} diffColor={diffColor} typeLabel={typeLabel[meta.type] ?? meta.type} showHints={showHints} onToggleHints={onToggleHints} isGenerated={isGenerated} onEnriched={onEnriched} />
         )}
         {active === "notes" && (
-          <NotesEditor problemId={content.problemId} />
+          <NotesEditor problemId={content.problemId} initialNotes={initialNotes} />
         )}
       </div>
     </div>

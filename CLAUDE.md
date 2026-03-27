@@ -90,10 +90,33 @@ Think: Linear, Raycast, Arc Browser. Dense, functional, quietly opulent. Every p
 - Max two font weights visible in any card/section. Don't over-bold.
 
 ### Color
-- Brand primary: teal `hsl(164 70% 40%)` — use for CTAs, active states, progress indicators.
-- Never use raw hex colors — always use design tokens (`text-primary`, `bg-primary/10`, etc.).
+- Brand primary: teal `#1fad87` — use for CTAs, active states, progress indicators.
+- Never use raw hex colors in components — always use design tokens (`text-primary`, `bg-primary/10`, etc.).
 - Semantic colors: `success` for positive, `warning` for caution, `destructive` for errors, `info` for neutral highlights.
-- Dark mode must work — use CSS variables, not hardcoded colors.
+- Both light and dark mode must work — use CSS variables, not hardcoded colors.
+
+### Light Mode Rules
+Light mode uses real depth through distinct surface colors — not everything white.
+
+**Color palette (defined in globals.css `:root`):**
+- `--background: #F9FAFB` — page bg (off-white, never pure white)
+- `--card: #FFFFFF` — card surfaces, modals (white sits on off-white for depth)
+- `--foreground: #161C24` — primary text (near-black, warm)
+- `--muted: #E4E8EB` — muted backgrounds, code blocks, tab bars
+- `--muted-foreground: #454F5B` — secondary text
+- `--border: #D0D5DA` — borders (darker than muted so they're visible)
+- `--primary: #1fad87` — teal brand color (same in light and dark)
+
+**Surface hierarchy:** `bg-background` (#F9FAFB) → `bg-card` (#FFFFFF) → `bg-muted` (#E4E8EB). Never stack same-color surfaces.
+
+**Rules:**
+- Borders must be visible — use `border-border` (solid) or `border-border/50`. Never `border-border/40` or lower in light mode.
+- Code blocks, function signatures, examples: use `bg-muted` (solid), not `bg-muted/30` (invisible on white).
+- Tab bars and editor headers: `bg-muted/50` in light mode for subtle tinting. Use `dark:bg-card/50` for dark mode.
+- Resizable handles: `bg-border` (solid) so they're visible. Not `bg-border/40`.
+- When a component needs different light/dark treatment, use `dark:` prefix: e.g., `bg-muted/50 dark:bg-card/50`.
+- No scrollbars — hidden globally via `scrollbar-width: none`.
+- TopBar uses `bg-card/80 backdrop-blur-md` — white with blur, sits above the off-white page.
 
 ### Components
 - Max 300 lines per file. Split into sub-components if exceeding.

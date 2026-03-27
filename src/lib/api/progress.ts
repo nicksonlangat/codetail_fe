@@ -16,6 +16,7 @@ export interface SavedTestResult {
 export interface ProgressResponse {
   problem_id: string;
   code: string | null;
+  notes: string | null;
   status: string;
   attempts: number;
   best_score: number;
@@ -38,6 +39,22 @@ export interface ReviewData {
 
 export async function saveCode(problemId: string, code: string) {
   const res = await apiClient.patch<ProgressResponse>(`/progress/${problemId}`, { code });
+  return res.data;
+}
+
+export interface StreakResponse {
+  current_streak: number;
+  longest_streak: number;
+  total_active_days: number;
+}
+
+export async function getStreak() {
+  const res = await apiClient.get<StreakResponse>("/progress/streak/me");
+  return res.data;
+}
+
+export async function saveNotes(problemId: string, notes: string) {
+  const res = await apiClient.patch<ProgressResponse>(`/progress/${problemId}`, { notes });
   return res.data;
 }
 
