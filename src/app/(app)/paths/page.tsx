@@ -40,8 +40,23 @@ export default function PathsPage() {
 
         <TabsContent value={stack}>
           {isLoading ? (
-            <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="rounded-xl border border-border bg-card p-5">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-8 h-8 rounded-lg bg-muted animate-pulse flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-36 bg-muted rounded animate-pulse" />
+                      <div className="flex gap-2">
+                        <div className="h-3 w-14 bg-muted rounded-full animate-pulse" />
+                        <div className="h-3 w-20 bg-muted rounded-full animate-pulse" />
+                      </div>
+                      <div className="h-3 w-full bg-muted rounded animate-pulse" />
+                      <div className="h-3 w-3/4 bg-muted rounded animate-pulse" />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : !Array.isArray(paths) || !paths.length ? (
             <div className="text-center py-16">

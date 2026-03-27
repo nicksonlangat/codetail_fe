@@ -55,8 +55,45 @@ export default function PathDetailPage() {
 
   if (isLoading) {
     return (
-      <main className="flex items-center justify-center py-20">
-        <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+      <main className="max-w-5xl mx-auto px-6 lg:px-8 py-8">
+        {/* Path header skeleton */}
+        <div className="mb-6">
+          <div className="h-3 w-16 bg-muted rounded animate-pulse" />
+        </div>
+        <div className="mb-8 space-y-2">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-muted animate-pulse" />
+            <div className="h-5 w-48 bg-muted rounded animate-pulse" />
+            <div className="h-4 w-16 bg-muted rounded-full animate-pulse" />
+          </div>
+          <div className="h-3 w-72 bg-muted rounded animate-pulse" />
+          <div className="h-2.5 w-20 bg-muted rounded animate-pulse mt-1" />
+        </div>
+
+        {/* Section skeletons */}
+        {[1, 2].map((s) => (
+          <div key={s} className="mb-6">
+            <div className="flex items-center gap-2 mb-3 px-1">
+              <div className="h-2.5 w-20 bg-muted rounded animate-pulse" />
+              <div className="flex-1 h-px bg-border" />
+            </div>
+            <div className="space-y-2">
+              {[1, 2, 3].map((p) => (
+                <div key={p} className="rounded-lg border border-border/50 p-4 flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-md bg-muted animate-pulse" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3.5 w-44 bg-muted rounded animate-pulse" />
+                    <div className="flex gap-2">
+                      <div className="h-2.5 w-12 bg-muted rounded-full animate-pulse" />
+                      <div className="h-2.5 w-20 bg-muted rounded-full animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="h-3 w-3 bg-muted rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </main>
     );
   }
