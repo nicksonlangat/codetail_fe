@@ -44,7 +44,7 @@ export default function PathsPage() {
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="rounded-xl border border-border bg-card p-5">
                   <div className="flex items-start gap-3.5">
-                    <div className="w-8 h-8 rounded-lg bg-muted animate-pulse flex-shrink-0" />
+                    <div className="w-8 h-8 rounded-lg bg-border/30 animate-pulse flex-shrink-0" />
                     <div className="flex-1 space-y-2">
                       <div className="h-4 w-36 bg-muted rounded animate-pulse" />
                       <div className="flex gap-2">

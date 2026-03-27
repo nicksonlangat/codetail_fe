@@ -62,7 +62,7 @@ export default function PathDetailPage() {
         </div>
         <div className="mb-8 space-y-2">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-muted animate-pulse" />
+            <div className="w-7 h-7 rounded-lg bg-border/30 animate-pulse" />
             <div className="h-5 w-48 bg-muted rounded animate-pulse" />
             <div className="h-4 w-16 bg-muted rounded-full animate-pulse" />
           </div>
@@ -80,7 +80,7 @@ export default function PathDetailPage() {
             <div className="space-y-2">
               {[1, 2, 3].map((p) => (
                 <div key={p} className="rounded-lg border border-border/50 p-4 flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-md bg-muted animate-pulse" />
+                  <div className="w-6 h-6 rounded-md bg-border/30 animate-pulse" />
                   <div className="flex-1 space-y-1.5">
                     <div className="h-3.5 w-44 bg-muted rounded animate-pulse" />
                     <div className="flex gap-2">
