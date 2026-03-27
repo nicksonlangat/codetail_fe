@@ -73,6 +73,24 @@ export function BentoFeatures() {
   const [codeLine, setCodeLine] = useState<number | null>(null);
   const [streakHover, setStreakHover] = useState<number | null>(null);
   const [heatmapHover, setHeatmapHover] = useState<number | null>(null);
+  const [confetti, setConfetti] = useState<{ id: number; x: number; y: number; r: number; color: string; shape: "rect" | "circle"; size: number }[]>([]);
+  const [showAchievement, setShowAchievement] = useState(false);
+
+  const celebrate = useCallback(() => {
+    setShowAchievement(false);
+    const colors = ["#14b8a6", "#22c55e", "#3b82f6", "#a855f7", "#f97316", "#eab308"];
+    setConfetti(Array.from({ length: 35 }, (_, i) => ({
+      id: i,
+      x: (Math.random() - 0.5) * 280,
+      y: -(Math.random() * 180 + 40),
+      r: Math.random() * 720 - 360,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      shape: Math.random() > 0.5 ? "rect" : "circle",
+      size: Math.random() * 6 + 4,
+    })));
+    setTimeout(() => setShowAchievement(true), 500);
+    setTimeout(() => { setConfetti([]); setShowAchievement(false); }, 3000);
+  }, []);
 
   return (
     <div className="grid grid-cols-6 gap-3 auto-rows-[240px]">
@@ -382,6 +400,8 @@ export function BentoFeatures() {
           <p className="text-[10px] text-muted-foreground">Watch your accuracy climb week over week</p>
         </div>
       </motion.div>
+
+     
     </div>
   );
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Code2, ArrowRight, Brain, Sparkles, BarChart3, Layers, Zap, Trophy, Flame, Bot, Star, Gem } from "lucide-react";
 import { BentoFeatures } from "@/components/landing/bento-features";
+import { CelebrationCTA } from "@/components/landing/celebration-cta";
 
 const ease = [0.22, 1, 0.36, 1] as [number, number, number, number];
 
@@ -60,8 +61,8 @@ export default function LandingPage() {
 
           {/* Nav — centered */}
           <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
-            {["Features", "Method", "Pricing"].map((l) => (
-              <Link key={l} href={l === "Pricing" ? "/pricing" : `#${l.toLowerCase()}`}
+            {["Features", "Why", "Method", "Pricing"].map((l) => (
+              <Link key={l} href={l === "Pricing" ? "/pricing" : l === "Why" ? "/why" : `#${l.toLowerCase()}`}
                 className="text-[13px] text-muted-foreground hover:text-foreground px-3 py-1.5 transition-all cursor-pointer">
                 {l}
               </Link>
@@ -245,7 +246,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="py-24 md:py-32 border-t border-border">
+      {/* <section className="py-24 md:py-32 border-t border-border">
         <div className="max-w-[1100px] mx-auto px-6 text-center">
           <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <Flame className="w-8 h-8 text-primary mx-auto mb-4" />
@@ -262,11 +263,13 @@ export default function LandingPage() {
             </Link>
           </motion.div>
         </div>
-      </section>
+      </section> */}
+
+      <CelebrationCTA />
 
       {/* ── FOOTER ── */}
       <footer className="py-8 border-t border-border">
-        <div className="max-w-[1100px] mx-auto px-6">
+        <div className="max-w-265 mx-auto px-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 rounded-md bg-primary flex items-center justify-center">

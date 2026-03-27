@@ -7,12 +7,12 @@ export default function TermsPage() {
       <div className="prose prose-sm dark:prose-invert max-w-none space-y-6 text-[14px] leading-relaxed text-foreground/80">
         <section>
           <h2 className="text-lg font-semibold text-foreground">1. Acceptance of Terms</h2>
-          <p>By creating an account or using Codetail ("the Service"), you agree to these Terms and Conditions. If you do not agree, do not use the Service.</p>
+          <p>By creating an account or using Codetail (&quot;the Service&quot;), you agree to these Terms and Conditions. If you do not agree, do not use the Service.</p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-foreground">2. Description of Service</h2>
-          <p>Codetail is a coding practice platform that provides curated and AI-generated programming challenges, code execution, AI-powered code reviews, and learning paths for Python, Django, and related technologies.</p>
+          <h2 className="text-lg font-semibold text-foreground">2. About Us</h2>
+          <p>Codetail is operated by <strong>Nick Langat</strong>. The Service is a coding practice platform that provides curated and AI-generated programming challenges, code execution, AI-powered code reviews, and learning paths for Python, Django, and related technologies.</p>
         </section>
 
         <section>
@@ -27,12 +27,12 @@ export default function TermsPage() {
 
         <section>
           <h2 className="text-lg font-semibold text-foreground">5. Payments and Billing</h2>
-          <p>Pro subscriptions are billed monthly ($9/month) or yearly ($90/year) through our payment processor, Paddle. By subscribing, you authorize recurring charges until you cancel. Prices may change with 30 days notice.</p>
+          <p>Pro subscriptions are billed monthly ($9/month) or yearly ($90/year). All payments are processed by <a href="https://www.paddle.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Paddle</a>, which acts as our Merchant of Record. By subscribing, you authorize Paddle to charge recurring payments until you cancel. Paddle&apos;s <a href="https://www.paddle.com/legal/buyer-terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Buyer Terms</a> apply to all transactions. Prices may change with 30 days notice.</p>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-foreground">6. Cancellation</h2>
-          <p>You may cancel your Pro subscription at any time from your account settings. Cancellation takes effect at the end of your current billing period. You retain Pro access until the period ends. No partial refunds are issued for unused time within a billing period.</p>
+          <h2 className="text-lg font-semibold text-foreground">6. Cancellation and Refunds</h2>
+          <p>You may cancel your Pro subscription at any time. Cancellation takes effect at the end of your current billing period. You retain Pro access until the period ends. For refunds, please see our <a href="/refund" className="text-primary hover:underline">Refund Policy</a>, which aligns with Paddle&apos;s buyer terms.</p>
         </section>
 
         <section>
