@@ -1,6 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Sun, Sunset, Moon } from "lucide-react";
+import { useAuthStore } from "@/stores/auth-store";
 import { SparklineStats } from "@/components/dashboard/sparkline-stats";
 import { AiInsight } from "@/components/dashboard/ai-insight";
 import { StreakCard } from "@/components/dashboard/streak-card";
@@ -11,9 +13,12 @@ import { ActivityTable } from "@/components/dashboard/activity-table";
 import { PremiumBanner } from "@/components/dashboard/premium-banner";
 
 export default function DashboardPage() {
+  const { user } = useAuthStore();
   const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const firstName = user?.name?.split(" ")[0] || "there";
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const GreetingIcon = hour < 12 ? Sun : hour < 17 ? Sunset : Moon;
+  const iconColor = hour < 12 ? "text-yellow-500" : hour < 17 ? "text-orange-400" : "text-indigo-400";
 
   return (
     <main className="max-w-5xl mx-auto px-6 lg:px-8 py-8 space-y-6">
@@ -23,10 +28,13 @@ export default function DashboardPage() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <h1 className="text-[15px] font-semibold tracking-tight text-foreground">
-          {greeting}
-        </h1>
-        <p className="text-[12px] text-muted-foreground mt-0.5">
+        <div className="flex items-center gap-2">
+          <GreetingIcon className={`w-4.5 h-4.5 ${iconColor}`} />
+          <h1 className="text-[15px] font-semibold tracking-tight text-foreground">
+            {greeting}, {firstName}
+          </h1>
+        </div>
+        <p className="text-[12px] text-muted-foreground mt-0.5 ml-6.5">
           Here&apos;s your learning progress.
         </p>
         <SparklineStats />
