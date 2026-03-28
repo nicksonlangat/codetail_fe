@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Route,
   Settings, Plus, Search, Command, User, Bookmark,
-  BarChart3, Flame, LogOut, Sun, Moon, House, ChevronRight,
+  BarChart3, Flame, LogOut, Sun, Moon, House, ChevronRight, Shield,
 } from "lucide-react";
 import { CTLogo } from "@/components/brand/logo";
 import { useTheme } from "next-themes";
@@ -220,6 +220,17 @@ export function TopBar() {
 
                   {/* Menu items */}
                   <div className="py-1">
+                    {user?.is_admin && (
+                      <>
+                        <button
+                          onClick={() => { setMenuOpen(false); router.push("/admin"); }}
+                          className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] cursor-pointer transition-colors duration-75 text-primary hover:bg-primary/10">
+                          <Shield className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="flex-1 text-left">Admin</span>
+                        </button>
+                        <div className="h-px bg-border/50 my-1" />
+                      </>
+                    )}
                     {menuItems.map((item, i) => {
                       if ("type" in item) {
                         return <div key={i} className="h-px bg-border/50 my-1" />;

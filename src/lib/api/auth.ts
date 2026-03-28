@@ -10,6 +10,8 @@ export interface UserResponse {
   id: string;
   email: string;
   name: string;
+  tier: "free" | "pro";
+  is_admin: boolean;
   is_verified: boolean;
   created_at: string;
 }
