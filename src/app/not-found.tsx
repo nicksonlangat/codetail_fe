@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Code2 } from "lucide-react";
+import { CTLogo } from "@/components/brand/logo";
 import { buttonVariants } from "@/components/ui/button";
 
 export default function NotFound() {
@@ -9,9 +9,7 @@ export default function NotFound() {
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="text-center space-y-6 px-6">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-[10px] bg-primary flex items-center justify-center">
-            <Code2 className="w-4.5 h-4.5 text-primary-foreground" />
-          </div>
+          <CTLogo size={32} variant="primary" />
           <span className="text-xl font-semibold tracking-tight">codetail</span>
         </div>
 

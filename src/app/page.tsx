@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Code2, ArrowRight, Brain, Sparkles, BarChart3, Layers, Zap, Trophy, Flame, Bot, Star, Gem } from "lucide-react";
+import { ArrowRight, Brain, Sparkles, BarChart3, Layers, Zap, Trophy, Flame, Bot, Star, Gem } from "lucide-react";
+import { CTLogo } from "@/components/brand/logo";
 import { BentoFeatures } from "@/components/landing/bento-features";
 import { CelebrationCTA } from "@/components/landing/celebration-cta";
 
@@ -51,12 +52,13 @@ export default function LandingPage() {
 
       {/* ── NAV — floating pill ── */}
       <header className="fixed top-0 z-50 w-full py-3 px-4">
-        <div className="max-w-260 mx-auto flex items-center h-12 px-1 bg-card/80 backdrop-blur-xl border border-border rounded-2xl">
+        <div className="max-w-265 mx-auto flex items-center h-12 px-3 bg-card/80 backdrop-blur-xl border border-border rounded-2xl">
           {/* Logo — far left */}
-          <Link href="/" className="shrink-0">
-            <div className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center">
-              <Gem className="w-4 h-4 text-primary" />
-            </div>
+          <Link href="/" className="flex items-center gap-2 shrink-0">
+            <CTLogo size={26} variant="primary" />
+            <span className="text-[14px] font-semibold tracking-tight">
+              code<span className="text-primary">tail</span>
+            </span>
           </Link>
 
           {/* Nav — centered */}
@@ -87,7 +89,7 @@ export default function LandingPage() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-primary/[0.04] rounded-full blur-[120px] pointer-events-none" />
 
         <div className="max-w-275 mx-auto px-6 relative">
-          <div className="grid md:grid-cols-[1.1fr_1fr] gap-12 items-center">
+          <div className="grid md:grid-cols-[1fr_1.3fr] gap-10 items-center">
             <div>
               <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease }}>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/20 bg-accent mb-6">
@@ -96,13 +98,13 @@ export default function LandingPage() {
                 </div>
 
                 <h1 className="text-[clamp(2.4rem,5vw,4rem)] font-bold leading-[1.08] tracking-[-0.035em] mb-5">
-                  Practice coding the way
+                  Sharpen your craft.
                   <br />
-                  <span className="italic font-normal text-muted-foreground">you actually learn</span>
+                  <span className="italic font-normal text-muted-foreground">Write beautiful code.</span>
                 </h1>
 
                 <p className="text-[16px] text-muted-foreground/70 leading-[1.7] max-w-md mb-4">
-                  Real-world challenges, AI reviews that teach you why, and structured paths from Python to Django. Stop memorizing — start building intuition.
+                  Real-world problems. AI reviews that teach you why, not just what. Structured paths from Python to Django. For developers who care about their code.
                 </p>
 
               </motion.div>
@@ -120,7 +122,7 @@ export default function LandingPage() {
               </motion.div>
             </div>
 
-            {/* Tilted dashboard mockup */}
+            {/* Hero illustration — code editor + AI review */}
             <motion.div
               initial={{ opacity: 0, y: 30, rotateY: -5 }}
               animate={{ opacity: 1, y: 0, rotateY: 0 }}
@@ -128,51 +130,75 @@ export default function LandingPage() {
               className="hidden md:block"
               style={{ perspective: "1200px" }}
             >
-              <div className="relative rounded-2xl border border-border bg-card overflow-hidden shadow-2xl"
-                style={{ transform: "perspective(1200px) rotateY(-6deg) rotateX(2deg)" }}>
-                <div className="p-4 border-b border-border">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-destructive/60" />
-                    <div className="w-3 h-3 rounded-full bg-warning/60" />
-                    <div className="w-3 h-3 rounded-full bg-success/60" />
-                    <span className="ml-3 text-[11px] text-muted-foreground/50 font-mono">codetail — dashboard</span>
+              <div className="relative rounded-2xl border border-border bg-card overflow-hidden shadow-[0_8px_40px_-8px_hsl(164_70%_40%/0.1)]"
+                style={{ transform: "perspective(1200px) rotateY(-4deg) rotateX(1deg)" }}>
+                {/* Window chrome */}
+                <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border">
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-destructive/50" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-warning/50" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-success/50" />
+                  </div>
+                  <div className="flex gap-0 ml-3">
+                    <span className="text-[10px] px-2 py-0.5 font-mono text-foreground/70 bg-secondary/50 rounded">models.py</span>
+                    <span className="text-[10px] px-2 py-0.5 font-mono text-muted-foreground/30">views.py</span>
                   </div>
                 </div>
-                <div className="p-5 space-y-4">
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { label: "Problems Solved", value: "47" },
-                      { label: "Accuracy", value: "84%" },
-                      { label: "Avg Score", value: "78" },
-                    ].map((s) => (
-                      <div key={s.label} className="rounded-lg bg-secondary border border-border p-3">
-                        <p className="text-[9px] text-muted-foreground/60">{s.label}</p>
-                        <p className="text-[18px] font-bold font-mono text-foreground/80 mt-0.5">{s.value}</p>
-                        <div className="h-6 mt-2 flex items-end gap-[2px]">
-                          {[3, 5, 4, 7, 6, 8, 7, 9, 8, 10, 9, 11].map((h, i) => (
-                            <div key={i} className="flex-1 bg-primary/40 rounded-sm" style={{ height: `${h * 2.5}px` }} />
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+
+                {/* Split view: code left, review right */}
+                <div className="flex divide-x divide-border">
+                  {/* Code */}
+                  <div className="flex-1 px-4 py-4 font-mono text-[11px] leading-[2]">
+                    <div><span className="text-muted-foreground/20 mr-2">1</span><span className="text-primary">class</span> <span className="text-[hsl(38_85%_62%)]">Order</span><span className="text-muted-foreground/50">(models.Model):</span></div>
+                    <div><span className="text-muted-foreground/20 mr-2">2</span><span className="text-foreground/60 pl-3">customer</span> <span className="text-muted-foreground/40">= models.</span><span className="text-[hsl(217_80%_68%)]">ForeignKey</span><span className="text-muted-foreground/40">(</span></div>
+                    <div><span className="text-muted-foreground/20 mr-2">3</span><span className="text-foreground/60 pl-6">User, </span><span className="text-[hsl(0_68%_70%)]">on_delete</span><span className="text-muted-foreground/40">=</span><span className="text-primary">CASCADE</span></div>
+                    <div><span className="text-muted-foreground/20 mr-2">4</span><span className="text-muted-foreground/40 pl-3">)</span></div>
+                    <div><span className="text-muted-foreground/20 mr-2">5</span><span className="text-foreground/60 pl-3">status</span> <span className="text-muted-foreground/40">= models.</span><span className="text-[hsl(217_80%_68%)]">CharField</span><span className="text-muted-foreground/40">(</span></div>
+                    <div><span className="text-muted-foreground/20 mr-2">6</span><span className="text-[hsl(0_68%_70%)] pl-6">choices</span><span className="text-muted-foreground/40">=Status.choices</span></div>
+                    <div><span className="text-muted-foreground/20 mr-2">7</span><span className="text-muted-foreground/40 pl-3">)</span></div>
+                    <div className="mt-1"><span className="text-muted-foreground/20 mr-2">8</span><span className="text-primary pl-3">@property</span></div>
+                    <div><span className="text-muted-foreground/20 mr-2">9</span><span className="text-primary pl-3">def</span> <span className="text-[hsl(38_85%_62%)]">total</span><span className="text-muted-foreground/40">(self):</span></div>
+                    <div><span className="text-muted-foreground/15 mr-2">10</span><span className="text-primary pl-6">return</span> <span className="text-foreground/50">self.items.</span><span className="text-[hsl(217_80%_68%)]">aggregate</span><span className="text-muted-foreground/40">(...)</span></div>
                   </div>
 
-                  <div className="rounded-lg bg-secondary border border-border overflow-hidden">
-                    <div className="px-3 py-2 border-b border-border">
-                      <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-medium">Recent Activity</span>
-                    </div>
-                    {[
-                      { title: "Design the Order Model", diff: "medium", status: "solved" },
-                      { title: "Fix the N+1 Query Bug", diff: "medium", status: "solved" },
-                      { title: "Custom Manager for Published", diff: "medium", status: "attempted" },
-                      { title: "Two Sum", diff: "easy", status: "solved" },
-                    ].map((p) => (
-                      <div key={p.title} className="flex items-center gap-2 px-3 py-2 border-b border-border/50 last:border-0">
-                        <div className={`w-1.5 h-1.5 rounded-full ${p.status === "solved" ? "bg-success" : "bg-warning"}`} />
-                        <span className="text-[11px] text-muted-foreground flex-1 truncate">{p.title}</span>
-                        <span className={`text-[9px] font-medium ${p.diff === "easy" ? "text-difficulty-easy" : "text-difficulty-medium"}`}>{p.diff}</span>
+                  {/* AI Review */}
+                  <div className="w-[220px] px-4 py-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-7 h-7 rounded-md bg-primary/15 flex items-center justify-center">
+                        <span className="text-[11px] font-bold font-mono text-primary">92</span>
                       </div>
-                    ))}
+                      <div className="flex-1 h-1 bg-secondary rounded-full overflow-hidden">
+                        <motion.div className="h-full bg-primary rounded-full"
+                          initial={{ width: 0 }} animate={{ width: "92%" }}
+                          transition={{ duration: 1.5, delay: 1 }} />
+                      </div>
+                    </div>
+
+                    <p className="text-[9px] text-muted-foreground/40 uppercase tracking-wider font-medium mb-2">AI Review</p>
+
+                    <div className="space-y-2">
+                      {[
+                        { good: true, text: "Correct FK with CASCADE" },
+                        { good: true, text: "TextChoices for validation" },
+                        { good: true, text: "Clean property for total" },
+                        { good: false, text: "Add Coalesce for empty" },
+                      ].map((item, i) => (
+                        <motion.div key={i}
+                          initial={{ opacity: 0, x: -4 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 1.2 + i * 0.15 }}
+                          className="flex items-start gap-1.5">
+                          <div className={`w-1 h-1 rounded-full mt-1.5 flex-shrink-0 ${item.good ? "bg-success" : "bg-warning"}`} />
+                          <span className="text-[10px] text-muted-foreground/60 leading-tight">{item.text}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+
+                    <div className="mt-3 pt-2 border-t border-border/30">
+                      <p className="text-[9px] text-muted-foreground/30 leading-relaxed italic">
+                        &ldquo;Use Coalesce to handle empty querysets gracefully. Without it, Sum returns None.&rdquo;
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -272,9 +298,7 @@ export default function LandingPage() {
         <div className="max-w-265 mx-auto px-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded-md bg-primary flex items-center justify-center">
-                <Code2 className="w-3 h-3 text-primary-foreground" />
-              </div>
+              <CTLogo size={20} variant="primary" />
               <span className="text-[13px] font-semibold tracking-tight">
                 code<span className="text-primary">tail</span>
               </span>

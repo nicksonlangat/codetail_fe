@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Code2 } from "lucide-react";
+import { CTLogo } from "@/components/brand/logo";
 import Link from "next/link";
 
 const spring = { type: "spring" as const, stiffness: 300, damping: 30 };
@@ -71,9 +71,7 @@ function ShowcasePanel() {
 
       <div className="relative z-10">
         <div className="flex items-center gap-2 mb-2">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-            <Code2 className="w-3.5 h-3.5 text-primary-foreground" />
-          </div>
+          <CTLogo size={28} variant="primary" />
           <span className="text-[15px] font-semibold tracking-tight">codetail</span>
         </div>
         <p className="text-[11px] text-white/40 mt-1">Master the craft of coding</p>
