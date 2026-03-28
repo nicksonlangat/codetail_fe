@@ -2,7 +2,8 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Code2, ArrowRight, ArrowLeft, Heart } from "lucide-react";
+import { ArrowRight, ArrowLeft, Heart } from "lucide-react";
+import { CTLogo } from "@/components/brand/logo";
 
 const ease = [0.22, 1, 0.36, 1] as [number, number, number, number];
 
@@ -14,9 +15,7 @@ export default function WhyPage() {
       <header className="fixed top-0 z-50 w-full py-3 px-4">
         <div className="max-w-[700px] mx-auto flex items-center justify-between h-12 px-5 bg-card/80 backdrop-blur-xl border border-border rounded-2xl">
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-primary flex items-center justify-center">
-              <Code2 className="w-3.5 h-3.5 text-primary-foreground" />
-            </div>
+            <CTLogo size={24} variant="primary" />
             <span className="text-[14px] font-semibold tracking-tight">
               code<span className="text-primary">tail</span>
             </span>
@@ -156,9 +155,7 @@ export default function WhyPage() {
       <footer className="py-8 border-t border-border">
         <div className="max-w-[640px] mx-auto px-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-primary flex items-center justify-center">
-              <Code2 className="w-2.5 h-2.5 text-primary-foreground" />
-            </div>
+            <CTLogo size={16} variant="primary" />
             <span className="text-[12px] font-semibold">code<span className="text-primary">tail</span></span>
           </div>
           <nav className="flex items-center gap-4">

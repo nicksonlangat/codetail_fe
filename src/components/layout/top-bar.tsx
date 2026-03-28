@@ -5,10 +5,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Code2, LayoutDashboard, Route,
+  LayoutDashboard, Route,
   Settings, Plus, Search, Command, User, Bookmark,
   BarChart3, Flame, LogOut, Sun, Moon, House, ChevronRight,
 } from "lucide-react";
+import { CTLogo } from "@/components/brand/logo";
 import { useTheme } from "next-themes";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth-store";
@@ -102,9 +103,7 @@ export function TopBar() {
         <div className="max-w-5xl mx-auto flex items-center h-11 px-4 lg:px-5 gap-5 bg-card/90 backdrop-blur-md border border-border/60 rounded-xl">
           {/* Logo */}
           <Link href="/dashboard" className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-5 h-5 rounded-md bg-primary/10 flex items-center justify-center">
-              <Code2 className="w-3 h-3 text-primary" />
-            </div>
+            <CTLogo size={22} variant="primary" />
             <span className="text-[13px] font-semibold tracking-tight text-foreground">
               code<span className="text-primary">tail</span>
             </span>

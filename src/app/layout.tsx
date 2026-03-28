@@ -16,9 +16,25 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Codetail — Practice Coding, Ship Faster",
+  title: "Codetail — Where Developers Sharpen Their Craft",
   description:
-    "Level up your coding skills with guided learning paths, AI-powered feedback, and hands-on challenges.",
+    "Real-world challenges, AI code reviews, and structured paths from Python to Django. The craft of writing beautiful code.",
+  metadataBase: new URL("https://codetail.cc"),
+  openGraph: {
+    title: "Codetail — Where Developers Sharpen Their Craft",
+    description: "Real-world challenges, AI code reviews, and structured paths from Python to Django. The craft of writing beautiful code.",
+    url: "https://codetail.cc",
+    siteName: "Codetail",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Codetail — Where Developers Sharpen Their Craft",
+    description: "The craft of writing beautiful code. Real-world challenges, AI reviews, structured paths.",
+  },
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
