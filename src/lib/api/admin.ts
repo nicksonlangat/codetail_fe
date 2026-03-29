@@ -104,7 +104,114 @@ export async function getAdminPayments(page = 1, perPage = 20) {
   return res.data;
 }
 
+export interface AdminDigest {
+  id: string;
+  user_email: string;
+  user_name: string;
+  stack: string;
+  problem_count: number;
+  attempted_count: number;
+  sent_at: string;
+}
+
+export interface AdminDigestList {
+  digests: AdminDigest[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+export async function getAdminDigests(search?: string, page = 1, perPage = 20) {
+  const params: Record<string, string | number> = { page, per_page: perPage };
+  if (search) params.search = search;
+  const res = await apiClient.get<AdminDigestList>("/admin/digests", { params });
+  return res.data;
+}
+
 export async function triggerDailyDigest() {
   const res = await apiClient.post("/admin/digest/trigger");
+  return res.data;
+}
+
+// ── Content ──
+
+export interface PathSummary {
+  id: string;
+  title: string;
+  slug: string;
+  stack: string;
+  difficulty: string;
+  problem_count: number;
+  is_active: boolean;
+}
+
+export interface ContentStats {
+  total_paths: number;
+  total_problems: number;
+  generated_problems: number;
+  hand_crafted_problems: number;
+  by_difficulty: Record<string, number>;
+  by_stack: Record<string, number>;
+  by_type: Record<string, number>;
+  paths: PathSummary[];
+}
+
+export async function getContentStats() {
+  const res = await apiClient.get<ContentStats>("/admin/content");
+  return res.data;
+}
+
+// ── Activity ──
+
+export interface ActivityStats {
+  total_attempts: number;
+  total_solved: number;
+  avg_score: number;
+  total_ai_reviews: number;
+  total_hints: number;
+  total_solutions: number;
+  solved_per_day: { date: string; count: number }[];
+  ai_usage_per_day: { date: string; reviews: number; hints: number; solutions: number }[];
+}
+
+export async function getActivityStats() {
+  const res = await apiClient.get<ActivityStats>("/admin/activity");
+  return res.data;
+}
+
+// ── Webhooks ──
+
+export interface WebhookEvent {
+  id: string;
+  event_id: string;
+  event_type: string;
+  status: string;
+  error: string | null;
+  created_at: string;
+}
+
+export interface WebhookList {
+  events: WebhookEvent[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+export async function getAdminWebhooks(status?: string, page = 1, perPage = 20) {
+  const params: Record<string, string | number> = { page, per_page: perPage };
+  if (status) params.status = status;
+  const res = await apiClient.get<WebhookList>("/admin/webhooks", { params });
+  return res.data;
+}
+
+// ── Enriched Stats ──
+
+export interface EnrichedStats extends PlatformStats {
+  mrr: number;
+  conversion_rate: number;
+}
+
+export async function getEnrichedStats() {
+  const res = await apiClient.get<EnrichedStats>("/admin/stats/enriched");
   return res.data;
 }
