@@ -8,7 +8,9 @@ export default function RefundPage() {
         <section>
           <h2 className="text-lg font-semibold text-foreground">Refunds</h2>
           <p>All purchases made through Codetail are processed by <a href="https://www.paddle.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Paddle</a>, our Merchant of Record. Paddle&apos;s buyer terms and refund policy apply to all transactions.</p>
-          <p>If you are not satisfied with your purchase for any reason, you may request a full refund. There are no conditions, qualifiers, or exceptions.</p>
+          <p>If you are not satisfied with your purchase for any reason, you may request a full refund within 14 days of your purchase. There are no conditions, qualifiers, or exceptions.
+          We will process your refund within 5 business days.
+          </p>
         </section>
 
         <section>
