@@ -23,7 +23,7 @@ print(type(x))    # <class 'str'>
 x = [1, 2, 3]
 print(type(x))    # <class 'list'>
 
-# x didn't change type — x just points to a different object each time`}
+# x didn't change type - x just points to a different object each time`}
         output={`<class 'int'>
 <class 'str'>
 <class 'list'>`}
@@ -40,8 +40,8 @@ print(type(x))    # <class 'list'>
 
       <p className="text-[15px] leading-relaxed text-foreground/90 mb-4">
         Python 3.5+ lets you annotate variables and function signatures with types. This is
-        purely for documentation and tooling. Python itself ignores annotations at runtime —
-        they don&apos;t enforce anything. Tools like{" "}
+        purely for documentation and tooling. Python itself ignores annotations at runtime.
+        They don&apos;t enforce anything. Tools like{" "}
         <code className="font-mono text-[13px] bg-muted px-1.5 py-0.5 rounded">mypy</code> and
         your IDE use them to catch type errors before you run the code.
       </p>
@@ -65,9 +65,9 @@ print(greet("Alice", 2))`}
 def double(n: int) -> int:
     return n * 2
 
-print(double(5))        # 10 — works as intended
-print(double("ha"))     # "haha" — Python doesn't enforce the annotation
-print(double([1, 2]))   # [1, 2, 1, 2] — same`}
+print(double(5))        # 10 - works as intended
+print(double("ha"))     # "haha" - Python doesn't enforce the annotation
+print(double([1, 2]))   # [1, 2, 1, 2] - same`}
         output={`10
 haha
 [1, 2, 1, 2]`}

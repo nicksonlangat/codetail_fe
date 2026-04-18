@@ -9,8 +9,8 @@ export function EverythingIsAnObjectSection() {
       </h2>
 
       <p className="text-[15px] leading-relaxed text-foreground/90 mb-4">
-        In Python, every value is an object. Numbers, strings, functions, classes, modules —
-        all objects. This isn&apos;t just philosophy: it means every value in Python has three
+        In Python, every value is an object: numbers, strings, functions, classes, modules.
+        This isn&apos;t just philosophy: it means every value in Python has three
         things attached to it.
       </p>
 
@@ -49,7 +49,7 @@ print(id(x))      # memory address, e.g. 9788576
 print(type(x))    # <class 'int'>
 print(x)          # 42
 
-# Works for every object — even functions
+# Works for every object, even functions
 def greet(): pass
 
 print(type(greet))   # <class 'function'>
@@ -89,11 +89,11 @@ print(id(greet))     # functions have identities too`}
 b = [1, 2, 3]   # same values, different object
 c = a           # same object
 
-print(a == b)   # True  — same value
-print(a is b)   # False — different objects
+print(a == b)   # True  - same value
+print(a is b)   # False - different objects
 
-print(a == c)   # True  — same value
-print(a is c)   # True  — same object`}
+print(a == c)   # True  - same value
+print(a is c)   # True  - same object`}
         output={`True
 False
 True
@@ -105,7 +105,7 @@ True`}
           <strong>Rule:</strong> use <code className="font-mono text-[12px] bg-muted px-1 py-0.5 rounded">==</code> to
           compare values. Use{" "}
           <code className="font-mono text-[12px] bg-muted px-1 py-0.5 rounded">is</code> only when
-          you specifically mean "same object" — most commonly{" "}
+          you specifically mean "same object", most commonly{" "}
           <code className="font-mono text-[12px] bg-muted px-1 py-0.5 rounded">x is None</code>.
           Using <code className="font-mono text-[12px] bg-muted px-1 py-0.5 rounded">is</code> to
           compare integers or strings can silently give wrong answers due to{" "}

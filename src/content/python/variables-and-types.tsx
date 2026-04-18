@@ -23,7 +23,7 @@ export default function VariablesAndTypesArticle() {
       <section id="introduction">
         <p className="text-[15px] leading-relaxed text-foreground/90 mb-4">
           Variables are the first thing you write in Python and the thing most tutorials explain
-          the least. The usual explanation — "a variable is a box that stores a value" — is
+          the least. The usual explanation ("a variable is a box that stores a value") is
           wrong enough to cause real confusion later.
         </p>
         <p className="text-[15px] leading-relaxed text-foreground/90">

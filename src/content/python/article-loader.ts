@@ -10,6 +10,8 @@ type ArticleModule = {
 const loaders: Record<string, () => Promise<ArticleModule>> = {
   "variables-and-types": () => import("./variables-and-types") as Promise<ArticleModule>,
   strings: () => import("./strings") as Promise<ArticleModule>,
+  "numbers-and-math": () => import("./numbers-and-math") as Promise<ArticleModule>,
+  "booleans-and-conditions": () => import("./booleans-and-conditions") as Promise<ArticleModule>,
 };
 
 export async function loadArticle(slug: string): Promise<ArticleModule | null> {

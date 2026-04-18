@@ -24,11 +24,11 @@ export function TypeConversionSection() {
 
 # type() checks the exact type
 print(type(x) == bool)    # True
-print(type(x) == int)     # False — even though True is stored as 1
+print(type(x) == int)     # False - even though True is stored as 1
 
 # isinstance() checks the type and its parents
 print(isinstance(x, bool))   # True
-print(isinstance(x, int))    # Also True — bool is a subclass of int
+print(isinstance(x, int))    # Also True - bool is a subclass of int
 
 # isinstance() handles multiple types at once
 def process(value):
@@ -57,7 +57,7 @@ HI`}
       <CodeBlock
         code={`# str → int
 int("42")       # 42
-int("  10  ")   # 10 — strips whitespace
+int("  10  ")   # 10 - strips whitespace
 
 # str → float
 float("3.14")   # 3.14
@@ -67,16 +67,16 @@ str(42)         # "42"
 str(3.14)       # "3.14"
 
 # int ↔ float
-int(3.9)        # 3 — truncates toward zero, does NOT round
+int(3.9)        # 3 - truncates toward zero, does NOT round
 float(7)        # 7.0
 
 # anything → bool
 bool(1)         # True
 bool(0)         # False
 bool("hello")   # True
-bool("")        # False — empty string is falsy
+bool("")        # False - empty string is falsy
 bool([1, 2])    # True
-bool([])        # False — empty list is falsy`}
+bool([])        # False - empty list is falsy`}
       />
 
       <div className="border-l-2 border-warning bg-warning/5 pl-4 py-3 rounded-r-lg mt-4 mb-6">
@@ -100,7 +100,7 @@ bool([])        # False — empty list is falsy`}
 
       <CodeBlock
         code={`int("hello")    # ValueError: invalid literal for int()
-int("3.14")     # ValueError — use float() first, then int()
+int("3.14")     # ValueError - use float() first, then int()
 int(None)       # TypeError: int() argument must be a string or number
 
 # The safe pattern: try/except
@@ -122,8 +122,8 @@ None`}
 
       <p className="text-[15px] leading-relaxed text-foreground/90 mb-4">
         Every Python object has a boolean interpretation. You don&apos;t have to write{" "}
-        <code className="font-mono text-[13px] bg-muted px-1.5 py-0.5 rounded">if len(items) &gt; 0</code>{" "}
-        — you can write{" "}
+        <code className="font-mono text-[13px] bg-muted px-1.5 py-0.5 rounded">if len(items) &gt; 0</code>.
+        Just write{" "}
         <code className="font-mono text-[13px] bg-muted px-1.5 py-0.5 rounded">if items</code>.
         The rule is simple: empty and zero-like values are falsy, everything else is truthy.
       </p>
@@ -185,7 +185,7 @@ name = "  "
 if name.strip():
     print("has name")
 else:
-    print("blank name")    # this runs — "  ".strip() → ""
+    print("blank name")    # this runs - "  ".strip() is ""
 
 # Common pattern: default value
 user_input = ""
