@@ -46,12 +46,12 @@ export function WhatIsAVariableSection() {
 
       <CodeBlock
         code={`a = [1, 2, 3]
-b = a           # b points to the SAME list — not a copy
+b = a           # b points to the SAME list, not a copy
 
 b.append(4)
-print(a)        # [1, 2, 3, 4] — a sees the change
+print(a)        # [1, 2, 3, 4] - a sees the change
 print(b)        # [1, 2, 3, 4]
-print(a is b)   # True — they're the same object`}
+print(a is b)   # True - same object`}
         output={`[1, 2, 3, 4]
 [1, 2, 3, 4]
 True`}
@@ -64,12 +64,12 @@ True`}
 
       <CodeBlock
         code={`a = [1, 2, 3]
-b = a.copy()    # a real copy — new object
+b = a.copy()    # a real copy, new object
 
 b.append(4)
-print(a)        # [1, 2, 3] — unchanged
+print(a)        # [1, 2, 3] - unchanged
 print(b)        # [1, 2, 3, 4]
-print(a is b)   # False — different objects`}
+print(a is b)   # False - different objects`}
         output={`[1, 2, 3]
 [1, 2, 3, 4]
 False`}
@@ -87,9 +87,9 @@ False`}
         code={`a = 10
 b = a
 
-b = b + 1       # creates a NEW integer object (20 → wait, 11)
-print(a)        # 10 — unchanged
-print(b)        # 11 — b now points to a different object`}
+b = b + 1       # creates a NEW integer object
+print(a)        # 10 - unchanged
+print(b)        # 11 - b now points to a different object`}
         output={`10
 11`}
       />

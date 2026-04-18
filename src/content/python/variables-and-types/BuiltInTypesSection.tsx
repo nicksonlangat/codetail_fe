@@ -15,18 +15,18 @@ export function BuiltInTypesSection() {
 
       {/* int */}
       <h3 className="text-base font-semibold mt-8 mb-3">
-        <code className="font-mono text-primary">int</code> — whole numbers
+        <code className="font-mono text-primary">int</code>: whole numbers
       </h3>
       <p className="text-[15px] leading-relaxed text-foreground/90 mb-4">
         Python integers are exact and have no size limit. Unlike most languages, you
-        can&apos;t overflow an int in Python — it grows to fit whatever you need.
+        can&apos;t overflow an int in Python. It grows to fit whatever you need.
       </p>
       <CodeBlock
         code={`age = 30
 count = -7
-big = 1_000_000_000   # underscores for readability — same as 1000000000
+big = 1_000_000_000   # underscores for readability, same as 1000000000
 
-# No overflow — Python handles arbitrarily large integers
+# No overflow: Python handles arbitrarily large integers
 factorial_20 = 2432902008176640000
 print(factorial_20 * 100)`}
         output={`243290200817664000000`}
@@ -34,7 +34,7 @@ print(factorial_20 * 100)`}
 
       {/* float */}
       <h3 className="text-base font-semibold mt-8 mb-3">
-        <code className="font-mono text-primary">float</code> — decimal numbers
+        <code className="font-mono text-primary">float</code>: decimal numbers
       </h3>
       <p className="text-[15px] leading-relaxed text-foreground/90 mb-4">
         Floats represent numbers with decimal points using IEEE 754 double precision. They&apos;re
@@ -62,7 +62,7 @@ False`}
 
       {/* str */}
       <h3 className="text-base font-semibold mt-8 mb-3">
-        <code className="font-mono text-primary">str</code> — text
+        <code className="font-mono text-primary">str</code>: text
       </h3>
       <p className="text-[15px] leading-relaxed text-foreground/90 mb-4">
         An <Term term="immutable">immutable</Term> <Term term="sequence">sequence</Term> of{" "}
@@ -80,13 +80,13 @@ print(type(name))   # <class 'str'>`}
 
       {/* bool */}
       <h3 className="text-base font-semibold mt-8 mb-3">
-        <code className="font-mono text-primary">bool</code> — true or false
+        <code className="font-mono text-primary">bool</code>: true or false
       </h3>
       <p className="text-[15px] leading-relaxed text-foreground/90 mb-4">
         Booleans represent truth values. There are exactly two:{" "}
         <code className="font-mono text-[13px] bg-muted px-1.5 py-0.5 rounded">True</code> and{" "}
         <code className="font-mono text-[13px] bg-muted px-1.5 py-0.5 rounded">False</code>.
-        The capitalization matters — lowercase versions are just undefined names.
+        The capitalization matters: lowercase versions are just undefined names.
       </p>
       <CodeBlock
         code={`is_active = True
@@ -115,7 +115,7 @@ print(int(False))     # 0`}
 
       {/* None */}
       <h3 className="text-base font-semibold mt-8 mb-3">
-        <code className="font-mono text-primary">None</code> — the absence of a value
+        <code className="font-mono text-primary">None</code>: the absence of a value
       </h3>
       <p className="text-[15px] leading-relaxed text-foreground/90 mb-4">
         <code className="font-mono text-[13px] bg-muted px-1.5 py-0.5 rounded">None</code> is
@@ -133,7 +133,7 @@ def say_hello():
 
 x = say_hello()
 print(x)            # None
-print(x is None)    # True — use "is", not "=="
+print(x is None)    # True - use "is", not "=="
 
 # Common pattern: optional parameter
 def connect(host, port=None):

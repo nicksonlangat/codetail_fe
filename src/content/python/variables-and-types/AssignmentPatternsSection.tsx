@@ -39,20 +39,20 @@ hello world`}
       <h3 className="text-base font-semibold mt-8 mb-3">Multiple assignment</h3>
       <p className="text-[15px] leading-relaxed text-foreground/90 mb-4">
         Assign the same value to several names in one line. Note that this binds all names to
-        the <em>same</em> object — fine for immutables, potentially confusing for mutables.
+        the <em>same</em> object, fine for immutables but potentially confusing for mutables.
       </p>
       <CodeBlock
         code={`x = y = z = 0      # all three names point to the same 0
 print(x, y, z)     # 0 0 0
 
-# Fine for immutables — 0 can't be mutated
+# Fine for immutables, 0 can't be mutated
 x += 1
-print(x, y, z)     # 1 0 0 — x now points to a different object
+print(x, y, z)     # 1 0 0 - x now points to a different object
 
 # Be careful with mutables
 a = b = []         # both point to the SAME list
 a.append(1)
-print(a, b)        # [1] [1] — surprise!`}
+print(a, b)        # [1] [1] - surprise!`}
         output={`0 0 0
 1 0 0
 [1] [1]`}
@@ -61,7 +61,7 @@ print(a, b)        # [1] [1] — surprise!`}
       <h3 className="text-base font-semibold mt-8 mb-3">Tuple unpacking</h3>
       <p className="text-[15px] leading-relaxed text-foreground/90 mb-4">
         Assign multiple values in one line by unpacking from a tuple, list, or any iterable.
-        The number of names must match the number of values — unless you use a star to capture
+        The number of names must match the number of values. Use a star to capture
         the rest.
       </p>
       <CodeBlock
@@ -104,12 +104,12 @@ print(middle)       # [2, 3, 4]`}
 
 text = "Order #12345 placed"
 
-# Without walrus — runs the regex twice
+# Without walrus: runs the regex twice
 if re.search(r"\d+", text):
     match = re.search(r"\d+", text)
     print(match.group())
 
-# With walrus — assign and test in one step
+# With walrus: assign and test in one step
 if match := re.search(r"\d+", text):
     print(match.group())    # "12345"
 
