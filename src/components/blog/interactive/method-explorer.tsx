@@ -140,9 +140,12 @@ export function MethodExplorer({ methods, categories }: MethodExplorerProps) {
               {selected.examples.length > 1 && (
                 <div className="flex gap-1.5 flex-wrap">
                   {selected.examples.map((ex, i) => (
-                    <button
+                    <motion.button
                       key={i}
                       onClick={() => setActiveExample(i)}
+                      whileHover={{ scale: 1.05, y: -1 }}
+                      whileTap={{ scale: 0.95 }}
+                      transition={spring}
                       className={cn(
                         "px-2.5 py-1 text-[10px] rounded transition-all duration-500 cursor-pointer",
                         activeExample === i
@@ -151,7 +154,7 @@ export function MethodExplorer({ methods, categories }: MethodExplorerProps) {
                       )}
                     >
                       {ex.label}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               )}
