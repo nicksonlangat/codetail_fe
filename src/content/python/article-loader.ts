@@ -16,6 +16,7 @@ const loaders: Record<string, () => Promise<ArticleModule>> = {
   tuples: () => import("./tuples") as Promise<ArticleModule>,
   dictionaries: () => import("./dictionaries") as Promise<ArticleModule>,
   sets: () => import("./sets") as Promise<ArticleModule>,
+  loops: () => import("./loops") as Promise<ArticleModule>,
 };
 
 export async function loadArticle(slug: string): Promise<ArticleModule | null> {
