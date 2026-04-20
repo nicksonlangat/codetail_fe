@@ -1,4 +1,5 @@
 import { CodeBlock } from "@/components/blog/interactive/code-block";
+import { Term } from "@/components/blog/interactive/term";
 
 export function ComprehensionsSection() {
   return (
@@ -8,9 +9,19 @@ export function ComprehensionsSection() {
       </h2>
 
       <p className="text-[15px] leading-relaxed text-foreground/90 mb-4">
-        A list comprehension builds a new list from an iterable in a single expression.
-        It&apos;s faster than a loop, more readable for simple transformations, and one of
-        the most distinctly Pythonic features in the language.
+        A list comprehension builds a new list from an{" "}
+        <Term term="iterable">iterable</Term>{" "}
+        in a single expression. It is faster than a loop, more readable for simple
+        transformations, and one of the most distinctly Pythonic features in the language.
+      </p>
+
+      <p className="text-[15px] leading-relaxed text-foreground/90 mb-4">
+        The speed difference comes from how Python runs them. A regular loop calls{" "}
+        <code className="font-mono text-[13px] bg-muted px-1.5 py-0.5 rounded">.append()</code>{" "}
+        on every iteration. Each call is a Python-level method lookup and function
+        invocation. A comprehension skips that entirely. Python handles the whole loop
+        internally in C, using a single optimized bytecode instruction to add each item.
+        The more items you process, the wider the gap.
       </p>
 
       <CodeBlock
@@ -58,6 +69,16 @@ print(non_empty)   # ['hello', 'world', 'python']`}
       />
 
       <h3 className="text-base font-semibold mt-8 mb-3">Nested comprehensions</h3>
+
+      <p className="text-[15px] leading-relaxed text-foreground/90 mb-4">
+        When a comprehension has multiple{" "}
+        <code className="font-mono text-[13px] bg-muted px-1.5 py-0.5 rounded">for</code>{" "}
+        clauses, the order trips people up. The rule is simple: write the{" "}
+        <code className="font-mono text-[13px] bg-muted px-1.5 py-0.5 rounded">for</code>{" "}
+        clauses in exactly the same order you would write the nested loops, top to bottom.
+        Outer loop first, inner loop second.
+      </p>
+
       <CodeBlock
         code={`# Flatten a 2D list
 matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
@@ -74,25 +95,34 @@ print(variants)
 [('red', 'S'), ('red', 'M'), ('red', 'L'), ('green', 'S'), ('green', 'M'), ('green', 'L')]`}
       />
 
-      <h3 className="text-base font-semibold mt-8 mb-3">vs map() and filter()</h3>
-      <CodeBlock
-        code={`nums = [1, 2, 3, 4, 5]
-
-# map() applies a function to each item
-doubled_map  = list(map(lambda x: x * 2, nums))
-doubled_comp = [x * 2 for x in nums]
-# Both produce [2, 4, 6, 8, 10]
-
-# filter() keeps items where the function returns True
-evens_filter = list(filter(lambda x: x % 2 == 0, nums))
-evens_comp   = [x for x in nums if x % 2 == 0]
-# Both produce [2, 4]
-
-# Comprehensions are generally preferred in Python:
-# they're more readable and don't need lambda for simple cases`}
-      />
+      <div className="border-l-2 border-primary bg-primary/5 pl-4 py-3 rounded-r-lg mt-4">
+        <p className="text-[13px] font-semibold text-foreground/80 mb-2">Formula</p>
+        <p className="text-[13px] text-foreground/70 mb-3">
+          Translate stacked loops into a comprehension by reading top to bottom, left to right.
+          The expression you want to collect goes at the front.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground/50 mb-1.5">Nested loops</p>
+            <pre className="font-mono text-[12px] text-foreground/80 leading-relaxed bg-muted px-3 py-2.5 rounded-lg">{`for row in matrix:   # outer
+    for x in row:    # inner
+        result.append(x)`}</pre>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground/50 mb-1.5">Comprehension</p>
+            <pre className="font-mono text-[12px] text-foreground/80 leading-relaxed bg-muted px-3 py-2.5 rounded-lg">{`[x                   # expression
+  for row in matrix  # outer
+  for x in row]      # inner`}</pre>
+          </div>
+        </div>
+      </div>
 
       <h3 className="text-base font-semibold mt-8 mb-3">When not to use comprehensions</h3>
+      <p className="text-[15px] leading-relaxed text-foreground/90 mb-4">
+        The readability advantage disappears when the logic gets complex. If you need
+        multiple conditions, nested calls, or side effects, a plain loop communicates
+        intent more clearly. Cleverness is not a virtue here.
+      </p>
       <CodeBlock
         code={`# Too complex - use a regular loop
 result = [
@@ -117,7 +147,7 @@ for item in get_items():
 
       <div className="border-l-2 border-primary bg-primary/5 pl-4 py-3 rounded-r-lg mt-3">
         <p className="text-[13px] text-foreground/70 italic">
-          If the comprehension doesn&apos;t fit on one readable line, write a loop. The goal
+          If the comprehension does not fit on one readable line, write a loop. The goal
           is code that communicates clearly, not the fewest lines.
         </p>
       </div>

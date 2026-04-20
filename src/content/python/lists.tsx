@@ -3,6 +3,8 @@ import { AccessingListsSection } from "./lists/AccessingListsSection";
 import { ModifyingListsSection } from "./lists/ModifyingListsSection";
 import { SortingSection } from "./lists/SortingSection";
 import { ComprehensionsSection } from "./lists/ComprehensionsSection";
+import { FilterSection } from "./lists/FilterSection";
+import { MapSection } from "./lists/MapSection";
 import { PatternsSection } from "./lists/PatternsSection";
 import { SignupBanner } from "@/components/blog/promo/signup-banner";
 
@@ -13,6 +15,8 @@ export const toc = [
   { id: "modifying-lists", title: "Modifying lists" },
   { id: "sorting", title: "Sorting" },
   { id: "comprehensions", title: "List comprehensions" },
+  { id: "filter", title: "Filtering lists" },
+  { id: "map", title: "Transforming lists" },
   { id: "real-world-patterns", title: "Real-world patterns" },
   { id: "summary", title: "Summary" },
 ];
@@ -43,6 +47,8 @@ export default function ListsArticle() {
 
       <SortingSection />
       <ComprehensionsSection />
+      <FilterSection />
+      <MapSection />
       <PatternsSection />
 
       <section>

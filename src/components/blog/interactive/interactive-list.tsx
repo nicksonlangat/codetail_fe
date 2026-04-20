@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Minus, ArrowUp, ArrowDown, Shuffle, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const spring = { type: "spring" as const, stiffness: 400, damping: 25 };
 
 type InteractiveListProps = {
   initialItems?: (string | number)[];
@@ -81,13 +83,16 @@ export function InteractiveList({ initialItems = ["apple", "banana", "cherry"], 
         <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground/60">
           Interactive List
         </span>
-        <button
+        <motion.button
           onClick={reset}
-          className="p-1.5 rounded hover:bg-secondary transition-colors"
+          whileHover={{ scale: 1.1, rotate: -15 }}
+          whileTap={{ scale: 0.9 }}
+          transition={spring}
+          className="p-1.5 rounded hover:bg-secondary transition-all duration-500 cursor-pointer"
           title="Reset"
         >
           <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
-        </button>
+        </motion.button>
       </div>
 
       {/* List visualization */}
@@ -98,10 +103,14 @@ export function InteractiveList({ initialItems = ["apple", "banana", "cherry"], 
               key={`${i}-${item}`}
               layout
               initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
+              animate={{
+                opacity: 1,
+                scale: highlightedIndex === i ? 1.1 : 1,
+                borderColor: highlightedIndex === i ? "hsl(var(--primary))" : "hsl(var(--border))",
+              }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className={cn(
+            className={cn(
                 "relative px-4 py-2 rounded-lg border text-[13px] font-mono",
                 highlightedIndex === i
                   ? "border-primary bg-primary/10"
@@ -118,25 +127,42 @@ export function InteractiveList({ initialItems = ["apple", "banana", "cherry"], 
       </div>
 
       {/* Operations */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        {operations.map((op) => (
-          <button
-            key={op.name}
-            onClick={op.action}
-            className="px-3 py-1.5 text-[11px] font-medium text-foreground bg-secondary hover:bg-secondary/80 rounded-md border border-border transition-colors"
-          >
-            {op.name}
-          </button>
-        ))}
+      <div className="mb-4">
+        <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground/50 block mb-2">
+          Try it — click an operation
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {operations.map((op) => (
+            <motion.button
+              key={op.name}
+              onClick={op.action}
+              whileHover={{ scale: 1.05, y: -1 }}
+              whileTap={{ scale: 0.95 }}
+              transition={spring}
+              className="px-3 py-1.5 text-[11px] font-medium text-foreground bg-secondary hover:bg-secondary/80 rounded-md border border-border transition-all duration-500 cursor-pointer"
+            >
+              {op.name}
+            </motion.button>
+          ))}
+        </div>
       </div>
 
       {/* Generated code */}
       {showCode && (
         <div className="bg-muted/50 rounded-lg p-3">
           <div className="text-[10px] text-muted-foreground mb-1">Current state</div>
-          <code className="text-[12px] font-mono text-foreground">
-            [{items.map((i) => typeof i === "string" ? `'${i}'` : i).join(", ")}]
-          </code>
+          <AnimatePresence mode="wait">
+            <motion.code
+              key={items.join(",")}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
+              className="text-[12px] font-mono text-foreground block"
+            >
+              [{items.map((i) => typeof i === "string" ? `'${i}'` : i).join(", ")}]
+            </motion.code>
+          </AnimatePresence>
         </div>
       )}
     </div>
