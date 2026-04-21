@@ -20,6 +20,7 @@ const loaders: Record<string, () => Promise<ArticleModule>> = {
   functions: () => import("./functions") as Promise<ArticleModule>,
   "error-handling": () => import("./error-handling") as Promise<ArticleModule>,
   "file-io": () => import("./file-io") as Promise<ArticleModule>,
+  "classes-and-oop": () => import("./classes-and-oop") as Promise<ArticleModule>,
 };
 
 export async function loadArticle(slug: string): Promise<ArticleModule | null> {
