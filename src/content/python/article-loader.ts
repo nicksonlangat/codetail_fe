@@ -18,6 +18,7 @@ const loaders: Record<string, () => Promise<ArticleModule>> = {
   sets: () => import("./sets") as Promise<ArticleModule>,
   loops: () => import("./loops") as Promise<ArticleModule>,
   functions: () => import("./functions") as Promise<ArticleModule>,
+  "error-handling": () => import("./error-handling") as Promise<ArticleModule>,
 };
 
 export async function loadArticle(slug: string): Promise<ArticleModule | null> {
