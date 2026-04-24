@@ -21,6 +21,8 @@ const loaders: Record<string, () => Promise<ArticleModule>> = {
   "error-handling": () => import("./error-handling") as Promise<ArticleModule>,
   "file-io": () => import("./file-io") as Promise<ArticleModule>,
   "classes-and-oop": () => import("./classes-and-oop") as Promise<ArticleModule>,
+  "modules-and-imports": () => import("./modules-and-imports") as Promise<ArticleModule>,
+  "standard-library-gems": () => import("./standard-library-gems") as Promise<ArticleModule>,
 };
 
 export async function loadArticle(slug: string): Promise<ArticleModule | null> {
