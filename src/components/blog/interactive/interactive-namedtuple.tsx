@@ -38,7 +38,7 @@ export function InteractiveNamedTuple() {
           NamedTuple Explorer
         </span>
         <code className="text-[10px] font-mono text-muted-foreground/40 hidden sm:block">
-          Color = namedtuple(&apos;Color&apos;, [&apos;red&apos;, &apos;green&apos;, &apos;blue&apos;])
+          Color = namedtuple('Color', ['red', 'green', 'blue'])
         </code>
       </div>
 
