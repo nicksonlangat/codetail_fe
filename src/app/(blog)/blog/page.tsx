@@ -54,6 +54,25 @@ function FastAPIIcon({ className }: { className?: string }) {
   );
 }
 
+function SystemDesignIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="2" y="3" width="6" height="5" rx="1" />
+      <rect x="9" y="3" width="6" height="5" rx="1" />
+      <rect x="16" y="3" width="6" height="5" rx="1" />
+      <rect x="5" y="13" width="6" height="5" rx="1" />
+      <rect x="13" y="13" width="6" height="5" rx="1" />
+      <line x1="5" y1="8" x2="5" y2="10" />
+      <line x1="12" y1="8" x2="12" y2="10" />
+      <line x1="19" y1="8" x2="19" y2="10" />
+      <line x1="5" y1="10" x2="19" y2="10" />
+      <line x1="8" y1="13" x2="8" y2="11.5" />
+      <line x1="16" y1="13" x2="16" y2="11.5" />
+      <line x1="8" y1="11.5" x2="16" y2="11.5" />
+    </svg>
+  );
+}
+
 /* ── Path data ── */
 
 type LearningPath = {
@@ -70,6 +89,26 @@ type LearningPath = {
 };
 
 const paths: LearningPath[] = [
+  {
+    slug: "system-design",
+    title: "System Design",
+    subtitle: "Architecture from First Principles",
+    description:
+      "How large-scale systems are actually built. Every concept from DNS resolution to database sharding — explained with interactive flow diagrams, architecture visualizers, and traffic simulators.",
+    icon: SystemDesignIcon,
+    articleCount: 15,
+    estimatedHours: 6,
+    topics: [
+      "The Request Journey",
+      "Scalability",
+      "Load Balancing",
+      "Caching",
+      "CAP Theorem",
+      "Resilience Patterns",
+    ],
+    status: "ready",
+    accentClass: "text-primary",
+  },
   {
     slug: "python",
     title: "Python",
