@@ -54,6 +54,16 @@ function FastAPIIcon({ className }: { className?: string }) {
   );
 }
 
+function ProductionAPIsIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="2" y="6" width="20" height="12" rx="2" />
+      <path d="M7 12l2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M15 10h2M15 14h2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function SystemDesignIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -170,6 +180,26 @@ const paths: LearningPath[] = [
     ],
     status: "coming-soon",
     accentClass: "text-[#092E20]",
+  },
+  {
+    slug: "production-apis",
+    title: "Production-Ready APIs",
+    subtitle: "Constraint-Driven Engineering",
+    description:
+      "Build a real API from scratch and watch it evolve under progressively tighter production constraints. SQLite to 10k RPS — every fix shown in runnable code. FastAPI, Django, and Go.",
+    icon: ProductionAPIsIcon,
+    articleCount: 10,
+    estimatedHours: 5,
+    topics: [
+      "Concurrency",
+      "Query Optimization",
+      "Auth & Security",
+      "Observability",
+      "Circuit Breakers",
+      "10k RPS",
+    ],
+    status: "ready",
+    accentClass: "text-primary",
   },
   {
     slug: "fastapi",

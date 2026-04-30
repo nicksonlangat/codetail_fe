@@ -3,6 +3,7 @@
 **Status:** Draft  
 **Author:** Codetail  
 **Created:** 2026-04-28  
+**Updated:** 2026-04-29  
 **Target start:** After System Design & Architecture series (articles 8-15) is complete  
 
 ---
@@ -39,7 +40,7 @@ Each stack gets its own independent sub-series. The constraint progression is id
 
 ### Sequencing
 
-Start with FastAPI. Validate the format with 6 articles. Then replicate the progression for Django and Go, using the FastAPI articles as the reference implementation.
+Start with FastAPI. Validate the format with 10 articles. Then replicate the progression for Django and Go, using the FastAPI articles as the reference implementation.
 
 Running all three stacks in parallel before the format is proven risks three underperforming series instead of one excellent one.
 
@@ -47,7 +48,7 @@ Running all three stacks in parallel before the format is proven risks three und
 
 ## 4. Constraint Arc (per stack)
 
-Each stack follows this six-article progression. The baseline API is identical in spirit across stacks (same 3 endpoints, same data model) but written idiomatically for each.
+Each stack follows a ten-article progression. The baseline API is identical in spirit across stacks (same 3 endpoints, same data model) but written idiomatically for each.
 
 ### The baseline API
 
@@ -80,65 +81,149 @@ Intentionally minimal: SQLite, synchronous where possible, no caching, no auth, 
 
 **Constraint:** The app must handle 100 concurrent requests without errors or timeouts.
 
-**What breaks:** SQLite cannot handle concurrent writes. Sync endpoints block the event loop (FastAPI). Connection pool exhausted immediately (Django). No health check means load balancer doesn't know the app is up.
+**What breaks:** SQLite cannot handle concurrent writes. Sync endpoints block the event loop (FastAPI). Connection pool exhausted immediately (Django). No health check means load balancer does not know the app is up.
 
 **What changes:**
-- SQLite → PostgreSQL
+- SQLite to PostgreSQL
 - Connection pooling (asyncpg for FastAPI, psycopg2 pooling for Django, pgx for Go)
 - Async endpoint rewrite (FastAPI)
 - Basic `/health` endpoint
-- `EXPLAIN ANALYZE` showing the missing index on tasks
 
 **Before/after diff:** Highlighted inline diff showing exactly what changed
 
-**Benchmark:** Simulated chart showing p50/p95/p99 latency before and after (using k6 or wrk results)
+**Benchmark:** Simulated chart showing p50/p95/p99 latency before and after
 
-**Code state:** Postgres, connection pool, async, index on `created_at` and `user_id`, `/health`
+**Code state:** Postgres, connection pool, async, `/health`
 
 ---
 
-### Article 3: Sub-100ms p95 Latency
+### Article 3: Slow Queries
 
-**Constraint:** p95 response time must be under 100ms at 100 RPS.
+**Constraint:** GET /tasks p95 exceeds 500ms once the table grows past 10,000 rows.
 
-**What breaks:** List endpoint does a full table scan. No caching on hot GET paths. JSON serialization of large result sets is slow.
+**What breaks:** The list endpoint does a full table scan. Offset pagination gets slower the further into the result set you go. No tooling to identify which queries are slow before users notice.
 
 **What changes:**
-- Redis cache for `GET /tasks/{id}` (cache-aside, 60s TTL)
-- Composite index on `(user_id, created_at DESC)` for list pagination
-- Cursor-based pagination replacing offset (avoids full scan to skip N rows)
-- Response model trimming (return only necessary fields)
-- Profiling walkthrough: how to find the slow line
+- Slow query log configuration (Postgres `log_min_duration_statement`)
+- `EXPLAIN ANALYZE` walkthrough: how to read a query plan, what a sequential scan means, when an index scan is used
+- Composite index on `(user_id, created_at DESC)` for the list endpoint
+- Cursor-based pagination replacing offset (eliminates the O(n) skip cost)
+- N+1 query detection: what it is, how to spot it in logs, how to fix it with a join or `IN` clause
 
-**Before/after diff:** The cache-aside pattern added to the GET handler, the pagination query rewritten
+**Before/after diff:** The pagination query rewritten, the N+1 collapsed into a single query
 
-**Benchmark:** Latency histogram before/after showing p95 drop
+**Benchmark:** Latency at row counts 1K / 10K / 100K / 1M before and after
 
-**Code state:** Redis cache, cursor pagination, covering index, profiling middleware
+**Code state:** Composite index, cursor pagination, no N+1 queries, slow query log enabled
 
 ---
 
-### Article 4: Zero-Downtime Deployments
+### Article 4: Authentication and Authorization
+
+**Constraint:** The API must serve multiple users and each user must only see and modify their own tasks.
+
+**What breaks:** No auth means any caller can read or modify any task. Scoping every query to `user_id` touches every endpoint. Adding a middleware layer changes request handling for the entire app.
+
+**What changes:**
+- JWT-based authentication: token generation, validation middleware, 401 on missing/invalid token
+- Every query scoped to the authenticated `user_id` (no global reads)
+- Object-level authorization: `GET /tasks/{id}` returns 403 if the task belongs to a different user (not 404 — do not leak existence)
+- Password hashing (bcrypt/argon2), no plaintext storage
+- Token refresh pattern
+
+**Before/after diff:** The middleware added, every query updated with `WHERE user_id = $1`
+
+**Security note:** IDOR (insecure direct object reference) explained: why returning 404 instead of 403 leaks information
+
+**Code state:** JWT auth, user-scoped queries, object-level authorization, password hashing
+
+---
+
+### Article 5: Observability
+
+**Constraint:** Something is wrong in production and you cannot tell what, where, or why.
+
+**What breaks:** Print statements and raw tracebacks are not searchable. No metrics means you learn about problems from users, not dashboards. No request tracing means you cannot find which step in a multi-layer request is slow.
+
+**What changes:**
+- Structured logging: every log line is JSON with `request_id`, `user_id`, `duration_ms`, `status_code` (structlog for Python, zerolog for Go)
+- Request ID propagation: generated at the edge, threaded through every log line and downstream call
+- Prometheus metrics endpoint `/metrics`: request count, latency histogram, active connections, cache hit rate
+- OpenTelemetry tracing: spans for DB queries, Redis calls, and outbound HTTP — latency visible per layer
+- Alerting thresholds: what to alert on vs what to log for later
+
+**Before/after diff:** The logging middleware, the metrics instrumentation on the DB client
+
+**Diagram:** A single request traced through structured logs, then through spans — same request, two views
+
+**Code state:** Structured JSON logs, request ID, Prometheus metrics, OpenTelemetry tracing
+
+---
+
+### Article 6: Security Hardening
+
+**Constraint:** A security audit found vulnerabilities. The API must be hardened before going public.
+
+**What breaks:** Input fields have no length or format limits beyond type checking. CORS is wide open. Security headers are absent. The user enumeration endpoint reveals whether an email exists.
+
+**What changes:**
+- Input validation: field length limits, format constraints, rejecting oversized payloads (413)
+- CORS: explicit allowed origins, no wildcard in production
+- Security headers: `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options`, `Strict-Transport-Security`
+- User enumeration: registration and password reset return identical responses for existing and non-existing emails
+- Parameterized queries audit: verify no string interpolation in any SQL (already done but explicitly validated)
+- Rate limiting on auth endpoints: stricter than the general API limit
+
+**Before/after diff:** The validation tightening, the security headers middleware
+
+**Checklist:** OWASP API Security Top 10 mapped to what is and is not addressed by this series
+
+**Code state:** Input limits, CORS policy, security headers, no user enumeration, auth rate limiting
+
+---
+
+### Article 7: Sub-100ms p95 Latency
+
+**Constraint:** p95 response time must be under 100ms at 100 RPS on all endpoints.
+
+**What breaks:** Cache misses on hot `GET /tasks/{id}` paths hit the database on every request. JSON serialization of large result sets adds tail latency. The list endpoint returns more fields than the client needs.
+
+**What changes:**
+- Redis cache for `GET /tasks/{id}` (cache-aside, TTL aligned to expected read frequency)
+- Cache invalidation on task update and delete
+- Response model trimming: list endpoint returns a subset of fields; detail endpoint returns full record
+- Profiling walkthrough: how to identify the slow line in a flamegraph
+
+**Before/after diff:** The cache-aside pattern added to the GET handler
+
+**Benchmark:** Latency histogram before and after showing p95 drop under 100ms
+
+**Code state:** Redis cache, cache invalidation, trimmed response models, profiling middleware
+
+---
+
+### Article 8: Zero-Downtime Deployments
 
 **Constraint:** Deploying a new version must not drop a single request or corrupt data.
 
-**What breaks:** Killing the process mid-request drops in-flight work. Running migrations before the new code is deployed can break the old version. No readiness probe means traffic hits a pod before it is ready.
+**What breaks:** Killing the process mid-request drops in-flight work. Running migrations before the new code is deployed can break the running version. No readiness probe means traffic hits a pod before it is ready.
 
 **What changes:**
 - Graceful shutdown: wait for in-flight requests before exit (SIGTERM handler)
-- Alembic/Django migration strategy: additive-only, never remove/rename in same deploy
+- Alembic/Django migration strategy: additive-only, never remove or rename a column in the same deploy as the code change
 - Readiness vs liveness health checks (`/health/live`, `/health/ready`)
-- The expand-contract pattern for schema changes (add column → backfill → remove old column)
+- The expand-contract pattern for schema changes: add column, backfill, then remove the old column in a later deploy
+- Large-table migrations: how to add a column or change a type on a 50M-row table without locking (concurrent index builds, batched backfills)
 
 **Before/after diff:** The SIGTERM handler, the migration split
 
-**Diagram:** Deploy timeline showing old/new version overlap period
+**Diagram:** Deploy timeline showing old/new version overlap and migration sequencing
 
 **Code state:** Graceful shutdown, dual health endpoints, expand-contract migration pattern
 
 ---
 
-### Article 5: Surviving Partial Failures
+### Article 9: Surviving Partial Failures
 
 **Constraint:** If PostgreSQL is slow or Redis is down, the API must degrade gracefully, not error completely.
 
@@ -146,7 +231,7 @@ Intentionally minimal: SQLite, synchronous where possible, no caching, no auth, 
 
 **What changes:**
 - Timeout on every database and cache operation
-- Circuit breaker pattern: after N failures, stop calling the dependency and return a fallback
+- Circuit breaker: after N failures, stop calling the dependency and return a fallback response
 - Redis failure mode: if cache is unavailable, fall through to the database (not a 500)
 - Retry with exponential backoff and jitter on idempotent operations
 - Structured error responses (`{ "error": "...", "code": "..." }`) instead of raw 500s
@@ -157,24 +242,24 @@ Intentionally minimal: SQLite, synchronous where possible, no caching, no auth, 
 
 ---
 
-### Article 6: 10,000 Requests per Second
+### Article 10: 10,000 Requests per Second
 
 **Constraint:** The API must sustain 10k RPS with p95 under 100ms and zero 5xx errors.
 
-**What breaks:** A single process cannot saturate 10k RPS. Write-heavy paths (POST /tasks) saturate the database. Synchronous background work (sending emails, webhooks) adds latency to the request path.
+**What breaks:** A single process cannot saturate 10k RPS. Write-heavy paths saturate the database. Synchronous work in the POST handler (sending emails, triggering webhooks) adds latency to the request path.
 
 **What changes:**
-- Horizontal scaling: the app is now stateless (session in Redis, uploads in S3)
-- Rate limiting: token bucket per user (Redis + Lua script), return 429 with Retry-After header
-- Background job queue: POST /tasks returns 202 Accepted, actual processing is async (Celery/RQ/goroutine worker)
-- Read replicas: list endpoint reads from replica, writes go to primary
+- Horizontal scaling: the app is now fully stateless (session in Redis, uploads in S3)
+- Rate limiting: token bucket per user (Redis + Lua script), 429 with Retry-After header
+- Background job queue: `POST /tasks` returns 202 Accepted, heavy processing is async (Celery/RQ/goroutine worker pool)
+- Read replicas: list and detail endpoints read from replica, writes go to primary
 - Load shedding: if queue depth exceeds N, return 503 immediately rather than queueing forever
 
 **Before/after diff:** The 202 Accepted pattern, the rate limit middleware
 
-**Architecture diagram:** Evolved system (LB → N app instances → Redis → Postgres primary/replica → Worker fleet)
+**Architecture diagram:** Full evolved system — LB, N app instances, Redis, Postgres primary/replica, worker fleet
 
-**Code state:** Stateless app, rate limiting, async task queue, read replica routing
+**Code state:** Stateless app, rate limiting, async task queue, read replica routing, load shedding
 
 ---
 
@@ -214,23 +299,26 @@ Each article follows a consistent structure:
 ## 6. Interactive Components Needed
 
 ### CodeDiff viewer
-Shows before/after code side by side with highlighted changed lines. Not just syntax highlighting: changed lines are visually marked with `+`/`-` and a color band. User can toggle "before" / "after" / "diff" view.
+Shows before/after code side by side with highlighted changed lines. User can toggle "before" / "after" / "diff" view. Required from article 2 onwards.
 
 ### BenchmarkChart
 Bar or line chart showing latency percentiles (p50, p95, p99) or throughput before and after the optimization. Pre-rendered with hardcoded values from actual benchmark runs.
 
 ### ArchitectureDiagram (evolving)
-Shows the system architecture as a diagram that adds components article by article. Reuses the same base diagram and adds layers: Redis appears in article 3, the worker fleet in article 6. Makes the evolution visible.
+Shows the system architecture as a diagram that adds components article by article. Makes the evolution visible across the 10-article arc.
+
+### QueryPlanViewer (new)
+Renders a simplified `EXPLAIN ANALYZE` output visually — highlights sequential scans in red, index scans in green. Needed for article 3.
 
 ### RequestTracer (stretch)
-Animated trace of a single request through the system, showing which layers it touches and where time is spent. Useful for the latency article.
+Animated trace of a single request through the system, showing which layers it touches and where time is spent. Useful for the observability article.
 
 ---
 
 ## 7. Infrastructure Requirements
 
 ### New route group
-`/blog/production-apis/[stack]/[slug]` or `/blog/[stack]/[slug]`
+`/blog/production-apis/[stack]/[slug]`
 
 Recommended: `/blog/production-apis/fastapi/the-baseline`, `/blog/production-apis/django/...`
 
@@ -240,13 +328,13 @@ Each stack gets its own `ArticleMeta[]` registry. A parent registry lists all st
 ### Series landing page
 `/blog/production-apis` — shows all three stacks, their progress, and the constraint arc as a visual timeline.
 
-Stack landing page: `/blog/production-apis/fastapi` — shows all articles for the FastAPI series.
+Stack landing page: `/blog/production-apis/fastapi` — shows all 10 articles for the FastAPI series.
 
 ### Article loader
 Same pattern as system design: `article-loader.ts` per stack with lazy imports.
 
 ### GitHub repository
-Each stack's code should live in a real GitHub repo that readers can clone. Articles link to specific commits (before state) and the PR (the fix). This makes the diff viewer grounded in real, runnable code.
+Each stack's code should live in a real GitHub repo that readers can clone. Articles link to specific commits (before state) and the PR (the fix).
 
 Repos:
 - `codetail/production-apis-fastapi`
@@ -261,21 +349,21 @@ Repos:
 
 2. **Docker**: Should the baseline article include Docker/docker-compose setup? Makes the "run it yourself" story stronger but adds setup overhead to article 1.
 
-3. **Stack order**: FastAPI → Django → Go, or FastAPI → Go → Django? Django readers are a larger audience; Go readers are more performance-focused.
+3. **Stack order**: FastAPI then Django then Go, or FastAPI then Go then Django? Django readers are a larger audience; Go readers are more performance-focused.
 
 4. **Naming**: "Production-Ready APIs", "Building Under Pressure", "Constraint-Driven Engineering", or something else?
 
-5. **Depth vs breadth**: 6 articles per stack is the minimum. Could extend to 8-10 (add auth, observability, multi-tenancy). Decide based on article 1-6 reception.
+5. **Depth vs breadth**: 10 articles per stack is the minimum viable arc. Could extend to 12 (add multi-tenancy, cost optimization). Decide based on articles 1-10 reception.
 
-6. **Shared constraint articles**: Some constraints (rate limiting, graceful shutdown) are nearly identical across stacks. Do we write each stack independently (more work, more SEO) or write one "master" article and link to stack-specific diffs?
+6. **Shared constraint articles**: Some constraints (rate limiting, graceful shutdown) are nearly identical across stacks. Write each stack independently for SEO, or write one master article and link to stack-specific diffs?
 
 ---
 
 ## 9. Success Metrics
 
-- Reader completes all 6 articles in a stack (completion rate)
-- Reader clones/forks the companion GitHub repo (engagement signal)
-- Article 6 architecture matches what the reader's production system looks like (applicability)
+- Reader completes all 10 articles in a stack (completion rate)
+- Reader clones or forks the companion GitHub repo (engagement signal)
+- Article 10 architecture matches what the reader's production system looks like (applicability)
 - Series drives referrals ("I learned X from Codetail") in developer communities
 
 ---
@@ -285,6 +373,7 @@ Repos:
 - **Prerequisite:** System Design & Architecture series articles 8-15 must be complete first (establishes the theory that the production series references)
 - **Prerequisite:** GitHub organization and repos created
 - **Prerequisite:** CodeDiff interactive component built before article 2
+- **Prerequisite:** QueryPlanViewer component built before article 3
 - **Optional prerequisite:** BenchmarkChart component (can start with static images in articles 2-3, upgrade later)
 
 ---
@@ -296,12 +385,16 @@ Repos:
 | 1 | Infrastructure: route group, registry, series landing page |
 | 2 | FastAPI article 1 (baseline) + companion repo |
 | 3 | FastAPI article 2 (100 concurrent) + CodeDiff component |
-| 4 | FastAPI article 3 (latency) + BenchmarkChart component |
-| 5 | FastAPI article 4 (zero-downtime) |
-| 6 | FastAPI article 5 (partial failures) |
-| 7 | FastAPI article 6 (10k RPS) + series retrospective |
-| 8+ | Replicate for Django (faster: format proven, reuse components) |
-| 10+ | Replicate for Go |
+| 4 | FastAPI article 3 (slow queries) + QueryPlanViewer component |
+| 5 | FastAPI article 4 (auth) |
+| 6 | FastAPI article 5 (observability) |
+| 7 | FastAPI article 6 (security) |
+| 8 | FastAPI article 7 (latency) + BenchmarkChart component |
+| 9 | FastAPI article 8 (zero-downtime) |
+| 10 | FastAPI article 9 (partial failures) |
+| 11 | FastAPI article 10 (10k RPS) + series retrospective |
+| 12+ | Replicate for Django (faster: format proven, reuse components) |
+| 15+ | Replicate for Go |
 
 ---
 
