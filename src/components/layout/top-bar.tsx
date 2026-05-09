@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard, Route,
+  LayoutDashboard, Route, Workflow,
   Settings, Plus, Search, Command, User, Bookmark,
   BarChart3, Flame, LogOut, Sun, Moon, House, ChevronRight, Shield,
 } from "lucide-react";
@@ -19,6 +19,7 @@ import { GenerateChallengeDialog } from "@/components/layout/generate-challenge-
 const navItems = [
   { icon: LayoutDashboard, label: "Home", path: "/dashboard" },
   { icon: Route, label: "Paths", path: "/paths" },
+  { icon: Workflow, label: "Canvas", path: "/canvas" },
 ];
 
 type MenuItem =
