@@ -54,6 +54,15 @@ function FastAPIIcon({ className }: { className?: string }) {
   );
 }
 
+function ConceptsIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M12 2a7 7 0 0 1 7 7c0 2.8-1.6 5.2-4 6.4V17a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-1.6A7 7 0 0 1 5 9a7 7 0 0 1 7-7z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9 21h6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function ProductionAPIsIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -197,6 +206,26 @@ const paths: LearningPath[] = [
       "Observability",
       "Circuit Breakers",
       "10k RPS",
+    ],
+    status: "ready",
+    accentClass: "text-primary",
+  },
+  {
+    slug: "concepts",
+    title: "Engineering Concepts",
+    subtitle: "Standalone Deep-Dives",
+    description:
+      "Precise, practical articles on specific backend and distributed systems concepts. Idempotency, race conditions, locking strategies, and more. Each article stands on its own.",
+    icon: ConceptsIcon,
+    articleCount: 6,
+    estimatedHours: 2,
+    topics: [
+      "Idempotency",
+      "Race Conditions",
+      "N+1 Queries",
+      "Eventual Consistency",
+      "Pagination",
+      "ACID",
     ],
     status: "ready",
     accentClass: "text-primary",
