@@ -167,7 +167,7 @@ const paths: LearningPath[] = [
       "Window Functions",
       "Indexes",
     ],
-    status: "coming-soon",
+    status: "ready",
     accentClass: "text-[#336791]",
   },
   {
