@@ -10,11 +10,39 @@ const PADDLE_ENV = (process.env.NEXT_PUBLIC_PADDLE_ENV ?? "sandbox") as "sandbox
 
 export function useCheckout() {
   const paddleRef = useRef<Paddle | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { user, setUser } = useAuthStore();
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState<string | null>(null);
+  const [success, setSuccess]   = useState(false);
 
-  // Initialize Paddle SDK
+  // Keep auth refs so the Paddle eventCallback never holds a stale closure
+  const { user, setUser } = useAuthStore();
+  const userRef    = useRef(user);
+  const setUserRef = useRef(setUser);
+  useEffect(() => { userRef.current = user; },    [user]);
+  useEffect(() => { setUserRef.current = setUser; }, [setUser]);
+
+  // Poll /payments/subscription/ until status flips to active
+  const pollForActivation = useCallback(async () => {
+    for (let i = 0; i < 10; i++) {
+      try {
+        const sub = await getSubscription();
+        if (sub.status === "active" && sub.plan === "pro") {
+          const u = userRef.current;
+          if (u) setUserRef.current({ ...u, tier: "pro" });
+          setSuccess(true);
+          return;
+        }
+      } catch { /* webhook may not have arrived yet */ }
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+  }, []);
+
+  // Keep a ref to pollForActivation so the Paddle eventCallback always
+  // calls the latest version even though it's set up once at mount time
+  const pollRef = useRef(pollForActivation);
+  useEffect(() => { pollRef.current = pollForActivation; }, [pollForActivation]);
+
+  // Initialize Paddle SDK once
   useEffect(() => {
     if (!PADDLE_TOKEN || paddleRef.current) return;
 
@@ -25,11 +53,12 @@ export function useCheckout() {
         settings: {
           displayMode: "overlay",
           theme: "dark",
+          locale: "en",
         },
       },
       eventCallback: (event) => {
         if (event.name === "checkout.completed") {
-          pollForActivation();
+          pollRef.current();
         }
       },
     }).then((paddle) => {
@@ -37,48 +66,37 @@ export function useCheckout() {
     });
   }, []);
 
-  const pollForActivation = useCallback(async () => {
-    const maxAttempts = 10;
-    const interval = 3000;
-
-    for (let i = 0; i < maxAttempts; i++) {
-      try {
-        const sub = await getSubscription();
-        if (sub.status === "active" && sub.plan === "pro") {
-          // Update user tier in auth store
-          if (user) {
-            setUser({ ...user, tier: "pro" });
-          }
-          return;
-        }
-      } catch {}
-      await new Promise((r) => setTimeout(r, interval));
-    }
-  }, [user, setUser]);
-
   const startCheckout = useCallback(async (planId: string, billingCycle: string) => {
+    if (!paddleRef.current) {
+      setError("Payment system not ready — please refresh and try again.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    setSuccess(false);
 
     try {
       const data = await createCheckout(planId, billingCycle);
 
-      // Extract transaction ID from checkout URL
-      const url = new URL(data.checkout_url);
-      const txnId = url.searchParams.get("_ptxn");
+      // The checkout_url contains _ptxn — we only need that to open the overlay.
+      // We never redirect to the URL itself.
+      const txnId = new URL(data.checkout_url).searchParams.get("_ptxn");
 
-      if (txnId && paddleRef.current) {
-        paddleRef.current.Checkout.open({ transactionId: txnId });
-      } else {
-        // Fallback: open in new tab
-        window.open(data.checkout_url, "_blank");
+      if (!txnId) {
+        setError("Invalid checkout response — missing transaction ID.");
+        return;
       }
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to start checkout");
+
+      paddleRef.current.Checkout.open({ transactionId: txnId });
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })
+        ?.response?.data?.detail ?? "Failed to start checkout. Please try again.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  return { startCheckout, loading, error };
+  return { startCheckout, loading, error, success };
 }
