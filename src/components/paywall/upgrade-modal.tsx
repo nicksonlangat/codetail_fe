@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, X, Sparkles, Zap, Code2, Database, Layout, Webhook, Flame, Bot, BookOpen, Infinity, Loader2 } from "lucide-react";
+import { CheckCircle2, X, Sparkles, Zap, Code2, Database, Layout, Webhook, Flame, Bot, BookOpen, Infinity, Loader2, AlertCircle } from "lucide-react";
 import { useEffect } from "react";
 import { useCheckout } from "@/hooks/use-checkout";
 
@@ -30,7 +30,11 @@ const paths = [
 
 export function UpgradeModal({ open, onClose, trigger }: UpgradeModalProps) {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
-  const { startCheckout, loading: checkoutLoading } = useCheckout();
+  const { startCheckout, loading: checkoutLoading, error: checkoutError, success } = useCheckout();
+
+  useEffect(() => {
+    if (success) onClose();
+  }, [success, onClose]);
 
   useEffect(() => {
     if (open) document.body.style.overflow = "hidden";
@@ -136,6 +140,13 @@ export function UpgradeModal({ open, onClose, trigger }: UpgradeModalProps) {
                 </button>
               </div>
 
+              {checkoutError && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <AlertCircle className="w-3.5 h-3.5 text-destructive flex-shrink-0" />
+                  <p className="text-[11px] text-destructive">{checkoutError}</p>
+                </div>
+              )}
+
               <motion.button
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.98 }}
@@ -144,7 +155,7 @@ export function UpgradeModal({ open, onClose, trigger }: UpgradeModalProps) {
                 onClick={() => startCheckout("pro", billingCycle)}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground text-[13px] font-semibold hover:bg-primary/90 disabled:opacity-50 cursor-pointer transition-colors duration-100">
                 {checkoutLoading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Opening checkout…</>
                 ) : (
                   <><Zap className="w-4 h-4" /> Upgrade to Pro — {billingCycle === "monthly" ? "$9/mo" : "$90/yr"}</>
                 )}

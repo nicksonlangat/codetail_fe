@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Route, Workflow,
   Settings, Plus, Search, Command, User, Bookmark,
   BarChart3, Flame, LogOut, Sun, Moon, House, ChevronRight, Shield,
+  Sparkles, Zap, CreditCard,
 } from "lucide-react";
 import { CTLogo } from "@/components/brand/logo";
 import { useTheme } from "next-themes";
@@ -15,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth-store";
 import { getStreak } from "@/lib/api/progress";
 import { GenerateChallengeDialog } from "@/components/layout/generate-challenge-dialog";
+import { UpgradeModal } from "@/components/paywall/upgrade-modal";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Home", path: "/dashboard" },
@@ -50,7 +52,9 @@ export function TopBar() {
     staleTime: 60000,
   });
   const [menuOpen, setMenuOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const isPro = user?.tier === "pro";
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -212,12 +216,51 @@ export function TopBar() {
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center flex-shrink-0">
                         <span className="text-xs font-semibold text-primary-foreground">{initials}</span>
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-medium text-foreground truncate">{user?.name ?? "Guest"}</p>
                         <p className="text-[10px] text-muted-foreground truncate">{user?.email ?? ""}</p>
+                        <div className="mt-1">
+                          {isPro ? (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full uppercase tracking-wide">
+                              <Sparkles className="w-2.5 h-2.5" /> Pro
+                            </span>
+                          ) : (
+                            <span className="inline-flex text-[9px] font-medium text-muted-foreground/60 bg-muted border border-border/50 px-1.5 py-0.5 rounded-full uppercase tracking-wide">
+                              Free
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
+
+                  {/* Upgrade nudge / Billing link */}
+                  {!isPro ? (
+                    <div className="px-2 pt-2 pb-1">
+                      <button
+                        onClick={() => { setMenuOpen(false); setUpgradeOpen(true); }}
+                        className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-primary/8 border border-primary/15 hover:bg-primary/12 cursor-pointer transition-all duration-500 group">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-3.5 h-3.5 text-primary" />
+                          <div className="text-left">
+                            <p className="text-[12px] font-semibold text-primary leading-none">Upgrade to Pro</p>
+                            <p className="text-[9px] text-primary/60 mt-0.5">Unlock all paths · $9/mo</p>
+                          </div>
+                        </div>
+                        <Zap className="w-3 h-3 text-primary/50 group-hover:text-primary transition-colors duration-500" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="px-2 pt-2 pb-1">
+                      <button
+                        onClick={() => { setMenuOpen(false); router.push("/settings?tab=billing"); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/60 border border-border/40 hover:bg-muted cursor-pointer transition-all duration-500">
+                        <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-[12px] text-foreground/80 flex-1 text-left">Billing</span>
+                        <span className="text-[9px] font-semibold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full uppercase tracking-wide">Pro</span>
+                      </button>
+                    </div>
+                  )}
 
                   {/* Menu items */}
                   <div className="py-1">
@@ -274,6 +317,7 @@ export function TopBar() {
       </header>
 
       <GenerateChallengeDialog open={generateOpen} onClose={() => setGenerateOpen(false)} />
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </>
   );
 }
