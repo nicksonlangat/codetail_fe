@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, Sparkles, Loader2 } from "lucide-react";
+import { AlertTriangle, Sparkles, Loader2, RefreshCw } from "lucide-react";
 import { TipTapRenderer } from "@/components/editors/tiptap-renderer";
-import { enrichProblem } from "@/lib/api/submissions";
+import { enrichProblem, regenerateProblem } from "@/lib/api/submissions";
 import type { ChallengeContent } from "@/types";
 
 const chipSpring = { type: "spring" as const, stiffness: 400, damping: 25 };
@@ -23,6 +23,7 @@ interface ProblemDescriptionProps {
 export function ProblemDescription({ content, meta, diffColor, typeLabel, isGenerated = false, onEnriched }: ProblemDescriptionProps) {
   const isHtml = content.description?.startsWith("<");
   const [enriching, setEnriching] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   const needsEnrichment = isGenerated && (!content.examples || content.examples.length === 0);
 
@@ -38,6 +39,18 @@ export function ProblemDescription({ content, meta, diffColor, typeLabel, isGene
     }
   };
 
+  const handleRegenerate = async () => {
+    setRegenerating(true);
+    try {
+      const updated = await regenerateProblem(content.problemId);
+      onEnriched?.(updated);
+    } catch {
+      // Silently fail — user can retry
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -48,14 +61,29 @@ export function ProblemDescription({ content, meta, diffColor, typeLabel, isGene
       <div className="px-7 py-6 space-y-5">
         {/* Title + badges */}
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold tracking-tight leading-tight">
-              {meta.title}
-            </h1>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <h1 className="text-xl font-semibold tracking-tight leading-tight">
+                {meta.title}
+              </h1>
+              {isGenerated && (
+                <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary shrink-0">
+                  AI Generated
+                </span>
+              )}
+            </div>
             {isGenerated && (
-              <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
-                AI Generated
-              </span>
+              <motion.button
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+                transition={chipSpring}
+                onClick={handleRegenerate}
+                disabled={regenerating}
+                className="shrink-0 inline-flex items-center gap-1.5 text-[11px] font-semibold text-white bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-3 py-1.5 rounded-lg cursor-pointer transition-all duration-500 shadow-sm"
+              >
+                {regenerating ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                {regenerating ? "Regenerating..." : "Regenerate"}
+              </motion.button>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -160,6 +188,7 @@ export function ProblemDescription({ content, meta, diffColor, typeLabel, isGene
             </motion.button>
           </motion.div>
         )}
+
       </div>
     </motion.div>
   );

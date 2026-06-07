@@ -25,6 +25,9 @@ export interface ProblemListItem {
   stack: string;
   concept: string;
   time_estimate: string;
+  unit: string;
+  unit_sort_order: number;
+  is_free: boolean;
   sort_order: number;
   locked: boolean;
   user_status: string | null;
@@ -83,8 +86,24 @@ export async function getPath(slug: string) {
   return res.data;
 }
 
-export async function getPathProblems(slug: string) {
-  const res = await apiClient.get<ProblemListItem[]>(`/paths/${slug}/problems`);
+export interface UnitItem {
+  unit: string;
+  label: string;
+  unit_sort_order: number;
+  total: number;
+  free: number;
+  solved: number;
+}
+
+export async function getPathUnits(slug: string) {
+  const res = await apiClient.get<UnitItem[]>(`/paths/${slug}/units`);
+  return res.data;
+}
+
+export async function getPathProblems(slug: string, unit?: string) {
+  const params: Record<string, string> = {};
+  if (unit) params.unit = unit;
+  const res = await apiClient.get<ProblemListItem[]>(`/paths/${slug}/problems`, { params });
   return res.data;
 }
 
