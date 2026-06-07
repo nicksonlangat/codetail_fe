@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { generatePractice } from "@/lib/api/submissions";
+import { getPathUnits } from "@/lib/api/paths";
 import { UpgradeModal } from "@/components/paywall/upgrade-modal";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -21,27 +23,6 @@ const types = [
   { id: "refactor", label: "Refactor" },
 ];
 
-interface TopicGroup {
-  label: string;
-  topics: string[];
-}
-
-const topicGroups: Record<string, TopicGroup[]> = {
-  python: [
-    { label: "Basics", topics: ["Strings", "Numbers", "Booleans", "Lists", "Tuples", "Dicts", "Sets"] },
-    { label: "Intermediate", topics: ["List Comprehensions", "Generators", "Iterators", "Decorators", "Context Managers"] },
-    { label: "Advanced", topics: ["OOP", "Async", "Metaclasses", "Descriptors"] },
-    { label: "Patterns", topics: ["Error Handling", "File I/O", "Recursion", "Sorting", "Searching"] },
-  ],
-  django: [
-    { label: "Models", topics: ["Fields", "Relationships", "Inheritance", "Managers", "QuerySets", "Migrations"] },
-    { label: "Views & Routing", topics: ["Function Views", "Class-Based Views", "URLs", "Middleware"] },
-    { label: "Forms & Templates", topics: ["Forms", "Validation", "Templates", "Signals"] },
-    { label: "REST Framework", topics: ["Serializers", "ViewSets", "Permissions", "Authentication", "Filtering", "Pagination"] },
-    { label: "Architecture", topics: ["Service Layer", "Clean Architecture", "Testing", "Admin"] },
-  ],
-};
-
 interface GenerateChallengeDialogProps {
   open: boolean;
   onClose: () => void;
@@ -55,13 +36,24 @@ export function GenerateChallengeDialog({ open, onClose, pathSlug, pathStack }: 
   const isPro = user?.tier === "pro";
   const [stack, setStack] = useState(pathStack || "django");
   const [selectedType, setSelectedType] = useState("write_code");
-  const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
-  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const groups = topicGroups[stack] ?? [];
-  const activeGroup = groups.find((g) => g.label === selectedLevel);
+  // Determine slug to fetch units from: prefer explicit pathSlug, else derive from stack
+  const slugForUnits = pathSlug || (stack === "python" ? "python-fundamentals" : null);
+
+  const { data: units } = useQuery({
+    queryKey: ["path-units", slugForUnits],
+    queryFn: () => getPathUnits(slugForUnits!),
+    enabled: open && !!slugForUnits,
+    staleTime: 60_000,
+  });
+
+  // Reset unit selection when stack/slug changes
+  useEffect(() => {
+    setSelectedUnit(null);
+  }, [stack, pathSlug]);
 
   useEffect(() => {
     if (open) {
@@ -80,7 +72,7 @@ export function GenerateChallengeDialog({ open, onClose, pathSlug, pathStack }: 
       const problem = await generatePractice({
         path_slug: slug,
         problem_type: selectedType,
-        concept: selectedTopic ?? undefined,
+        unit: selectedUnit ?? undefined,
       });
       onClose();
       router.push(`/challenge/${slug}/${problem.id}`);
@@ -133,22 +125,47 @@ export function GenerateChallengeDialog({ open, onClose, pathSlug, pathStack }: 
               </div>
 
               <div className="px-5 pb-5 space-y-4">
-                {/* Stack */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-medium text-muted-foreground tracking-wide uppercase">Stack</label>
-                  <div className="flex gap-2">
-                    {stacks.map((s) => (
-                      <motion.button key={s.id}
-                        whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} transition={chipSpring}
-                        onClick={() => { setStack(s.id); setSelectedLevel(null); setSelectedTopic(null); }}
-                        className={`flex-1 text-[12px] font-medium py-2 rounded-lg cursor-pointer transition-all duration-500 ${
-                          stack === s.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
-                        }`}>
-                        {s.label}
-                      </motion.button>
-                    ))}
+                {/* Stack — only show when not locked to a specific path */}
+                {!pathSlug && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-medium text-muted-foreground tracking-wide uppercase">Stack</label>
+                    <div className="flex gap-2">
+                      {stacks.map((s) => (
+                        <motion.button key={s.id}
+                          whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} transition={chipSpring}
+                          onClick={() => setStack(s.id)}
+                          className={`flex-1 text-[12px] font-medium py-2 rounded-lg cursor-pointer transition-all duration-500 ${
+                            stack === s.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
+                          }`}>
+                          {s.label}
+                        </motion.button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* Unit selector — required when the path has units */}
+                {units && units.length > 0 && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-medium text-muted-foreground tracking-wide uppercase">Unit</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {units.map((u) => (
+                        <motion.button
+                          key={u.unit}
+                          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                          transition={chipSpring}
+                          onClick={() => setSelectedUnit(u.unit)}
+                          className={`text-[11px] font-medium px-3 py-1.5 rounded-lg cursor-pointer transition-all duration-500 ${
+                            selectedUnit === u.unit
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground hover:text-foreground"
+                          }`}>
+                          {u.label}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Type */}
                 <div className="space-y-1.5">
@@ -167,66 +184,6 @@ export function GenerateChallengeDialog({ open, onClose, pathSlug, pathStack }: 
                   </div>
                 </div>
 
-                {/* Level */}
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-medium text-muted-foreground tracking-wide uppercase">Level</label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {groups.map((g) => (
-                      <motion.button key={g.label}
-                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} transition={chipSpring}
-                        onClick={() => { setSelectedLevel(selectedLevel === g.label ? null : g.label); setSelectedTopic(null); }}
-                        className={`text-[11px] font-medium px-3 py-1.5 rounded-lg cursor-pointer transition-all duration-500 ${
-                          selectedLevel === g.label ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
-                        }`}>
-                        {g.label}
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Topics — appears when a level is selected */}
-                <AnimatePresence mode="wait">
-                  {activeGroup && (
-                    <motion.div
-                      key={activeGroup.label}
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <label className="text-[10px] font-medium text-muted-foreground tracking-wide uppercase">
-                            Topic <span className="normal-case text-muted-foreground/60">(optional)</span>
-                          </label>
-                          {selectedTopic && (
-                            <button onClick={() => setSelectedTopic(null)}
-                              className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer transition-colors">
-                              Clear
-                            </button>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {activeGroup.topics.map((t) => (
-                            <motion.button key={t}
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                              transition={chipSpring}
-                              onClick={() => setSelectedTopic(selectedTopic === t ? null : t)}
-                              className={`text-[11px] font-medium px-2.5 py-1 rounded-lg cursor-pointer transition-all duration-500 ${
-                                selectedTopic === t ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:text-foreground"
-                              }`}>
-                              {t}
-                            </motion.button>
-                          ))}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
                 {/* Error */}
                 <AnimatePresence>
                   {error && (
@@ -238,7 +195,7 @@ export function GenerateChallengeDialog({ open, onClose, pathSlug, pathStack }: 
                 {/* Generate */}
                 <motion.button
                   whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} transition={chipSpring}
-                  onClick={handleGenerate} disabled={generating}
+                  onClick={handleGenerate} disabled={generating || (!!units?.length && !selectedUnit)}
                   className="w-full flex items-center justify-center gap-2 text-[13px] font-medium text-primary-foreground bg-primary hover:bg-primary/90 disabled:opacity-70 py-2.5 rounded-lg shadow-sm cursor-pointer transition-colors duration-100">
                   {generating ? (
                     <><Loader2 className="w-4 h-4 animate-spin" /> Generating challenge...</>

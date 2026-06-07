@@ -42,6 +42,7 @@ export interface GenerateRequest {
   path_slug: string;
   concept?: string;
   problem_type?: string;
+  unit?: string;
 }
 
 export async function generatePractice(req: GenerateRequest) {
@@ -55,6 +56,13 @@ export async function enrichProblem(problemId: string) {
   const res = await apiClient.post<import("./paths").ProblemDetail>("/practice/enrich", {
     problem_id: problemId,
   }, { timeout: 60000 });
+  return res.data;
+}
+
+export async function regenerateProblem(problemId: string) {
+  const res = await apiClient.post<import("./paths").ProblemDetail>("/practice/regenerate", {
+    problem_id: problemId,
+  }, { timeout: 90000 });
   return res.data;
 }
 
