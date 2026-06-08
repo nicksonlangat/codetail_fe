@@ -75,6 +75,11 @@ export async function changeUserTier(userId: string, tier: string) {
   return res.data;
 }
 
+export async function activateUser(userId: string) {
+  const res = await apiClient.post(`/admin/users/${userId}/activate`);
+  return res.data;
+}
+
 export async function banUser(userId: string) {
   const res = await apiClient.post(`/admin/users/${userId}/ban`);
   return res.data;

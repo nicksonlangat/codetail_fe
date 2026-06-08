@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, Shield, Ban, Trash2, AlertTriangle } from "lucide-react";
-import { getAdminUserDetail, changeUserTier, banUser, deleteUser } from "@/lib/api/admin";
+import { X, Shield, Ban, Trash2, AlertTriangle, CheckCircle } from "lucide-react";
+import { getAdminUserDetail, changeUserTier, activateUser, banUser, deleteUser } from "@/lib/api/admin";
 
 const spring = { type: "spring" as const, stiffness: 400, damping: 25 };
 
@@ -31,6 +31,11 @@ export function UserDetailModal({ userId, onClose }: { userId: string; onClose: 
 
   const tierMutation = useMutation({
     mutationFn: (tier: string) => changeUserTier(userId, tier),
+    onSuccess: invalidateAll,
+  });
+
+  const activateMutation = useMutation({
+    mutationFn: () => activateUser(userId),
     onSuccess: invalidateAll,
   });
 
@@ -158,6 +163,20 @@ export function UserDetailModal({ userId, onClose }: { userId: string; onClose: 
                       className="text-[10px] text-primary mt-1.5">Tier updated. Email sent.</motion.p>
                   )}
                 </div>
+
+                {/* Activate — only shown for unverified users */}
+                {!user.is_verified && (
+                  <div className="pt-2 border-t border-border/30">
+                    <motion.button
+                      whileTap={{ scale: 0.97 }} transition={spring}
+                      onClick={() => activateMutation.mutate()}
+                      disabled={activateMutation.isPending || activateMutation.isSuccess}
+                      className="w-full flex items-center justify-center gap-1.5 text-[11px] font-medium py-2 rounded-lg bg-green-500/10 text-green-600 hover:bg-green-500/20 cursor-pointer transition-all duration-500 disabled:opacity-50">
+                      <CheckCircle className="w-3 h-3" />
+                      {activateMutation.isPending ? "Activating..." : activateMutation.isSuccess ? "Activated" : "Activate Account"}
+                    </motion.button>
+                  </div>
+                )}
 
                 {/* Ban + Delete */}
                 <div className="flex items-center gap-2 pt-2 border-t border-border/30">
