@@ -2,59 +2,48 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, Route, Workflow,
-  Settings, Plus, Search, Command, User, Bookmark,
-  BarChart3, Flame, LogOut, Sun, Moon, House, ChevronRight, Shield,
-  Sparkles, Zap, CreditCard,
+  Settings, LogOut, Sun, Moon,
+  Shield, Sparkles, Zap, CreditCard, Crown,
 } from "lucide-react";
 import { CTLogo } from "@/components/brand/logo";
 import { useTheme } from "next-themes";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth-store";
 import { getStreak } from "@/lib/api/progress";
-import { GenerateChallengeDialog } from "@/components/layout/generate-challenge-dialog";
 import { UpgradeModal } from "@/components/paywall/upgrade-modal";
 
-const navItems = [
+const baseNavItems = [
   { icon: LayoutDashboard, label: "Home", path: "/dashboard" },
   { icon: Route, label: "Paths", path: "/paths" },
   { icon: Workflow, label: "Canvas", path: "/canvas" },
 ];
 
-type MenuItem =
-  | { type: "separator" }
-  | { icon: typeof User; label: string; shortcut?: string; badge?: string; destructive?: boolean; href?: string };
-
-const menuItems: MenuItem[] = [
-  { icon: User, label: "Profile", shortcut: "⇧P" },
-  { icon: Settings, label: "Settings", shortcut: "⇧S", href: "/settings" },
-  { type: "separator" },
-  { icon: BarChart3, label: "My Progress" },
-  { icon: Bookmark, label: "Saved Problems" },
-  { icon: Flame, label: "Streak", badge: "__streak__" },
-  { type: "separator" },
-  { icon: LogOut, label: "Log out", destructive: true },
-];
+const spring = { type: "spring" as const, stiffness: 400, damping: 30 };
 
 export function TopBar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const { resolvedTheme, setTheme } = useTheme();
-  const [generateOpen, setGenerateOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const isPro = user?.tier === "pro";
+  const navItems = user?.is_admin
+    ? [...baseNavItems, { icon: Shield, label: "Admin", path: "/admin" }]
+    : baseNavItems;
+
   const { data: streak } = useQuery({
     queryKey: ["streak"],
     queryFn: getStreak,
     enabled: !!user,
     staleTime: 60000,
   });
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const isPro = user?.tier === "pro";
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -66,34 +55,11 @@ export function TopBar() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Build breadcrumbs for path/challenge routes
-  const breadcrumbs = useMemo(() => {
-    const segments = pathname.split("/").filter(Boolean);
-
-    // /paths/:slug → Home > Path Name
-    if (segments[0] === "paths" && segments[1]) {
-      const pathSlug = segments[1];
-      const pathName = pathSlug.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
-      return [
-        { label: "Home", href: "/dashboard", icon: true },
-        { label: "Paths", href: "/paths", icon: false },
-        { label: pathName, href: `/paths/${pathSlug}`, icon: false },
-      ];
-    }
-
-    // /challenge/:pathSlug/:problemId → Home > Path Name > Problem (shown on challenge page's own topbar)
-    // TopBar is hidden on challenge pages (they have their own), but just in case:
-    if (segments[0] === "challenge" && segments[1]) {
-      const pathSlug = segments[1];
-      const pathName = pathSlug.split("-").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ");
-      return [
-        { label: "Home", href: "/dashboard", icon: true },
-        { label: pathName, href: `/paths/${pathSlug}`, icon: false },
-      ];
-    }
-
-    return [];
-  }, [pathname]);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const initials = user?.name
     ?.split(" ")
@@ -104,219 +70,165 @@ export function TopBar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full py-2.5 px-4">
-        <div className="max-w-5xl mx-auto flex items-center h-11 px-4 lg:px-5 gap-5 bg-card/90 backdrop-blur-md border border-border/60 rounded-xl">
+      <header className={`sticky top-0 z-50 w-full py-3 px-4 transition-all duration-300 ${scrolled ? "bg-background/80 backdrop-blur-xl border-b border-border/40" : ""}`}>
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+
           {/* Logo */}
-          <Link href="/dashboard" className="flex items-center gap-2 flex-shrink-0">
-            <CTLogo size={22} variant="primary" />
-            <span className="text-[13px] font-semibold tracking-tight text-foreground">
+          <Link href="/dashboard" className="flex items-center gap-2 shrink-0 cursor-pointer">
+            <CTLogo size={26} variant="primary" />
+            <span className="text-[15px] font-semibold tracking-tight">
               code<span className="text-primary">tail</span>
             </span>
           </Link>
 
-          {/* Nav — normal items or breadcrumb depending on route */}
-          <div className="flex-1 flex justify-center">
-            <nav className="hidden md:flex items-center gap-0.5">
-              {breadcrumbs.length > 0 ? (
-                <AnimatePresence mode="popLayout" initial={false}>
-                  {breadcrumbs.map((crumb, i) => {
-                    const isLast = i === breadcrumbs.length - 1;
-                    return (
-                      <motion.div key={`${crumb.label}-${i}`}
-                        className="flex items-center gap-0 flex-shrink-0"
-                        initial={{ opacity: 0, x: 8, scale: 0.95 }}
-                        animate={{ opacity: 1, x: 0, scale: 1 }}
-                        exit={{ opacity: 0, x: 8, scale: 0.95 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 25, delay: i * 0.04 }}
-                        layout>
-                        {i > 0 && <ChevronRight className="w-3 h-3 text-muted-foreground/40 mx-1.5 flex-shrink-0" />}
-                        <Link href={crumb.href}
-                          className={`flex items-center gap-1.5 text-[12px] relative py-0.5 cursor-pointer transition-all duration-500 ${
-                            isLast ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
-                          }`}>
-                          {crumb.icon && <House className="w-3 h-3" />}
-                          <span>{crumb.label}</span>
-                          {isLast && (
-                            <motion.div className="absolute -bottom-0.5 left-0 right-0 h-[1.5px] bg-primary rounded-full"
-                              layoutId="breadcrumb-underline"
-                              transition={{ type: "spring", stiffness: 400, damping: 25 }} />
-                          )}
-                        </Link>
-                      </motion.div>
-                    );
-                  })}
-                </AnimatePresence>
-              ) : (
-                navItems.map((item) => {
-                  const active = pathname.startsWith(item.path);
-                  const Icon = item.icon;
-                  return (
-                    <Link key={item.path} href={item.path}
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] cursor-pointer transition-colors duration-75 ${
-                        active
-                          ? "bg-secondary text-foreground font-medium"
-                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                      }`}>
-                      <Icon className="w-3.5 h-3.5" />
-                      {item.label}
-                    </Link>
-                  );
-                })
-              )}
-            </nav>
+          {/* Segmented tab control */}
+          <div className="flex items-center gap-0.5">
+            {navItems.map((item) => {
+              const active = pathname.startsWith(item.path);
+              const Icon = item.icon;
+              return (
+                <Link key={item.path} href={item.path} className="relative cursor-pointer">
+                  <div className={`relative flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium transition-colors duration-150 ${
+                    active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}>
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{item.label}</span>
+                    {active && (
+                      <motion.div
+                        layoutId="tab-underline"
+                        className="absolute bottom-0 left-3 right-3 h-[1.5px] bg-primary rounded-full"
+                        transition={spring}
+                      />
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
 
-          {/* Search */}
-          <button className="hidden sm:flex items-center gap-2 text-[11px] text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-md hover:bg-secondary cursor-pointer transition-colors duration-75 ring-1 ring-border/40">
-            <Search className="w-3 h-3" />
-            <span>Search...</span>
-            <kbd className="flex items-center gap-0.5 text-[9px] text-muted-foreground/60 ml-2">
-              <Command className="w-2.5 h-2.5" />K
-            </kbd>
-          </button>
-
-          {/* Theme toggle */}
-          <button onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50 cursor-pointer transition-colors duration-75">
-            <Sun className="w-4 h-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute w-4 h-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-          </button>
-
-          {/* New Challenge */}
-          <button onClick={() => setGenerateOpen(true)}
-            className="flex items-center gap-1.5 text-[12px] font-medium text-primary-foreground bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-lg shadow-sm cursor-pointer transition-all duration-100">
-            <Plus className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">New Challenge</span>
-          </button>
-
-          {/* Settings */}
-          <Link href="/settings"
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50 cursor-pointer transition-colors duration-75">
-            <Settings className="w-4 h-4" />
-          </Link>
-
-          {/* Avatar + Dropdown */}
-          <div className="relative" ref={menuRef}>
-            <button onClick={() => setMenuOpen(!menuOpen)}
-              className="w-6 h-6 rounded-full bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center shadow-sm hover:shadow-md cursor-pointer transition-all duration-100 ring-2 ring-transparent hover:ring-primary/20">
-              <span className="text-[10px] font-medium text-primary-foreground">{initials}</span>
-            </button>
-
-            <AnimatePresence>
-              {menuOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 4, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 4, scale: 0.97 }}
-                  transition={{ duration: 0.12, ease: [0.25, 0.1, 0.25, 1] }}
-                  className="absolute right-0 top-full mt-1.5 w-56 z-50 bg-card border border-border/60 rounded-lg overflow-hidden shadow-lg">
-                  {/* User info */}
-                  <div className="px-3 py-3 border-b border-border/50">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/80 to-primary flex items-center justify-center flex-shrink-0">
-                        <span className="text-xs font-semibold text-primary-foreground">{initials}</span>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-medium text-foreground truncate">{user?.name ?? "Guest"}</p>
-                        <p className="text-[10px] text-muted-foreground truncate">{user?.email ?? ""}</p>
-                        <div className="mt-1">
-                          {isPro ? (
-                            <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full uppercase tracking-wide">
-                              <Sparkles className="w-2.5 h-2.5" /> Pro
-                            </span>
-                          ) : (
-                            <span className="inline-flex text-[9px] font-medium text-muted-foreground/60 bg-muted border border-border/50 px-1.5 py-0.5 rounded-full uppercase tracking-wide">
-                              Free
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Upgrade nudge / Billing link */}
-                  {!isPro ? (
-                    <div className="px-2 pt-2 pb-1">
-                      <button
-                        onClick={() => { setMenuOpen(false); setUpgradeOpen(true); }}
-                        className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-primary/8 border border-primary/15 hover:bg-primary/12 cursor-pointer transition-all duration-500 group">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="w-3.5 h-3.5 text-primary" />
-                          <div className="text-left">
-                            <p className="text-[12px] font-semibold text-primary leading-none">Upgrade to Pro</p>
-                            <p className="text-[9px] text-primary/60 mt-0.5">Unlock all paths · $9/mo</p>
-                          </div>
-                        </div>
-                        <Zap className="w-3 h-3 text-primary/50 group-hover:text-primary transition-colors duration-500" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="px-2 pt-2 pb-1">
-                      <button
-                        onClick={() => { setMenuOpen(false); router.push("/settings?tab=billing"); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/60 border border-border/40 hover:bg-muted cursor-pointer transition-all duration-500">
-                        <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
-                        <span className="text-[12px] text-foreground/80 flex-1 text-left">Billing</span>
-                        <span className="text-[9px] font-semibold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full uppercase tracking-wide">Pro</span>
-                      </button>
-                    </div>
+          {/* Right — avatar only */}
+          <div className="flex items-center shrink-0" ref={menuRef}>
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-secondary cursor-pointer transition-all duration-150 group"
+              >
+                <div className="w-5 h-5 rounded-full bg-linear-to-br from-primary/80 to-primary flex items-center justify-center shrink-0">
+                  <span className="text-[9px] font-semibold text-primary-foreground leading-none">{initials}</span>
+                </div>
+                <div className="flex flex-col items-start leading-none">
+                  <span className="text-[12px] font-medium text-foreground/80 group-hover:text-foreground transition-colors duration-150 max-w-20 truncate">
+                    {user?.name?.split(" ")[0] ?? ""}
+                  </span>
+                  {isPro && (
+                    <span className="flex items-center gap-0.5 mt-0.5 text-[9px] font-semibold text-primary">
+                      <Crown className="w-2.5 h-2.5" />
+                      Pro
+                    </span>
                   )}
+                </div>
+              </button>
 
-                  {/* Menu items */}
-                  <div className="py-1">
-                    {user?.is_admin && (
-                      <>
+              <AnimatePresence>
+                {menuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                    transition={{ duration: 0.13, ease: [0.25, 0.1, 0.25, 1] }}
+                    className="absolute right-0 top-full mt-2 w-56 z-50 bg-card border border-border/60 rounded-xl overflow-hidden shadow-lg"
+                  >
+                    {/* User info */}
+                    <div className="px-3 py-3 border-b border-border/50">
+                      <p className="text-[13px] font-semibold text-foreground truncate">{user?.name ?? "Guest"}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">{user?.email ?? ""}</p>
+                    </div>
+
+                    {/* Upgrade / Billing */}
+                    <div className="px-2 pt-2 pb-1">
+                      {!isPro ? (
                         <button
-                          onClick={() => { setMenuOpen(false); router.push("/admin"); }}
-                          className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] cursor-pointer transition-colors duration-75 text-primary hover:bg-primary/10">
-                          <Shield className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span className="flex-1 text-left">Admin</span>
+                          onClick={() => { setMenuOpen(false); setUpgradeOpen(true); }}
+                          className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-primary/8 border border-primary/15 hover:bg-primary/12 cursor-pointer transition-all duration-500 group"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-3.5 h-3.5 text-primary" />
+                            <div className="text-left">
+                              <p className="text-[12px] font-semibold text-primary leading-none">Upgrade to Pro</p>
+                              <p className="text-[9px] text-primary/60 mt-0.5">Unlock all paths · $9/mo</p>
+                            </div>
+                          </div>
+                          <Zap className="w-3 h-3 text-primary/50 group-hover:text-primary transition-colors duration-500" />
                         </button>
-                        <div className="h-px bg-border/50 my-1" />
-                      </>
-                    )}
-                    {menuItems.map((item, i) => {
-                      if ("type" in item) {
-                        return <div key={i} className="h-px bg-border/50 my-1" />;
-                      }
+                      ) : (
+                        <button
+                          onClick={() => { setMenuOpen(false); router.push("/settings?tab=billing"); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/60 border border-border/40 hover:bg-muted cursor-pointer transition-all duration-500"
+                        >
+                          <CreditCard className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span className="text-[12px] text-foreground/80 flex-1 text-left">Billing</span>
+                        </button>
+                      )}
+                    </div>
 
-                      const Icon = item.icon;
-                      return (
-                        <button key={i}
-                          onClick={() => {
-                            setMenuOpen(false);
-                            if (item.href) router.push(item.href);
-                            if (item.label === "Log out") { logout(); router.push("/signin"); }
-                          }}
-                          className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-[13px] cursor-pointer transition-colors duration-75 ${
-                            item.destructive
-                              ? "text-destructive hover:bg-destructive/10"
-                              : "text-foreground/80 hover:bg-secondary hover:text-foreground"
-                          }`}>
-                          <Icon className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span className="flex-1 text-left">{item.label}</span>
-                          {item.badge && (
-                            <span className="text-[10px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">
-                              {item.badge === "__streak__"
-                                ? `${streak?.current_streak ?? 0} days`
-                                : item.badge}
-                            </span>
-                          )}
-                          {item.shortcut && (
-                            <span className="text-[10px] text-muted-foreground font-mono">{item.shortcut}</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                    <div className="py-1">
+                      {user?.is_admin && (
+                        <>
+                          <button
+                            onClick={() => { setMenuOpen(false); router.push("/admin"); }}
+                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] text-primary hover:bg-primary/10 cursor-pointer transition-colors duration-75"
+                          >
+                            <Shield className="w-3.5 h-3.5 shrink-0" />
+                            <span className="flex-1 text-left">Admin</span>
+                          </button>
+                          <div className="h-px bg-border/50 my-1" />
+                        </>
+                      )}
+
+                      <button
+                        onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] text-foreground/80 hover:bg-secondary hover:text-foreground cursor-pointer transition-colors duration-75"
+                      >
+                        {resolvedTheme === "dark"
+                          ? <Sun className="w-3.5 h-3.5 shrink-0" />
+                          : <Moon className="w-3.5 h-3.5 shrink-0" />
+                        }
+                        <span className="flex-1 text-left">{resolvedTheme === "dark" ? "Light mode" : "Dark mode"}</span>
+                      </button>
+
+                      <button
+                        onClick={() => { setMenuOpen(false); router.push("/settings"); }}
+                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] text-foreground/80 hover:bg-secondary hover:text-foreground cursor-pointer transition-colors duration-75"
+                      >
+                        <Settings className="w-3.5 h-3.5 shrink-0" />
+                        <span className="flex-1 text-left">Settings</span>
+                      </button>
+
+                      {streak && streak.current_streak > 0 && (
+                        <div className="flex items-center gap-2.5 px-3 py-1.5 text-[12px] text-muted-foreground">
+                          <span className="text-sm leading-none">🔥</span>
+                          <span>{streak.current_streak} day streak</span>
+                        </div>
+                      )}
+
+                      <div className="h-px bg-border/50 my-1" />
+
+                      <button
+                        onClick={() => { setMenuOpen(false); logout(); router.push("/signin"); }}
+                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-[12px] text-destructive hover:bg-destructive/10 cursor-pointer transition-colors duration-75"
+                      >
+                        <LogOut className="w-3.5 h-3.5 shrink-0" />
+                        <span className="flex-1 text-left">Log out</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </header>
 
-      <GenerateChallengeDialog open={generateOpen} onClose={() => setGenerateOpen(false)} />
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </>
   );
