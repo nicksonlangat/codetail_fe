@@ -108,6 +108,7 @@ export interface RecentActivityItem {
   path_slug: string;
   path_title: string;
   difficulty: string;
+  unit: string;
   status: string;
   best_score: number;
   last_submission_at: string | null;

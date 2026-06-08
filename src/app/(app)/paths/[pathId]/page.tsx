@@ -7,7 +7,7 @@ import { useParams } from "next/navigation";
 import { ArrowLeft, ChevronRight, Lock, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getPath, getPathUnits } from "@/lib/api/paths";
-import { getGeneratedProblems } from "@/lib/api/submissions";
+import { getGeneratedProblems, deleteGeneratedProblem } from "@/lib/api/submissions";
 import { getIcon } from "@/lib/icons";
 import { Badge } from "@/components/ui/badge";
 import { ProblemCardList } from "@/components/paths/problem-card";
@@ -210,6 +210,10 @@ export default function PathDetailPage() {
           <ProblemCardList
             problems={generated.map((p, i) => ({ ...p, idx: i }))}
             pathSlug={slug}
+            onDelete={async (id) => {
+              await deleteGeneratedProblem(id);
+              refetchGenerated();
+            }}
           />
         ) : (
           <div className="rounded-lg border border-dashed border-border/60 p-5 text-center">

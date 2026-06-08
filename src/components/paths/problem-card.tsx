@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, Lock, CheckCircle2, Circle, Minus, ChevronRight, Loader2 } from "lucide-react";
+import { Clock, Lock, CheckCircle2, Circle, Minus, ChevronRight, Loader2, Trash2 } from "lucide-react";
 import { getProblem, type ProblemDetail } from "@/lib/api/paths";
 import { TipTapRenderer } from "@/components/editors/tiptap-renderer";
 import { UpgradeModal } from "@/components/paywall/upgrade-modal";
@@ -42,6 +42,7 @@ interface ProblemCardProps {
   pathSlug: string;
   expanded: boolean;
   onToggle: () => void;
+  onDelete?: (id: string) => void;
 }
 
 function StatusIcon({ status }: { status: string | null }) {
@@ -50,7 +51,7 @@ function StatusIcon({ status }: { status: string | null }) {
   return <Circle className="w-4 h-4 text-muted-foreground/20 flex-shrink-0" />;
 }
 
-export function ProblemCard({ problem, index, pathSlug, expanded, onToggle }: ProblemCardProps) {
+export function ProblemCard({ problem, index, pathSlug, expanded, onToggle, onDelete }: ProblemCardProps) {
   const [detail, setDetail] = useState<ProblemDetail | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -133,6 +134,15 @@ export function ProblemCard({ problem, index, pathSlug, expanded, onToggle }: Pr
           {problem.time_estimate}
         </div>
 
+        {onDelete && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(problem.id); }}
+            className="p-1 rounded hover:bg-red-500/10 text-muted-foreground/30 hover:text-red-500 transition-colors duration-150 cursor-pointer"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        )}
+
         <motion.div animate={{ rotate: expanded ? 90 : 0 }} transition={spring}>
           <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
         </motion.div>
@@ -196,9 +206,10 @@ export function ProblemCard({ problem, index, pathSlug, expanded, onToggle }: Pr
 interface ProblemCardListProps {
   problems: ProblemCardItem[];
   pathSlug: string;
+  onDelete?: (id: string) => void;
 }
 
-export function ProblemCardList({ problems, pathSlug }: ProblemCardListProps) {
+export function ProblemCardList({ problems, pathSlug, onDelete }: ProblemCardListProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
 
@@ -222,6 +233,7 @@ export function ProblemCardList({ problems, pathSlug }: ProblemCardListProps) {
               pathSlug={pathSlug}
               expanded={expandedId === problem.id}
               onToggle={() => setExpandedId(expandedId === problem.id ? null : problem.id)}
+              onDelete={onDelete}
             />
           </motion.div>
         ))}

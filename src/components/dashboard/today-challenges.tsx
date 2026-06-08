@@ -1,21 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, CheckCircle2, Code, Bug, Wrench, ListChecks, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
+import { CheckCircle2, Circle, ArrowRight, Lock } from "lucide-react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getTodayChallenges } from "@/lib/api/submissions";
 import { useAuthStore } from "@/stores/auth-store";
+import { UpgradeModal } from "@/components/paywall/upgrade-modal";
+import { GenerateChallengeDialog } from "@/components/layout/generate-challenge-dialog";
 
 const spring = { type: "spring" as const, stiffness: 400, damping: 25 };
-
-const typeConfig: Record<string, { icon: typeof Code; dot: string }> = {
-  write_code: { icon: Code, dot: "bg-primary" },
-  fix_code: { icon: Bug, dot: "bg-orange-500" },
-  refactor: { icon: Wrench, dot: "bg-purple-500" },
-  mcq: { icon: ListChecks, dot: "bg-blue-500" },
-};
 
 const diffColor: Record<string, string> = {
   easy: "text-difficulty-easy",
@@ -26,7 +21,8 @@ const diffColor: Record<string, string> = {
 export function TodayChallenges() {
   const { user } = useAuthStore();
   const isPro = user?.tier === "pro";
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [generateOpen, setGenerateOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["today-challenges"],
@@ -35,132 +31,125 @@ export function TodayChallenges() {
     staleTime: 60000,
   });
 
-  if (!isPro || isLoading) return null;
+  /* Free user */
+  if (!isPro) {
+    return (
+      <>
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">Today</span>
+          </div>
+          <div className="rounded-lg border border-border bg-card px-4 py-5 flex items-center gap-4">
+            <Lock className="w-4 h-4 text-muted-foreground/40 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-medium text-foreground">Daily challenges are a Pro feature</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Get 3 tailored problems every day, matched to your weak areas.</p>
+            </div>
+            <button
+              onClick={() => setUpgradeOpen(true)}
+              className="text-[11px] font-semibold text-primary hover:text-primary/80 cursor-pointer transition-colors shrink-0"
+            >
+              Upgrade →
+            </button>
+          </div>
+        </div>
+        <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
+      </>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">Today</span>
+        </div>
+        <div className="space-y-px">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-12 bg-muted/50 rounded animate-pulse" style={{ animationDelay: `${i * 100}ms` }} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const problems = data?.problems ?? [];
-  if (!problems.length) return null;
+  const solved = problems.filter((p) => p.attempted).length;
 
-  const attempted = problems.filter((p) => p.attempted).length;
-  const total = problems.length;
+  /* Empty state */
+  if (!problems.length) {
+    return (
+      <>
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">Today</span>
+          </div>
+          <div className="rounded-lg border border-dashed border-border px-4 py-5 flex items-center justify-between gap-4">
+            <p className="text-[12px] text-muted-foreground">No challenges queued yet.</p>
+            <button
+              onClick={() => setGenerateOpen(true)}
+              className="text-[11px] font-semibold text-primary hover:text-primary/80 cursor-pointer transition-colors shrink-0"
+            >
+              Generate one →
+            </button>
+          </div>
+        </div>
+        <GenerateChallengeDialog open={generateOpen} onClose={() => setGenerateOpen(false)} />
+      </>
+    );
+  }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3 px-1">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-3 h-3 text-primary" />
-          <h2 className="text-[10px] font-semibold uppercase tracking-widest text-primary/80">
-            Today&apos;s Challenges
-          </h2>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Progress dots */}
-          <div className="flex items-center gap-1">
-            {problems.map((p, i) => (
-              <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${
-                p.attempted ? "bg-primary" : "bg-muted"
-              }`} />
-            ))}
-          </div>
-          <span className="text-[10px] text-muted-foreground tabular-nums font-mono">
-            {attempted}/{total}
-          </span>
-        </div>
+      {/* Section header */}
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">Today</span>
+        <span className="text-[10px] font-mono tabular-nums text-muted-foreground/50">
+          {solved} / {problems.length} done
+        </span>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-4 relative">
-        {/* Timeline line */}
-        <motion.div
-          className="absolute left-[27px] top-4 bottom-4 w-[2px] bg-border/40 origin-top"
-          initial={{ scaleY: 0 }}
-          animate={{ scaleY: 1 }}
-          transition={{ ...spring, delay: 0.2 }}
-        />
+      {/* Challenge rows */}
+      <div className="rounded-lg border border-border bg-card overflow-hidden divide-y divide-border/50">
+        {problems.map((problem, i) => {
+          const pathSlug = problem.stack === "django" ? "django-models" : "python-fundamentals";
+          const done = problem.attempted;
 
-        <div className="space-y-0">
-          {problems.map((problem, i) => {
-            const config = typeConfig[problem.type] ?? typeConfig.write_code;
-            const Icon = config.icon;
-            const isHovered = hoveredIdx === i;
-            const pathSlug = problem.stack === "django" ? "django-models" : "python-fundamentals";
+          return (
+            <Link key={problem.id} href={`/challenge/${pathSlug}/${problem.id}`}>
+              <motion.div
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ ...spring, delay: i * 0.04 }}
+                className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors duration-150 cursor-pointer group"
+              >
+                {/* Status */}
+                {done
+                  ? <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
+                  : <Circle className="w-4 h-4 text-muted-foreground/30 group-hover:text-muted-foreground/60 shrink-0 transition-colors duration-150" />
+                }
 
-            return (
-              <Link key={problem.id} href={`/challenge/${pathSlug}/${problem.id}`}>
-                <motion.div
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ ...spring, delay: 0.1 + i * 0.06 }}
-                  onMouseEnter={() => setHoveredIdx(i)}
-                  onMouseLeave={() => setHoveredIdx(null)}
-                  className="relative flex items-start gap-3 py-2.5 cursor-pointer group"
-                >
-                  {/* Dot */}
-                  <motion.div
-                    animate={{ scale: isHovered ? 1.3 : 1 }}
-                    transition={spring}
-                    className={`w-[24px] h-[24px] rounded-full flex items-center justify-center flex-shrink-0 z-10 ${
-                      problem.attempted ? "bg-primary/15" : `${config.dot}/15`
-                    } transition-all duration-500`}
-                  >
-                    {problem.attempted ? (
-                      <CheckCircle2 className="w-3 h-3 text-primary" />
-                    ) : (
-                      <div className={`w-[8px] h-[8px] rounded-full ${config.dot} transition-all duration-500`} />
-                    )}
-                  </motion.div>
+                {/* Title */}
+                <span className={`text-[13px] font-medium flex-1 truncate transition-colors duration-150 ${
+                  done ? "text-muted-foreground line-through" : "text-foreground group-hover:text-primary"
+                }`}>
+                  {problem.title}
+                </span>
 
-                  {/* Content */}
-                  <motion.div
-                    animate={{ y: isHovered ? -1 : 0 }}
-                    transition={spring}
-                    className="flex-1 min-w-0"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
-                      <span className={`text-[12px] font-semibold tracking-tight truncate ${
-                        problem.attempted ? "text-muted-foreground line-through" : "text-foreground"
-                      }`}>
-                        {problem.title}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5 ml-5">
-                      <span className={`text-[10px] font-semibold ${diffColor[problem.difficulty] ?? ""}`}>
-                        {problem.difficulty}
-                      </span>
-                      {problem.concept && (
-                        <>
-                          <span className="text-muted-foreground/30">·</span>
-                          <span className="text-[10px] text-muted-foreground">{problem.concept}</span>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Hover reveal */}
-                    <AnimatePresence>
-                      {isHovered && !problem.attempted && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.15 }}
-                          className="overflow-hidden ml-5"
-                        >
-                          <span className="inline-flex items-center gap-0.5 text-[10px] text-primary font-medium mt-1">
-                            Start challenge <ArrowRight className="w-2.5 h-2.5" />
-                          </span>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-
-                  {/* Number */}
-                  <span className="text-[10px] text-muted-foreground/30 font-mono tabular-nums flex-shrink-0 pt-0.5">
-                    #{i + 1}
+                {/* Meta */}
+                <div className="flex items-center gap-3 shrink-0">
+                  {problem.concept && (
+                    <span className="text-[10px] text-muted-foreground/60 hidden sm:block">{problem.concept}</span>
+                  )}
+                  <span className={`text-[10px] font-semibold ${diffColor[problem.difficulty] ?? "text-muted-foreground"}`}>
+                    {problem.difficulty}
                   </span>
-                </motion.div>
-              </Link>
-            );
-          })}
-        </div>
+                  <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
+                </div>
+              </motion.div>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );
