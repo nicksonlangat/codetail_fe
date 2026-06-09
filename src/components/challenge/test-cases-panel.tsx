@@ -1,6 +1,20 @@
 "use client";
 
 import { CheckCircle2, XCircle, Minus } from "lucide-react";
+
+function formatInput(raw: string): string {
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+      const entries = Object.entries(parsed);
+      if (entries.length === 1) return JSON.stringify(entries[0][1]);
+      return entries.map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", ");
+    }
+  } catch {
+    // not JSON — return as-is
+  }
+  return raw;
+}
 import type { ChallengeExample } from "@/types";
 
 export interface TestCaseResult {
@@ -59,7 +73,7 @@ export function TestCasesPanel({ examples, results, running }: TestCasesPanelPro
             <div className="text-[12px] font-mono space-y-0.5 pl-5">
               <p>
                 <span className="text-muted-foreground">Input: </span>
-                <span className="text-foreground">{tc.input}</span>
+                <span className="text-foreground">{formatInput(tc.input)}</span>
               </p>
               <p>
                 <span className="text-muted-foreground">Expected: </span>
