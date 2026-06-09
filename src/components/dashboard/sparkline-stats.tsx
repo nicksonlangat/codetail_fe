@@ -2,12 +2,13 @@
 
 import { useState, useRef, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp, TrendingDown, Code2, Database, Layout, ArrowRight, Sparkles, Zap } from "lucide-react";
+import { TrendingUp, TrendingDown, Code2, Database, Layout, ArrowRight, Sparkles, Zap, Crown, Check, WandSparkles } from "lucide-react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getStats, type DayPoint } from "@/lib/api/progress";
 import { useAuthStore } from "@/stores/auth-store";
 import { GenerateChallengeDialog } from "@/components/layout/generate-challenge-dialog";
+import { UpgradeModal } from "@/components/paywall/upgrade-modal";
 
 const spring = { type: "spring" as const, stiffness: 400, damping: 25 };
 const entranceSpring = { type: "spring" as const, stiffness: 300, damping: 30 };
@@ -122,121 +123,158 @@ const starterPaths = [
   },
 ];
 
+const proPerks = [
+  "Unlimited problems across all paths",
+  "AI code reviews on every submission",
+  "Hints & model solutions",
+  "AI-generated challenges on demand",
+];
+
 /* ── Welcome state for new users ── */
 function WelcomeState() {
   const { user } = useAuthStore();
-  const firstName = user?.name?.split(" ")[0] || "there";
-  const [hoveredPath, setHoveredPath] = useState<string | null>(null);
+  const isPro = user?.tier === "pro";
   const [generateOpen, setGenerateOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={entranceSpring}
-      className="py-2"
+      className="py-2 grid grid-cols-2 gap-4"
     >
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        {/* Header */}
-        <div className="px-6 pt-6 pb-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ ...entranceSpring, delay: 0.1 }}
-            className="flex items-center gap-3 mb-3"
-          >
-            <motion.div
-              className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center"
-              animate={{ rotate: [0, 5, -5, 0] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-            >
-              <Zap className="w-5 h-5 text-primary" />
-            </motion.div>
-            <div>
-              <h2 className="text-[15px] font-semibold text-foreground">Welcome, {firstName}</h2>
-              <p className="text-[12px] text-muted-foreground">Pick a path and solve your first challenge — takes 5 minutes.</p>
-            </div>
-          </motion.div>
-        </div>
+      {/* ── Left: paths ── */}
+      <div className="flex flex-col gap-1.5">
+        {starterPaths.map((path, i) => {
+          const Icon = path.icon;
+          return (
+            <Link key={path.slug} href={`/paths/${path.slug}`}>
+              <motion.div
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ ...entranceSpring, delay: 0.1 + i * 0.06 }}
+                whileHover={{ x: 2 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border hover:border-primary/30 hover:bg-primary/2 cursor-pointer transition-all duration-300 group"
+              >
+                <div className={`w-6 h-6 rounded-md ${path.bg} flex items-center justify-center shrink-0`}>
+                  <Icon className={`w-3.5 h-3.5 ${path.color}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-medium text-foreground truncate">{path.title}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{path.description}</p>
+                </div>
+                <ArrowRight className="w-3 h-3 text-muted-foreground opacity-0 group-hover:opacity-100 group-hover:text-primary transition-all duration-300 shrink-0" />
+              </motion.div>
+            </Link>
+          );
+        })}
 
-        {/* Path cards */}
-        <div className="px-6 pb-6 grid grid-cols-3 gap-3">
-          {starterPaths.map((path, i) => {
-            const Icon = path.icon;
-            const isHovered = hoveredPath === path.slug;
-            return (
-              <Link key={path.slug} href={`/paths/${path.slug}`}>
-                <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ ...entranceSpring, delay: 0.2 + i * 0.08 }}
-                  whileHover={{ y: -3, scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onHoverStart={() => setHoveredPath(path.slug)}
-                  onHoverEnd={() => setHoveredPath(null)}
-                  className="relative rounded-lg border border-border/60 p-4 cursor-pointer transition-colors duration-500 hover:border-primary/30 overflow-hidden"
-                >
-                  {/* Subtle glow on hover */}
-                  <AnimatePresence>
-                    {isHovered && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-primary/[0.03]"
-                      />
-                    )}
-                  </AnimatePresence>
-
-                  <div className="relative">
-                    <div className={`w-8 h-8 rounded-lg ${path.bg} flex items-center justify-center mb-3`}>
-                      <Icon className={`w-4 h-4 ${path.color}`} />
-                    </div>
-                    <h3 className="text-[13px] font-semibold text-foreground mb-1">{path.title}</h3>
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">{path.description}</p>
-
-                    <motion.div
-                      className="flex items-center gap-1 mt-3 text-[11px] font-medium text-primary"
-                      animate={{ x: isHovered ? 2 : 0 }}
-                      transition={spring}
-                    >
-                      Start path
-                      <motion.span
-                        animate={{ x: isHovered ? 3 : 0 }}
-                        transition={spring}
-                      >
-                        <ArrowRight className="w-3 h-3" />
-                      </motion.span>
-                    </motion.div>
-                  </div>
-                </motion.div>
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Or generate */}
-        <div className="px-6 pb-5 flex items-center gap-2">
-          <div className="flex-1 h-px bg-border/40" />
-          <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wide">or</span>
-          <div className="flex-1 h-px bg-border/40" />
-        </div>
-
-        <div className="px-6 pb-6 flex justify-center">
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            transition={spring}
-            onClick={() => setGenerateOpen(true)}
-            className="flex items-center gap-2 text-[13px] font-medium text-primary-foreground bg-primary hover:bg-primary/90 px-5 py-2.5 rounded-lg shadow-sm cursor-pointer transition-colors duration-100"
-          >
-            <Sparkles className="w-4 h-4" />
-            Generate an AI Challenge
-          </motion.button>
-        </div>
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          transition={spring}
+          onClick={() => setGenerateOpen(true)}
+          className="flex items-center justify-center gap-1.5 text-[12px] font-semibold text-primary-foreground bg-primary hover:bg-primary/90 px-4 py-2 rounded-lg cursor-pointer transition-colors duration-200 mt-1"
+        >
+          <WandSparkles className="w-3.5 h-3.5" />
+          Or generate an AI challenge
+        </motion.button>
       </div>
 
+      {/* ── Right: Pro status or upgrade nudge ── */}
+      <motion.div
+        initial={{ opacity: 0, x: 8 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ ...entranceSpring, delay: 0.15 }}
+        className="relative rounded-xl border border-primary/25 bg-card overflow-hidden flex flex-col"
+      >
+        <div className="absolute inset-0 bg-linear-to-br from-primary/8 via-primary/3 to-transparent pointer-events-none" />
+
+        {isPro ? (
+          <>
+            <div className="relative px-5 pt-5 pb-4 border-b border-primary/10">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center">
+                  <Crown className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold text-foreground tracking-tight">You&apos;re on Pro</p>
+                  <p className="text-[10px] text-muted-foreground">Everything&apos;s unlocked</p>
+                </div>
+              </div>
+            </div>
+            <ul className="relative px-5 py-4 flex flex-col gap-2.5 flex-1">
+              {proPerks.map((perk, i) => (
+                <motion.li key={perk}
+                  initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }}
+                  transition={{ ...entranceSpring, delay: 0.2 + i * 0.05 }}
+                  className="flex items-center gap-2.5"
+                >
+                  <div className="w-4 h-4 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0">
+                    <Check className="w-2.5 h-2.5 text-primary" />
+                  </div>
+                  <span className="text-[11px] text-foreground/80 leading-snug">{perk}</span>
+                </motion.li>
+              ))}
+            </ul>
+            <div className="relative px-5 pb-5">
+              <Link href="/settings?tab=billing"
+                className="w-full flex items-center justify-center gap-2 text-[12px] font-medium text-primary bg-primary/8 border border-primary/15 hover:bg-primary/12 px-4 py-2.5 rounded-lg cursor-pointer transition-colors duration-200">
+                Manage billing
+              </Link>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="relative px-5 pt-5 pb-4 border-b border-primary/10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/20 flex items-center justify-center">
+                    <Crown className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-bold text-foreground tracking-tight">Go Pro</p>
+                    <p className="text-[10px] text-muted-foreground">Unlock the full platform</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-[18px] font-bold text-primary leading-none">$9</p>
+                  <p className="text-[9px] text-muted-foreground">/month</p>
+                </div>
+              </div>
+            </div>
+            <ul className="relative px-5 py-4 flex flex-col gap-2.5 flex-1">
+              {proPerks.map((perk, i) => (
+                <motion.li key={perk}
+                  initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }}
+                  transition={{ ...entranceSpring, delay: 0.2 + i * 0.05 }}
+                  className="flex items-center gap-2.5"
+                >
+                  <div className="w-4 h-4 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0">
+                    <Check className="w-2.5 h-2.5 text-primary" />
+                  </div>
+                  <span className="text-[11px] text-foreground/80 leading-snug">{perk}</span>
+                </motion.li>
+              ))}
+            </ul>
+            <div className="relative px-5 pb-5">
+              <motion.button
+                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={spring}
+                onClick={() => setUpgradeOpen(true)}
+                className="w-full flex items-center justify-center gap-2 text-[12px] font-semibold text-primary-foreground bg-primary hover:bg-primary/90 px-4 py-2.5 rounded-lg cursor-pointer transition-colors duration-200 shadow-[0_2px_16px_-4px_hsl(164_70%_40%/0.4)]"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                Upgrade to Pro
+              </motion.button>
+            </div>
+          </>
+        )}
+      </motion.div>
+
       <GenerateChallengeDialog open={generateOpen} onClose={() => setGenerateOpen(false)} />
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </motion.div>
   );
 }

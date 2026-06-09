@@ -1,185 +1,217 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, XCircle, Play, Clock, ArrowUp } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { motion } from "framer-motion";
+import { CheckCircle2, Circle } from "lucide-react";
 import Link from "next/link";
 import { getRecentActivity, type RecentActivityItem } from "@/lib/api/progress";
 
 const spring = { type: "spring" as const, stiffness: 400, damping: 25 };
 
-const difficultyColor: Record<string, string> = {
-  easy: "bg-green-500/15 text-green-600",
-  medium: "bg-yellow-500/15 text-yellow-600",
-  hard: "bg-red-500/15 text-red-600",
-};
-
-function StatusIcon({ status }: { status: string }) {
-  if (status === "solved") return <CheckCircle2 className="w-3 h-3 text-green-500" />;
-  if (status === "attempted") return <XCircle className="w-3 h-3 text-amber-500" />;
-  return <Play className="w-3 h-3 text-blue-500" />;
-}
-
 function timeAgo(dateStr: string | null): string {
-  if (!dateStr) return "";
+  if (!dateStr) return "—";
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return `${mins}m`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
-  if (days === 1) return "Yesterday";
-  return `${days}d ago`;
+  if (days === 1) return "1d";
+  return `${days}d`;
+}
+
+const scoreColor = (s: number) =>
+  s >= 90 ? "text-green-500" : s >= 70 ? "text-primary" : s >= 50 ? "text-yellow-600" : "text-red-500";
+
+const diffColor: Record<string, string> = {
+  easy: "text-difficulty-easy",
+  medium: "text-difficulty-medium",
+  hard: "text-difficulty-hard",
+};
+
+function groupLabel(dateStr: string): string {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return "This week";
+  if (diffDays < 14) return "Last week";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function groupItems(items: RecentActivityItem[]) {
+  const groups: { label: string; items: RecentActivityItem[] }[] = [];
+  const seen = new Map<string, number>();
+  for (const item of items) {
+    if (!item.last_submission_at) continue;
+    const label = groupLabel(item.last_submission_at);
+    if (!seen.has(label)) {
+      seen.set(label, groups.length);
+      groups.push({ label, items: [] });
+    }
+    groups[seen.get(label)!].items.push(item);
+  }
+  return groups;
 }
 
 export function ActivityTable() {
   const [items, setItems] = useState<RecentActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [allLoaded, setAllLoaded] = useState(false);
-  const [showTop, setShowTop] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const loadMore = useCallback(async () => {
-    if (loading && items.length > 0) return;
     if (allLoaded) return;
     setLoading(true);
     try {
-      const data = await getRecentActivity(10, items.length);
-      if (data.length === 0 || data.length < 10) setAllLoaded(true);
-      setItems((prev) => [...prev, ...data]);
+      const data = await getRecentActivity(15, items.length);
+      if (data.length < 15) setAllLoaded(true);
+      setItems((prev) => {
+        const seen = new Set(prev.map((p) => p.problem_id));
+        const fresh = data.filter((d) => d.last_submission_at && !seen.has(d.problem_id));
+        return [...prev, ...fresh];
+      });
     } catch {
       setAllLoaded(true);
     } finally {
       setLoading(false);
     }
-  }, [items.length, allLoaded, loading]);
+  }, [items.length, allLoaded]);
 
-  // Initial load
-  useEffect(() => {
-    loadMore();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { loadMore(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Infinite scroll observer
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    const container = containerRef.current;
-    if (!sentinel || !container) return;
-    const observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting) loadMore(); },
-      { root: container, threshold: 0.1 }
+  /* Loading skeleton */
+  if (loading && items.length === 0) {
+    return (
+      <div className="space-y-1">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">Recent</span>
+        </div>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-10 rounded bg-muted/40 animate-pulse" style={{ animationDelay: `${i * 60}ms` }} />
+        ))}
+      </div>
     );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [loadMore]);
+  }
 
-  const handleScroll = () => {
-    if (!containerRef.current) return;
-    setShowTop(containerRef.current.scrollTop > 100);
-  };
+  /* Empty state */
+  if (!loading && items.length === 0) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">Recent</span>
+        </div>
+        <p className="text-[12px] text-muted-foreground py-4">No submissions yet — solve your first problem to see activity here.</p>
+      </div>
+    );
+  }
 
-  const scrollToTop = () => {
-    containerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  if (!loading && items.length === 0) return null;
+  const groups = groupItems(items);
 
   return (
-    <div className="relative rounded-xl bg-card border border-border/50 overflow-hidden">
-      <div className="px-4 py-3 border-b border-border/50">
-        <h3 className="text-[13px] font-semibold text-foreground tracking-tight">
-          Recent Activity
-        </h3>
-        <p className="text-[11px] text-muted-foreground mt-0.5">
-          {items.length} problem{items.length !== 1 ? "s" : ""} attempted
-        </p>
+    <div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">Recent</span>
+        <span className="text-[10px] text-muted-foreground/50 tabular-nums">{items.length} submissions</span>
       </div>
 
-      <div ref={containerRef} onScroll={handleScroll} className="max-h-[340px] overflow-y-auto scroll-smooth">
-        <AnimatePresence initial={false}>
-          {items.map((item, i) => (
-            <Link key={`${item.problem_id}-${i}`} href={`/challenge/${item.path_slug}/${item.problem_id}`}>
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ ...spring, delay: i >= items.length - 10 ? (i % 10) * 0.04 : 0 }}
-                className="flex items-center gap-3 px-4 py-2.5 border-b border-border/30 transition-all duration-500 hover:bg-muted/50 cursor-pointer group"
-              >
-                {/* Status icon */}
-                <div className="flex-shrink-0">
-                  <StatusIcon status={item.status} />
-                </div>
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
+        {/* Table header */}
+        <div className="grid grid-cols-[16px_1fr_110px_90px_52px_36px_52px_52px] gap-x-3 items-center px-4 py-2 border-b border-border/50 bg-muted/20">
+          <div />
+          <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/40">Problem</span>
+          <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/40">Path</span>
+          <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/40">Unit</span>
+          <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/40">Status</span>
+          <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/40 text-right">Score</span>
+          <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/40">Level</span>
+          <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/40 text-right">When</span>
+        </div>
 
-                {/* Title + path */}
-                <div className="flex-1 min-w-0">
-                  <span className="text-[12px] font-medium text-foreground group-hover:text-primary transition-colors duration-300 truncate block">
+        {/* Grouped rows */}
+        {groups.map((group, gi) => (
+          <div key={group.label}>
+            {/* Group separator */}
+            <div className={`px-4 py-1 bg-muted/20 border-b border-border/30 ${gi > 0 ? "border-t border-border/30" : ""}`}>
+              <span className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/40">
+                {group.label}
+              </span>
+            </div>
+
+            {group.items.map((item, i) => (
+              <Link key={`${item.problem_id}-${i}`} href={`/challenge/${item.path_slug}/${item.problem_id}`}>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ ...spring, delay: i * 0.02 }}
+                  className="grid grid-cols-[16px_1fr_110px_90px_52px_36px_52px_52px] gap-x-3 items-center px-4 py-2.5 border-b border-border/20 last:border-0 hover:bg-muted/30 transition-colors duration-150 cursor-pointer group"
+                >
+                  {/* Status icon */}
+                  {item.status === "solved"
+                    ? <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                    : <Circle className="w-3.5 h-3.5 text-muted-foreground/25 group-hover:text-muted-foreground/45 transition-colors duration-150" />
+                  }
+
+                  {/* Problem title */}
+                  <span className="text-[12px] font-medium text-foreground group-hover:text-primary transition-colors duration-150 truncate">
                     {item.problem_title}
                   </span>
-                  <span className="text-[10px] text-muted-foreground/60">{item.path_title}</span>
-                </div>
 
-                {/* Score */}
-                {item.best_score > 0 && (
-                  <span className={`text-[10px] font-bold font-mono tabular-nums ${
-                    item.best_score >= 90 ? "text-green-500"
-                    : item.best_score >= 70 ? "text-primary"
-                    : item.best_score >= 50 ? "text-yellow-600"
-                    : "text-red-500"
+                  {/* Path */}
+                  <span className="text-[10px] text-muted-foreground/60 truncate">{item.path_title}</span>
+
+                  {/* Unit */}
+                  <span className="text-[10px] text-muted-foreground/50 truncate">{item.unit || "—"}</span>
+
+                  {/* Pass / Fail badge */}
+                  {item.status === "solved" ? (
+                    <span className="inline-flex items-center text-[9px] font-semibold px-1.5 py-0.5 rounded bg-green-500/10 text-green-600 border border-green-500/20 w-fit">
+                      Passed
+                    </span>
+                  ) : item.status === "attempted" ? (
+                    <span className="inline-flex items-center text-[9px] font-semibold px-1.5 py-0.5 rounded bg-red-500/10 text-red-500 border border-red-500/20 w-fit">
+                      Failed
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center text-[9px] font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border/40 w-fit">
+                      Started
+                    </span>
+                  )}
+
+                  {/* Score */}
+                  <span className={`text-[11px] font-bold font-mono tabular-nums text-right ${
+                    item.best_score > 0 ? scoreColor(item.best_score) : "text-muted-foreground/20"
                   }`}>
-                    {item.best_score}
+                    {item.best_score > 0 ? item.best_score : "—"}
                   </span>
-                )}
 
-                {/* Difficulty */}
-                <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${difficultyColor[item.difficulty] ?? ""}`}>
-                  {item.difficulty}
-                </span>
+                  {/* Difficulty */}
+                  <span className={`text-[10px] font-semibold capitalize ${diffColor[item.difficulty] ?? "text-muted-foreground"}`}>
+                    {item.difficulty}
+                  </span>
 
-                {/* Time */}
-                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/50 flex-shrink-0">
-                  <Clock className="w-3 h-3" />
-                  {timeAgo(item.last_submission_at)}
-                </span>
-              </motion.div>
-            </Link>
-          ))}
-        </AnimatePresence>
-
-        {/* Loading shimmer */}
-        {loading && (
-          <div className="px-4 py-2 space-y-2">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-8 rounded-lg bg-muted animate-pulse" style={{ animationDelay: `${i * 150}ms` }} />
+                  {/* Time */}
+                  <span className="text-[10px] text-muted-foreground/40 font-mono tabular-nums text-right">
+                    {timeAgo(item.last_submission_at)}
+                  </span>
+                </motion.div>
+              </Link>
             ))}
           </div>
-        )}
+        ))}
 
-        {/* All loaded */}
-        {allLoaded && items.length > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={spring}
-            className="px-4 py-4 text-center text-[11px] text-muted-foreground">
-            You&apos;ve seen it all
-          </motion.div>
-        )}
-
-        <div ref={sentinelRef} className="h-1" />
-      </div>
-
-      {/* Scroll to top button */}
-      <AnimatePresence>
-        {showTop && (
-          <motion.button
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.5, opacity: 0 }}
-            transition={spring}
-            onClick={scrollToTop}
-            className="cursor-pointer absolute bottom-3 right-3 w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:bg-primary/90 transition-all duration-500"
+        {/* Load more */}
+        {!allLoaded && (
+          <button
+            onClick={loadMore}
+            disabled={loading}
+            className="w-full px-4 py-2.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-colors duration-150 cursor-pointer border-t border-border/20 text-center disabled:opacity-40"
           >
-            <ArrowUp className="w-3.5 h-3.5" />
-          </motion.button>
+            {loading ? "Loading…" : "Load more"}
+          </button>
         )}
-      </AnimatePresence>
+      </div>
     </div>
   );
 }

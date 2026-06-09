@@ -92,6 +92,10 @@ export async function getGeneratedProblems(pathSlug: string) {
   return res.data;
 }
 
+export async function deleteGeneratedProblem(problemId: string) {
+  await apiClient.delete(`/practice/${problemId}`);
+}
+
 export interface HintResponse {
   hint: string;
   hint_number: number;

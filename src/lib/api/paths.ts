@@ -28,6 +28,7 @@ export interface ProblemListItem {
   unit: string;
   unit_sort_order: number;
   is_free: boolean;
+  is_generated: boolean;
   sort_order: number;
   locked: boolean;
   user_status: string | null;

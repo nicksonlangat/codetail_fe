@@ -2,14 +2,12 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getStats } from "@/lib/api/progress";
 
 const spring = { type: "spring" as const, stiffness: 400, damping: 25 };
-
-const ROWS = 7;
-const COLS = 12;
-const dayLabels = ["M", "", "W", "", "F", "", ""];
+const DAY_LABELS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
 const levelClasses = [
   "bg-muted",
@@ -21,10 +19,14 @@ const levelClasses = [
 
 function getLevel(count: number): number {
   if (count === 0) return 0;
-  if (count <= 1) return 1;
+  if (count === 1) return 1;
   if (count <= 3) return 2;
   if (count <= 5) return 3;
   return 4;
+}
+
+function isSameMonth(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
 }
 
 export function HeatmapCard() {
@@ -34,145 +36,168 @@ export function HeatmapCard() {
     staleTime: 30000,
   });
 
-  const [hover, setHover] = useState<{ col: number; row: number } | null>(null);
+  const now = new Date();
+  const [cursor, setCursor] = useState(new Date(now.getFullYear(), now.getMonth(), 1));
+  const [tooltip, setTooltip] = useState<{ day: number; count: number; x: number; y: number } | null>(null);
 
-  // Build heatmap data from API stats or generate deterministic fallback
-  const { data, monthLabels, total } = useMemo(() => {
-    const grid: number[][] = [];
-    const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - COLS * 7);
+  const isCurrentMonth = isSameMonth(cursor, now);
 
-    // Build a map of date → solved count from API data
-    const solvedMap: Record<string, number> = {};
-    if (stats?.solved_per_day) {
-      let prev = 0;
-      for (const point of stats.solved_per_day) {
-        const daily = point.value - prev;
-        if (daily > 0) solvedMap[point.date] = daily;
-        prev = point.value;
-      }
+  function prevMonth() {
+    setCursor(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+  }
+  function nextMonth() {
+    if (!isCurrentMonth) setCursor(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+  }
+
+  // Build solved-per-day map
+  const solvedMap = useMemo<Record<string, number>>(() => {
+    if (!stats?.solved_per_day) return {};
+    const map: Record<string, number> = {};
+    let prev = 0;
+    for (const point of stats.solved_per_day) {
+      const daily = point.value - prev;
+      if (daily > 0) map[point.date] = daily;
+      prev = point.value;
     }
-
-    let totalSolved = 0;
-    const months: string[] = [];
-    let lastMonth = -1;
-
-    for (let col = 0; col < COLS; col++) {
-      const week: number[] = [];
-      for (let row = 0; row < ROWS; row++) {
-        const d = new Date(startDate);
-        d.setDate(d.getDate() + col * 7 + row);
-        const key = d.toISOString().split("T")[0];
-        const count = solvedMap[key] ?? 0;
-        totalSolved += count;
-        week.push(getLevel(count));
-
-        // Track month labels
-        if (row === 0) {
-          const m = d.getMonth();
-          if (m !== lastMonth) {
-            months.push(d.toLocaleDateString("en-US", { month: "short" }));
-            lastMonth = m;
-          } else {
-            months.push("");
-          }
-        }
-      }
-      grid.push(week);
-    }
-
-    return { data: grid, monthLabels: months, total: totalSolved };
+    return map;
   }, [stats]);
 
-  function getDate(col: number, row: number): string {
-    const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - COLS * 7);
-    const d = new Date(startDate);
-    d.setDate(d.getDate() + col * 7 + row);
-    return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
-  }
+  // Build calendar grid for the current cursor month
+  const { weeks, monthTotal } = useMemo(() => {
+    const year = cursor.getFullYear();
+    const month = cursor.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDow = new Date(year, month, 1).getDay(); // 0=Sun
+    const startOffset = firstDow === 0 ? 6 : firstDow - 1; // Mon=0
 
-  function getCounts(level: number): number {
-    return [0, 1, 3, 5, 8][level];
-  }
+    let total = 0;
+    const cells: ({ day: number; level: number; count: number } | null)[] = [
+      ...Array(startOffset).fill(null),
+    ];
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const count = solvedMap[key] ?? 0;
+      total += count;
+      cells.push({ day: d, level: getLevel(count), count });
+    }
+
+    // Pad to full weeks
+    while (cells.length % 7 !== 0) cells.push(null);
+
+    const w: typeof cells[] = [];
+    for (let i = 0; i < cells.length; i += 7) w.push(cells.slice(i, i + 7));
+
+    return { weeks: w, monthTotal: total };
+  }, [cursor, solvedMap]);
+
+  const monthLabel = cursor.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: 0.05 }}
-    >
-      <div className="rounded-xl bg-card border border-border/50 p-4">
-        {/* Month labels */}
-        <div className="flex ml-6 mb-1">
-          {monthLabels.map((label, i) => (
-            <span key={i} className="text-[9px] text-muted-foreground/60 font-mono"
-              style={{ width: 18, textAlign: "center" }}>
-              {label}
-            </span>
-          ))}
+    <div className="space-y-3">
+      {/* Header with navigation */}
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+          Activity
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={prevMonth}
+            className="w-5 h-5 flex items-center justify-center rounded hover:bg-secondary cursor-pointer transition-colors duration-150 text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" />
+          </button>
+          <span className="text-[11px] font-medium text-foreground w-28 text-center tabular-nums">
+            {monthLabel}
+          </span>
+          <button
+            onClick={nextMonth}
+            disabled={isCurrentMonth}
+            className="w-5 h-5 flex items-center justify-center rounded hover:bg-secondary cursor-pointer transition-colors duration-150 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
         </div>
+      </div>
 
-        <div className="flex gap-0">
-          {/* Day labels */}
-          <div className="flex flex-col mr-1.5" style={{ gap: 2 }}>
-            {dayLabels.map((label, i) => (
-              <span key={i} className="text-[9px] text-muted-foreground/60 font-mono leading-none"
-                style={{ height: 14, display: "flex", alignItems: "center", width: 16 }}>
-                {label}
-              </span>
-            ))}
-          </div>
+      {/* Day labels */}
+      <div className="grid grid-cols-7 gap-1">
+        {DAY_LABELS.map((d) => (
+          <span key={d} className="text-[9px] text-muted-foreground/40 text-center font-medium">{d}</span>
+        ))}
+      </div>
 
-          {/* Grid */}
-          <div className="flex" style={{ gap: 2 }}>
-            {data.map((week, col) => (
-              <div key={col} className="flex flex-col" style={{ gap: 2 }}>
-                {week.map((level, row) => (
-                  <div key={`${col}-${row}`} className="relative"
-                    onMouseEnter={() => setHover({ col, row })}
-                    onMouseLeave={() => setHover(null)}>
-                    <div className={`w-[14px] h-[14px] rounded-[2px] cursor-pointer transition-all duration-500 ${
-                      levelClasses[level]
-                    } ${hover && (hover.col === col || hover.row === row) ? "ring-1 ring-primary/10" : ""}`} />
-
+      {/* Calendar grid */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`${cursor.getFullYear()}-${cursor.getMonth()}`}
+          initial={{ opacity: 0, x: -6 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 6 }}
+          transition={spring}
+          className="space-y-1"
+        >
+          {weeks.map((week, wi) => (
+            <div key={wi} className="grid grid-cols-7 gap-1">
+              {week.map((cell, di) => {
+                if (!cell) return <div key={di} />;
+                const isToday = isCurrentMonth && cell.day === now.getDate();
+                return (
+                  <div
+                    key={di}
+                    className="relative group"
+                    onMouseEnter={(e) => {
+                      const rect = (e.target as HTMLElement).getBoundingClientRect();
+                      setTooltip({ day: cell.day, count: cell.count, x: rect.left, y: rect.top });
+                    }}
+                    onMouseLeave={() => setTooltip(null)}
+                  >
+                    <div className={`
+                      w-full aspect-square rounded flex items-center justify-center
+                      text-[9px] font-mono cursor-default transition-all duration-200
+                      ${levelClasses[cell.level]}
+                      ${isToday ? "ring-1 ring-primary ring-offset-1 ring-offset-background" : ""}
+                      ${cell.count > 0 ? "text-primary-foreground/80" : "text-muted-foreground/50"}
+                      hover:ring-1 hover:ring-primary/30
+                    `}>
+                      {cell.day}
+                    </div>
+                    {/* Tooltip */}
                     <AnimatePresence>
-                      {hover?.col === col && hover?.row === row && (
+                      {tooltip?.day === cell.day && (
                         <motion.div
-                          initial={{ opacity: 0, scale: 0.9, y: 4 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
+                          initial={{ opacity: 0, y: 4, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 4, scale: 0.95 }}
                           transition={spring}
-                          className="absolute z-10 bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg bg-foreground text-background text-[10px] whitespace-nowrap shadow-lg">
-                          <span className="font-medium">{getDate(col, row)}</span>
-                          <span className="text-background/70"> &mdash; {getCounts(level)} problems solved</span>
-                          <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-foreground" />
+                          className="absolute z-20 bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded bg-foreground text-background text-[9px] whitespace-nowrap shadow-lg pointer-events-none"
+                        >
+                          {cell.count} solved
+                          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-foreground" />
                         </motion.div>
                       )}
                     </AnimatePresence>
                   </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
+                );
+              })}
+            </div>
+          ))}
+        </motion.div>
+      </AnimatePresence>
 
-        {/* Legend */}
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-border/30">
-          <span className="text-[11px] text-muted-foreground">
-            <span className="font-semibold text-foreground">{total}</span> problems solved in the last 12 weeks
-          </span>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[9px] text-muted-foreground/60">Less</span>
-            {levelClasses.map((cls, i) => (
-              <div key={i} className={`w-[12px] h-[12px] rounded-[2px] ${cls} transition-all duration-500`} />
-            ))}
-            <span className="text-[9px] text-muted-foreground/60">More</span>
-          </div>
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-1">
+        <span className="text-[10px] text-muted-foreground/50">
+          <span className="font-semibold text-foreground tabular-nums">{monthTotal}</span> solved this month
+        </span>
+        <div className="flex items-center gap-1">
+          <span className="text-[9px] text-muted-foreground/40">Less</span>
+          {levelClasses.map((cls, i) => (
+            <div key={i} className={`w-2.5 h-2.5 rounded-sm ${cls}`} />
+          ))}
+          <span className="text-[9px] text-muted-foreground/40">More</span>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
