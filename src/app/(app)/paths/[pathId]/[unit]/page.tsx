@@ -117,6 +117,16 @@ function ChallengeRow({
               {problem.title}
             </span>
             <StatusBadge status={problem.user_status} />
+            {problem.best_score != null && problem.best_score > 0 && (
+              <span className={`text-[10px] font-mono font-semibold tabular-nums ${
+                problem.best_score >= 90 ? "text-green-500"
+                : problem.best_score >= 70 ? "text-primary"
+                : problem.best_score >= 50 ? "text-yellow-500"
+                : "text-red-500"
+              }`}>
+                {problem.best_score}%
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${difficultyDot[problem.difficulty] ?? "bg-muted-foreground/20"}`} />
