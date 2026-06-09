@@ -30,6 +30,7 @@ export interface ProgressResponse {
 
 export interface ReviewData {
   score: number;
+  attributes?: { correctness: number; design: number; clarity: number; efficiency: number } | null;
   summary: string;
   strengths: string[];
   issues: string[];

@@ -167,7 +167,7 @@ export function BottomPanel({ problemId, code, examples, testResults, running, s
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Tab bar */}
-      <div className="flex items-center gap-0 px-2 border-b border-border bg-muted/50 dark:bg-card/50 dark:border-border/40 flex-shrink-0">
+      <div className="flex items-center gap-0 px-2 border-b border-border bg-muted/50 dark:bg-card/50 dark:border-border/40 shrink-0">
         {tabs.filter((tab) => !(isDjango && tab.id === "tests")).map((tab) => {
           const Icon = tab.icon;
           const isActive = active === tab.id;
@@ -261,7 +261,7 @@ export function BottomPanel({ problemId, code, examples, testResults, running, s
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                 {/* Score + summary */}
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold font-mono ${
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold font-mono shrink-0 ${
                     review.score >= 90 ? "bg-green-500/10 text-green-500"
                     : review.score >= 70 ? "bg-primary/10 text-primary"
                     : review.score >= 50 ? "bg-yellow-500/10 text-yellow-600"
@@ -272,6 +272,38 @@ export function BottomPanel({ problemId, code, examples, testResults, running, s
                   <p className="text-[13px] text-foreground flex-1">{review.summary}</p>
                 </div>
 
+                {/* Attribute scores */}
+                {review.attributes && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {([
+                      { key: "correctness", label: "Correctness" },
+                      { key: "design",      label: "Design"      },
+                      { key: "clarity",     label: "Clarity"     },
+                      { key: "efficiency",  label: "Efficiency"  },
+                    ] as const).map(({ key, label }) => {
+                      const val = review.attributes![key];
+                      const color = val >= 90 ? "bg-green-500" : val >= 70 ? "bg-primary" : val >= 50 ? "bg-yellow-500" : "bg-red-500";
+                      const textColor = val >= 90 ? "text-green-500" : val >= 70 ? "text-primary" : val >= 50 ? "text-yellow-500" : "text-red-500";
+                      return (
+                        <div key={key} className="bg-muted/30 rounded-lg px-3 py-2 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">{label}</span>
+                            <span className={`text-[11px] font-bold font-mono ${textColor}`}>{val}</span>
+                          </div>
+                          <div className="h-1 bg-border/50 rounded-full overflow-hidden">
+                            <motion.div
+                              className={`h-full rounded-full ${color}`}
+                              initial={{ width: 0 }}
+                              animate={{ width: `${val}%` }}
+                              transition={{ type: "spring", stiffness: 120, damping: 20, delay: 0.1 }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
                 {/* Strengths */}
                 {review.strengths?.length > 0 && (
                   <div>
@@ -279,7 +311,7 @@ export function BottomPanel({ problemId, code, examples, testResults, running, s
                     <div className="space-y-1">
                       {review.strengths.map((s, i) => (
                         <div key={i} className="flex items-start gap-1.5 text-[11px]">
-                          <CheckCircle2 className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
+                          <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
                           <span className="text-foreground/80">{s}</span>
                         </div>
                       ))}
@@ -294,7 +326,7 @@ export function BottomPanel({ problemId, code, examples, testResults, running, s
                     <div className="space-y-1">
                       {review.issues.map((s, i) => (
                         <div key={i} className="flex items-start gap-1.5 text-[11px]">
-                          <XCircle className="w-3 h-3 text-red-500 flex-shrink-0 mt-0.5" />
+                          <XCircle className="w-3 h-3 text-red-500 shrink-0 mt-0.5" />
                           <span className="text-foreground/80">{s}</span>
                         </div>
                       ))}
@@ -309,7 +341,7 @@ export function BottomPanel({ problemId, code, examples, testResults, running, s
                     <div className="space-y-1">
                       {review.suggestions.map((s, i) => (
                         <div key={i} className="flex items-start gap-1.5 text-[11px]">
-                          <ArrowRight className="w-3 h-3 text-primary flex-shrink-0 mt-0.5" />
+                          <ArrowRight className="w-3 h-3 text-primary shrink-0 mt-0.5" />
                           <span className="text-foreground/80">{s}</span>
                         </div>
                       ))}

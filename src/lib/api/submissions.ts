@@ -110,8 +110,16 @@ export async function getHint(problemId: string, code: string) {
   return res.data;
 }
 
+export interface AttributeScores {
+  correctness: number;
+  design: number;
+  clarity: number;
+  efficiency: number;
+}
+
 export interface ReviewResponse {
   score: number;
+  attributes: AttributeScores | null;
   summary: string;
   strengths: string[];
   issues: string[];

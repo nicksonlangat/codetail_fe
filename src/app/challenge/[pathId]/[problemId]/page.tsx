@@ -162,11 +162,44 @@ export default function ChallengePage() {
     <div className="flex flex-col h-screen bg-background" key={problemId}>
       {/* Top bar — navigation only */}
       <div className="flex items-center justify-between h-14 px-6 border-b border-border/60 bg-card/50 flex-shrink-0">
-        <Link href={`/paths/${pathSlug}`}
-          className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-all duration-500">
-          <ArrowLeft className="w-4 h-4" />
-          {path?.title ?? pathSlug}
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href={`/paths/${pathSlug}`}
+            className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-all duration-500">
+            <ArrowLeft className="w-4 h-4" />
+            {path?.title ?? pathSlug}
+          </Link>
+          {progress?.status && progress.status !== "not_started" && (
+            <>
+              <div className="w-px h-4 bg-border/40" />
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground/50">Status</span>
+                  <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider border ${
+                    progress.status === "solved"
+                      ? "bg-green-500/8 border-green-500/19 text-green-500"
+                      : "bg-yellow-500/8 border-yellow-500/19 text-yellow-500"
+                  }`}>
+                    <span className={`w-1 h-1 rounded-full ${progress.status === "solved" ? "bg-green-500" : "bg-yellow-500"}`} />
+                    {progress.status}
+                  </span>
+                </div>
+                {progress.best_score != null && progress.best_score > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground/50">Score</span>
+                    <span className={`text-[12px] font-mono font-semibold tabular-nums ${
+                      progress.best_score >= 90 ? "text-green-500"
+                      : progress.best_score >= 70 ? "text-primary"
+                      : progress.best_score >= 50 ? "text-yellow-500"
+                      : "text-red-500"
+                    }`}>
+                      {progress.best_score}%
+                    </span>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
 
         <div className="flex items-center gap-2.5">
           <button onClick={() => prevProblem && navigateTo(prevProblem.id)} disabled={!prevProblem}
