@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Clock, Lock, CheckCircle2, Circle, Minus, ChevronRight, Loader2, Trash2 } from "lucide-react";
-import { getProblem, type ProblemDetail } from "@/lib/api/paths";
+import { Clock, Lock, ArrowRight, Trash2, Loader2 } from "lucide-react";
+import { getProblem } from "@/lib/api/paths";
 import { TipTapRenderer } from "@/components/editors/tiptap-renderer";
 import { UpgradeModal } from "@/components/paywall/upgrade-modal";
 
@@ -23,7 +23,7 @@ const typeLabel: Record<string, string> = {
   refactor: "Refactor",
 };
 
-interface ProblemCardItem {
+export interface ProblemCardItem {
   id: string;
   title: string;
   slug: string;
@@ -36,170 +36,124 @@ interface ProblemCardItem {
   best_score: number | null;
 }
 
-interface ProblemCardProps {
+function ctaLabel(status: string | null) {
+  if (status === "solved") return "Revisit";
+  if (status === "attempted") return "Continue";
+  return "Start";
+}
+
+function UnlockedCard({
+  problem,
+  pathSlug,
+  onDelete,
+}: {
   problem: ProblemCardItem;
-  index: number;
   pathSlug: string;
-  expanded: boolean;
-  onToggle: () => void;
   onDelete?: (id: string) => void;
-}
-
-function StatusIcon({ status }: { status: string | null }) {
-  if (status === "solved") return <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />;
-  if (status === "attempted") return <Minus className="w-4 h-4 text-yellow-500 flex-shrink-0" />;
-  return <Circle className="w-4 h-4 text-muted-foreground/20 flex-shrink-0" />;
-}
-
-export function ProblemCard({ problem, index, pathSlug, expanded, onToggle, onDelete }: ProblemCardProps) {
-  const [detail, setDetail] = useState<ProblemDetail | null>(null);
+}) {
+  const [hovered, setHovered] = useState(false);
+  const [description, setDescription] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (expanded && !detail && !problem.locked) {
+  function handleMouseEnter() {
+    setHovered(true);
+    if (!description && !loading) {
       setLoading(true);
-      getProblem(problem.id).then(setDetail).catch(() => {}).finally(() => setLoading(false));
+      getProblem(problem.id)
+        .then((d) => setDescription(d.description ?? null))
+        .catch(() => setDescription(null))
+        .finally(() => setLoading(false));
     }
-  }, [expanded, detail, problem.id, problem.locked]);
-
-  if (problem.locked) {
-    return (
-      <div className="relative bg-card border border-border rounded-xl overflow-hidden cursor-pointer" onClick={onToggle}>
-        {/* Real content underneath — blurred */}
-        <div className="flex items-center gap-3 px-4 py-3">
-          <span className="text-[11px] font-mono tabular-nums text-muted-foreground">
-            {String(index + 1).padStart(2, "0")}
-          </span>
-          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${difficultyColor[problem.difficulty] ?? "bg-secondary text-muted-foreground"}`}>
-            {problem.difficulty}
-          </span>
-          <span className="text-[13px] font-medium text-foreground flex-1 truncate">{problem.title}</span>
-          <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-md hidden sm:inline">{problem.concept}</span>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-            <Clock className="w-3 h-3" />
-            {problem.time_estimate}
-          </div>
-        </div>
-
-        {/* Blur overlay */}
-        <div className="absolute inset-0 backdrop-blur-[3px] bg-background/50 flex flex-col items-center justify-center gap-1">
-          <Lock className="w-3.5 h-3.5 text-muted-foreground" />
-          <span className="text-[11px] font-medium text-primary cursor-pointer hover:underline underline-offset-2 transition-all duration-500">
-            Upgrade to unlock
-          </span>
-        </div>
-      </div>
-    );
   }
 
   return (
-    <motion.div
-      className="bg-card border border-border rounded-xl overflow-hidden cursor-pointer transition-all duration-500"
-      whileHover={{ y: -1 }}
-      transition={spring}
-      onClick={onToggle}
+    <Link
+      href={`/challenge/${pathSlug}/${problem.id}`}
+      className="relative bg-card border border-border rounded-lg p-4 cursor-pointer group flex flex-col gap-2.5 transition-colors duration-150 hover:border-primary/30 hover:shadow-sm"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={() => setHovered(false)}
+      style={{ willChange: "height" }}
     >
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        <StatusIcon status={problem.user_status} />
-
-        <span className="text-[11px] font-mono tabular-nums text-muted-foreground">
-          {String(index + 1).padStart(2, "0")}
-        </span>
-
-        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${difficultyColor[problem.difficulty] ?? ""}`}>
-          {problem.difficulty}
-        </span>
-
-        <span className="text-[13px] font-medium text-foreground flex-1 truncate">{problem.title}</span>
-
-        <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-md hidden sm:inline">
-          {problem.concept}
-        </span>
-
-        <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground">
-          {typeLabel[problem.type] ?? problem.type}
-        </span>
-
-        {problem.best_score != null && problem.best_score > 0 && (
-          <span className={`text-[10px] font-mono tabular-nums font-medium ${
-            problem.best_score >= 90 ? "text-green-500" : problem.best_score >= 50 ? "text-yellow-500" : "text-red-500"
-          }`}>
-            {problem.best_score}%
+      {/* Top: badges + trash */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-md ${difficultyColor[problem.difficulty] ?? "bg-secondary text-muted-foreground"}`}>
+            {problem.difficulty}
           </span>
-        )}
-
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-          <Clock className="w-3 h-3" />
-          {problem.time_estimate}
+          <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground">
+            {typeLabel[problem.type] ?? problem.type}
+          </span>
         </div>
-
         {onDelete && (
           <button
-            onClick={(e) => { e.stopPropagation(); onDelete(problem.id); }}
-            className="p-1 rounded hover:bg-red-500/10 text-muted-foreground/30 hover:text-red-500 transition-colors duration-150 cursor-pointer"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(problem.id); }}
+            className="p-0.5 rounded hover:bg-red-500/10 text-muted-foreground/20 hover:text-red-500 transition-colors duration-150 cursor-pointer shrink-0"
           >
             <Trash2 className="w-3 h-3" />
           </button>
         )}
-
-        <motion.div animate={{ rotate: expanded ? 90 : 0 }} transition={spring}>
-          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-        </motion.div>
       </div>
 
-      {/* Expanded content */}
-      <AnimatePresence>
-        {expanded && (
+      {/* Title */}
+      <p className="text-[12px] font-medium text-foreground leading-snug group-hover:text-primary transition-colors duration-150">
+        {problem.title}
+      </p>
+
+      {/* Concept */}
+      {problem.concept && (
+        <p className="text-[10px] text-muted-foreground/50 truncate">{problem.concept}</p>
+      )}
+
+      {/* Hover: description preview */}
+      <AnimatePresence initial={false}>
+        {hovered && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={spring}
+            animate={{ height: 76, opacity: 1, transition: spring }}
+            exit={{ height: 0, opacity: 0, transition: { duration: 0.12, ease: "easeOut" } }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 pt-0 border-t border-border">
-              {/* Description preview */}
-              <div className="mt-3 mb-3">
-                {loading ? (
-                  <div className="flex items-center gap-2 py-2">
-                    <Loader2 className="w-3 h-3 text-muted-foreground animate-spin" />
-                    <span className="text-[11px] text-muted-foreground">Loading...</span>
-                  </div>
-                ) : detail?.description ? (
-                  <div className="max-h-[120px] overflow-hidden relative">
-                    <TipTapRenderer content={detail.description} />
-                    <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card to-transparent" />
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {problem.user_status === "solved" && (
-                    <span className="text-[10px] font-medium text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">Solved</span>
-                  )}
-                  {problem.user_status === "attempted" && (
-                    <span className="text-[10px] font-medium text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full">Attempted</span>
-                  )}
+            <div className="pt-2 border-t border-border/40 h-full">
+              {loading ? (
+                <div className="flex items-center gap-1.5 py-1">
+                  <Loader2 className="w-3 h-3 text-muted-foreground/30 animate-spin" />
                 </div>
-
-                <Link href={`/challenge/${pathSlug}/${problem.id}`} onClick={(e) => e.stopPropagation()}>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    transition={spring}
-                    className="text-[11px] font-medium text-primary-foreground bg-primary hover:bg-primary/90 px-4 py-1.5 rounded-lg cursor-pointer transition-all duration-500"
-                  >
-                    {problem.user_status === "solved" ? "Revisit" : problem.user_status === "attempted" ? "Continue" : "Start Challenge"}
-                  </motion.button>
-                </Link>
-              </div>
+              ) : description ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.15 }}
+                  className="max-h-20 overflow-hidden relative text-[11px] text-muted-foreground/60 leading-relaxed"
+                >
+                  <TipTapRenderer content={description} />
+                  <div className="absolute bottom-0 left-0 right-0 h-6 bg-linear-to-t from-card to-transparent" />
+                </motion.div>
+              ) : null}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+
+      {/* Footer: time + score + cta */}
+      <div className="flex items-center justify-between pt-1 border-t border-border/40 mt-auto">
+        <div className="flex items-center gap-1 text-[10px] text-muted-foreground/40">
+          <Clock className="w-3 h-3" />
+          {problem.time_estimate}
+        </div>
+        <div className="flex items-center gap-2">
+          {problem.best_score != null && problem.best_score > 0 && (
+            <span className={`text-[10px] font-mono tabular-nums font-semibold ${
+              problem.best_score >= 90 ? "text-green-500" : problem.best_score >= 50 ? "text-yellow-500" : "text-red-500"
+            }`}>
+              {problem.best_score}%
+            </span>
+          )}
+          <span className="flex items-center gap-0.5 text-[10px] font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+            {ctaLabel(problem.user_status)} <ArrowRight className="w-3 h-3" />
+          </span>
+        </div>
+      </div>
+    </Link>
   );
 }
 
@@ -210,7 +164,6 @@ interface ProblemCardListProps {
 }
 
 export function ProblemCardList({ problems, pathSlug, onDelete }: ProblemCardListProps) {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
 
   const unlocked = problems.filter((p) => !p.locked);
@@ -218,8 +171,8 @@ export function ProblemCardList({ problems, pathSlug, onDelete }: ProblemCardLis
 
   return (
     <>
-      {/* Unlocked: expandable list */}
-      <div className="space-y-2">
+      {/* Unlocked: card grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {unlocked.map((problem, i) => (
           <motion.div
             key={problem.id}
@@ -227,19 +180,12 @@ export function ProblemCardList({ problems, pathSlug, onDelete }: ProblemCardLis
             animate={{ opacity: 1, y: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30, delay: i * 0.03 }}
           >
-            <ProblemCard
-              problem={problem}
-              index={i}
-              pathSlug={pathSlug}
-              expanded={expandedId === problem.id}
-              onToggle={() => setExpandedId(expandedId === problem.id ? null : problem.id)}
-              onDelete={onDelete}
-            />
+            <UnlockedCard problem={problem} pathSlug={pathSlug} onDelete={onDelete} />
           </motion.div>
         ))}
       </div>
 
-      {/* Locked: grid cards with blur */}
+      {/* Locked: same grid, blurred */}
       {locked.length > 0 && (
         <div className="mt-4">
           <div className="flex items-center gap-2 mb-2 px-1">
@@ -257,14 +203,12 @@ export function ProblemCardList({ problems, pathSlug, onDelete }: ProblemCardLis
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30, delay: i * 0.02 }}
                 onClick={() => setShowUpgrade(true)}
-                className="relative bg-card border border-border rounded-xl p-4 overflow-hidden cursor-pointer group"
+                className="relative bg-card border border-border rounded-lg p-4 overflow-hidden cursor-pointer group hover:border-border/80 transition-colors duration-150"
               >
-                {/* Title — visible, not blurred */}
                 <p className="text-[12px] font-medium text-foreground leading-tight relative z-10">{problem.title}</p>
 
-                {/* Rest — blurred */}
                 <div className="mt-2 space-y-1.5 blur-[2px] select-none">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-md ${difficultyColor[problem.difficulty] ?? "bg-secondary text-muted-foreground"}`}>
                       {problem.difficulty}
                     </span>
@@ -275,7 +219,6 @@ export function ProblemCardList({ problems, pathSlug, onDelete }: ProblemCardLis
                   <p className="text-[10px] text-muted-foreground">{problem.concept}</p>
                 </div>
 
-                {/* Unlock button */}
                 <div className="mt-3 relative z-10">
                   <div className="flex items-center justify-center gap-1.5 text-[10px] font-medium text-primary-foreground bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-lg cursor-pointer transition-all duration-500">
                     <Lock className="w-3 h-3" />
