@@ -26,26 +26,26 @@ const difficultyDot: Record<string, string> = {
   hard: "bg-difficulty-hard",
 };
 
-const typeConfig: Record<string, { label: string; icon: React.ReactNode; badge: string }> = {
+const typeConfig: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   write_code: {
     label: "Code",
     icon: <Code2 className="w-3 h-3" />,
-    badge: "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400 dark:border-blue-400/20",
+    color: "text-blue-500 dark:text-blue-400",
   },
   fix_code: {
     label: "Fix",
     icon: <Wrench className="w-3 h-3" />,
-    badge: "bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400 dark:border-orange-400/20",
+    color: "text-orange-500 dark:text-orange-400",
   },
   mcq: {
     label: "MCQ",
     icon: <HelpCircle className="w-3 h-3" />,
-    badge: "bg-purple-500/10 text-purple-600 border-purple-500/20 dark:text-purple-400 dark:border-purple-400/20",
+    color: "text-purple-500 dark:text-purple-400",
   },
   refactor: {
     label: "Refactor",
     icon: <RefreshCcw className="w-3 h-3" />,
-    badge: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400 dark:border-emerald-400/20",
+    color: "text-emerald-500 dark:text-emerald-400",
   },
 };
 
@@ -61,7 +61,7 @@ function TypeBadge({ type }: { type: string }) {
   const tc = typeConfig[type];
   if (!tc) return null;
   return (
-    <span className={`hidden sm:flex items-center gap-1 text-[10px] font-semibold border px-1.5 py-0.5 rounded ${tc.badge}`}>
+    <span className={`hidden sm:flex items-center gap-1 text-[10px] font-medium ${tc.color}`}>
       {tc.icon} {tc.label}
     </span>
   );
@@ -112,21 +112,10 @@ function ChallengeRow({
 
         {/* Title + meta */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
+          <div className="flex items-center gap-2 mb-1">
             <span className="text-[14px] font-semibold text-foreground group-hover:text-primary transition-colors duration-150">
               {problem.title}
             </span>
-            <StatusBadge status={problem.user_status} />
-            {problem.best_score != null && problem.best_score > 0 && (
-              <span className={`text-[10px] font-mono font-semibold tabular-nums ${
-                problem.best_score >= 90 ? "text-green-500"
-                : problem.best_score >= 70 ? "text-primary"
-                : problem.best_score >= 50 ? "text-yellow-500"
-                : "text-red-500"
-              }`}>
-                {problem.best_score}%
-              </span>
-            )}
           </div>
           <div className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${difficultyDot[problem.difficulty] ?? "bg-muted-foreground/20"}`} />
@@ -137,12 +126,35 @@ function ChallengeRow({
                 <span className="text-[11px] text-muted-foreground/40">{problem.concept}</span>
               </>
             )}
+            <span className="text-muted-foreground/20">·</span>
+            <TypeBadge type={problem.type} />
           </div>
         </div>
 
-        {/* Right: type + delete + chevron */}
+        {/* Right: status + score + type + delete + chevron */}
         <div className="flex items-center gap-3 shrink-0">
-          <TypeBadge type={problem.type} />
+          {problem.user_status && problem.user_status !== "not_started" && (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground/50">Status</span>
+                <StatusBadge status={problem.user_status} />
+              </div>
+              {problem.best_score != null && problem.best_score > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground/50">Score</span>
+                  <span className={`text-[11px] font-mono font-semibold tabular-nums ${
+                    problem.best_score >= 90 ? "text-green-500"
+                    : problem.best_score >= 70 ? "text-primary"
+                    : problem.best_score >= 50 ? "text-yellow-500"
+                    : "text-red-500"
+                  }`}>
+                    {problem.best_score}%
+                  </span>
+                </div>
+              )}
+              <div className="w-px h-4 bg-border/40" />
+            </div>
+          )}
           {onDelete && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(problem.id); }}
@@ -469,7 +481,7 @@ export default function UnitPage() {
                           <span className={`w-1.5 h-1.5 rounded-full ${difficultyDot[problem.difficulty] ?? "bg-muted-foreground/20"}`} />
                           <span className="text-[10px] text-muted-foreground/50 capitalize">{problem.difficulty}</span>
                           {tc && (
-                            <span className={`flex items-center gap-0.5 text-[10px] font-semibold border px-1 py-0.5 rounded ${tc.badge}`}>
+                            <span className={`flex items-center gap-0.5 text-[10px] font-medium ${tc.color}`}>
                               {tc.icon} {tc.label}
                             </span>
                           )}
