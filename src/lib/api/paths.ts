@@ -63,6 +63,7 @@ export interface ProblemDetail {
   stack: string;
   concept: string;
   time_estimate: string;
+  unit: string;
   description: string;
   function_signature: string;
   examples: Example[];
