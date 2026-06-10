@@ -94,6 +94,7 @@ export interface UnitItem {
   total: number;
   free: number;
   solved: number;
+  description: string | null;
 }
 
 export async function getPathUnits(slug: string) {

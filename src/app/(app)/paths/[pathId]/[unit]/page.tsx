@@ -332,9 +332,14 @@ export default function UnitPage() {
               Module {String(moduleNumber).padStart(2, "0")} · {path?.title}
             </p>
           )}
-          <h1 className="text-[52px] font-black tracking-tighter text-foreground leading-none mb-4">
+          <h1 className="text-[52px] font-black tracking-tighter text-foreground leading-none mb-3">
             {unitLabel}
           </h1>
+          {units?.find(u => u.unit === unit)?.description && (
+            <p className="text-[13px] text-muted-foreground leading-relaxed mb-4 max-w-lg">
+              {units.find(u => u.unit === unit)!.description}
+            </p>
+          )}
           {/* Stats pills */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60 border border-border/60 px-2.5 py-1 rounded">
