@@ -18,6 +18,7 @@ import { McqPanel } from "@/components/challenge/mcq-panel";
 import { CodePanel } from "@/components/challenge/code-panel";
 import type { ChallengeContent, ChallengeType } from "@/types";
 import { UpgradeModal } from "@/components/paywall/upgrade-modal";
+import { ShareModal } from "@/components/challenge/share-modal";
 import { runCode, getReview } from "@/lib/api/submissions";
 import { getProgress } from "@/lib/api/progress";
 import type { TestCaseResult } from "@/components/challenge/test-cases-panel";
@@ -161,13 +162,27 @@ export default function ChallengePage() {
   return (
     <div className="flex flex-col h-screen bg-background" key={problemId}>
       {/* Top bar — navigation only */}
-      <div className="flex items-center justify-between h-14 px-6 border-b border-border/60 bg-card/50 flex-shrink-0">
+      <div className="flex items-center justify-between h-14 px-6 border-b border-border/60 bg-card/50 shrink-0">
         <div className="flex items-center gap-3">
           <Link href={`/paths/${pathSlug}`}
             className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-all duration-500">
             <ArrowLeft className="w-4 h-4" />
             {path?.title ?? pathSlug}
           </Link>
+          {problem.unit && (
+            <>
+              <span className="text-muted-foreground/25 text-[13px]">/</span>
+              <Link href={`/paths/${pathSlug}/${problem.unit}`}
+                className="text-[12px] font-medium text-muted-foreground/60 hover:text-foreground cursor-pointer transition-all duration-500 capitalize">
+                {problem.unit}
+              </Link>
+            </>
+          )}
+          {problem.is_generated && (
+            <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border bg-primary/8 border-primary/20 text-primary">
+              AI
+            </span>
+          )}
           {progress?.status && progress.status !== "not_started" && (
             <>
               <div className="w-px h-4 bg-border/40" />
@@ -202,18 +217,12 @@ export default function ChallengePage() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <ShareModal problemId={problem.id} />
+          <div className="w-px h-5 bg-border/40" />
           <button onClick={() => prevProblem && navigateTo(prevProblem.id)} disabled={!prevProblem}
             className="flex items-center gap-1 text-[12px] font-medium px-2.5 py-1.5 rounded-md ring-1 ring-border/60 hover:bg-secondary disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all duration-500">
             <ChevronLeft className="w-3.5 h-3.5" /> Prev
           </button>
-          <div className="flex items-center gap-1.5 px-1">
-            {unlocked.map((p, i) => (
-              <button key={p.id} onClick={() => navigateTo(p.id)} title={`${i + 1}. ${p.title}`}
-                className={`w-2.5 h-2.5 rounded-full cursor-pointer transition-all duration-500 ${
-                  p.id === problemId ? "bg-primary scale-125" : i < currentIdx ? "bg-primary/40" : "bg-border"
-                }`} />
-            ))}
-          </div>
           <span className="text-[11px] text-muted-foreground/50 font-mono tabular-nums">
             {currentIdx + 1}/{unlocked.length}
           </span>

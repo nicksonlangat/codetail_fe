@@ -21,7 +21,6 @@ interface ProblemDescriptionProps {
 }
 
 export function ProblemDescription({ content, meta, diffColor, typeLabel, isGenerated = false, onEnriched }: ProblemDescriptionProps) {
-  const isHtml = content.description?.startsWith("<");
   const [enriching, setEnriching] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
 
@@ -102,13 +101,7 @@ export function ProblemDescription({ content, meta, diffColor, typeLabel, isGene
         <div className="h-px bg-border/50" />
 
         {/* Description */}
-        {isHtml ? (
-          <TipTapRenderer content={content.description} />
-        ) : (
-          <div className="text-[13px] text-foreground/80 leading-[1.7]">
-            {content.description ?? "No description available."}
-          </div>
-        )}
+        <TipTapRenderer content={content.description ?? ""} />
 
         {/* Issue description for fix-code */}
         {content.type === "fix-code" && content.issueDescription && (
