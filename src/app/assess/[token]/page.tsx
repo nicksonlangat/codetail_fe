@@ -1,0 +1,633 @@
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useParams } from "next/navigation";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, Clock, ChevronLeft, ChevronRight, Send, Play, Check, X, AlertTriangle } from "lucide-react";
+import {
+  getAssessSession,
+  startAssessSession,
+  submitAssessProblem,
+  finishAssessSession,
+  type AssessSession,
+  type AssessProblem,
+  type CandidateSubmission,
+  type CandidateTestResult,
+} from "@/lib/api/interviews";
+import { MonacoCodeEditor } from "@/components/editors/monaco-code-editor";
+import { TipTapRenderer } from "@/components/editors/tiptap-renderer";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable";
+
+export default function AssessPage() {
+  const { token } = useParams<{ token: string }>();
+
+  const { data: session, isLoading, error, refetch } = useQuery({
+    queryKey: ["assess", token],
+    queryFn: () => getAssessSession(token),
+    refetchInterval: false,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error || !session) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="text-center space-y-2">
+          <p className="text-[15px] font-semibold">Assessment not found</p>
+          <p className="text-[12px] text-muted-foreground">This link may be invalid or expired.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (session.status === "completed") {
+    return <CompletedScreen session={session} />;
+  }
+
+  if (session.status === "pending") {
+    return <WelcomeScreen token={token} session={session} onStarted={() => refetch()} />;
+  }
+
+  return <AssessmentScreen token={token} session={session} onFinished={() => refetch()} />;
+}
+
+// ── Welcome / Start screen ──
+
+function WelcomeScreen({
+  token,
+  session,
+  onStarted,
+}: {
+  token: string;
+  session: AssessSession;
+  onStarted: () => void;
+}) {
+  const [name, setName] = useState(session.interview_title ? "" : "");
+
+  const startMutation = useMutation({
+    mutationFn: () => startAssessSession(token, name),
+    onSuccess: onStarted,
+  });
+
+  return (
+    <div className="flex h-screen items-center justify-center bg-background px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-lg bg-card border border-border rounded-2xl overflow-hidden"
+      >
+        <div className="h-px bg-linear-to-r from-transparent via-primary/60 to-transparent" />
+        <div className="p-8 space-y-6">
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-primary/10 text-primary">
+                Technical Assessment
+              </span>
+            </div>
+            <h1 className="text-[22px] font-semibold tracking-tight leading-tight">
+              {session.interview_title}
+            </h1>
+            {session.role && (
+              <p className="text-[13px] text-muted-foreground">{session.role}</p>
+            )}
+            {session.interview_description && (
+              <p className="text-[13px] text-muted-foreground leading-relaxed mt-2">
+                {session.interview_description}
+              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: "Problems", value: session.problems.length },
+              { label: "Time limit", value: `${session.time_limit_minutes} min` },
+            ].map(({ label, value }) => (
+              <div key={label} className="px-4 py-3 rounded-xl bg-muted/50 space-y-0.5">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+                <p className="text-[16px] font-semibold tabular-nums">{value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-2 p-4 rounded-xl border border-border/60 bg-muted/30">
+            <p className="text-[11px] font-semibold text-foreground">Before you begin</p>
+            <ul className="space-y-1">
+              {[
+                "Timer starts when you click Start — it cannot be paused.",
+                "Submit each problem individually. You can re-submit to improve your score.",
+                "Click Finish when done or when time runs out.",
+              ].map((note) => (
+                <li key={note} className="flex items-start gap-2 text-[11px] text-muted-foreground">
+                  <span className="text-primary mt-0.5 shrink-0">·</span>
+                  {note}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-medium text-muted-foreground">Your name</label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your name"
+                className="w-full text-[13px] bg-background border border-border/60 rounded-lg px-3 py-2.5 placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all duration-500"
+              />
+            </div>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => startMutation.mutate()}
+              disabled={startMutation.isPending}
+              className="w-full flex items-center justify-center gap-2 text-[13px] font-semibold py-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer transition-all duration-500"
+            >
+              {startMutation.isPending ? (
+                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Starting…</>
+              ) : (
+                "Start Assessment →"
+              )}
+            </motion.button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ── Main assessment IDE ──
+
+function AssessmentScreen({
+  token,
+  session: initialSession,
+  onFinished,
+}: {
+  token: string;
+  session: AssessSession;
+  onFinished: () => void;
+}) {
+  const [session, setSession] = useState(initialSession);
+  const [activeProblemIdx, setActiveProblemIdx] = useState(0);
+  const [codes, setCodes] = useState<Record<string, string>>(() =>
+    Object.fromEntries(session.problems.map((p) => [p.id, p.starter_code]))
+  );
+  const [results, setResults] = useState<Record<string, CandidateTestResult[]>>(() =>
+    Object.fromEntries(
+      session.submissions.map((s) => [s.problem_id.toString(), s.test_results])
+    )
+  );
+  const [scores, setScores] = useState<Record<string, number>>(() =>
+    Object.fromEntries(session.submissions.map((s) => [s.problem_id.toString(), s.score]))
+  );
+  const [running, setRunning] = useState(false);
+  const [showFinish, setShowFinish] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(session.seconds_remaining ?? session.time_limit_minutes * 60);
+  const startTimeRef = useRef(Date.now());
+
+  const activeProblem = session.problems[activeProblemIdx];
+
+  // Countdown timer
+  useEffect(() => {
+    if (session.status !== "in_progress") return;
+    const interval = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setShowFinish(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [session.status]);
+
+  const submitMutation = useMutation({
+    mutationFn: (problemId: string) =>
+      submitAssessProblem(token, {
+        problem_id: problemId,
+        code: codes[problemId] ?? "",
+        time_spent_seconds: Math.round((Date.now() - startTimeRef.current) / 1000),
+      }),
+    onMutate: () => setRunning(true),
+    onSuccess: (res) => {
+      setResults((prev) => ({ ...prev, [res.problem_id]: res.test_results }));
+      setScores((prev) => ({ ...prev, [res.problem_id]: res.score }));
+      setRunning(false);
+    },
+    onError: () => setRunning(false),
+  });
+
+  const finishMutation = useMutation({
+    mutationFn: () => finishAssessSession(token),
+    onSuccess: onFinished,
+  });
+
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const timerColor = secondsLeft < 300 ? "text-destructive" : secondsLeft < 600 ? "text-yellow-500" : "text-foreground";
+
+  const submittedProblems = new Set(Object.keys(scores).filter((k) => scores[k] !== undefined));
+
+  return (
+    <div className="flex flex-col h-screen bg-background">
+      {/* Top bar */}
+      <div className="flex items-center justify-between h-12 px-5 border-b border-border/60 bg-card/50 shrink-0">
+        <div className="flex items-center gap-3">
+          <span className="text-[14px] font-black tracking-tight text-foreground">Codetail</span>
+          <span className="text-[10px] text-muted-foreground/40">·</span>
+          <span className="text-[11px] text-muted-foreground truncate max-w-[240px]">
+            {session.interview_title}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {/* Problem tabs */}
+          <div className="flex items-center gap-1">
+            {session.problems.map((p, i) => {
+              const submitted = submittedProblems.has(p.id);
+              const isActive = i === activeProblemIdx;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setActiveProblemIdx(i)}
+                  className={`relative flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-md cursor-pointer transition-all duration-500 ${
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  }`}
+                >
+                  {submitted && (
+                    <span className={`w-1.5 h-1.5 rounded-full ${(scores[p.id] ?? 0) >= 80 ? "bg-green-500" : "bg-yellow-500"}`} />
+                  )}
+                  P{i + 1}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="w-px h-4 bg-border/40" />
+
+          {/* Timer */}
+          <div className={`flex items-center gap-1.5 text-[12px] font-mono font-semibold tabular-nums ${timerColor}`}>
+            <Clock className="w-3.5 h-3.5" />
+            {formatTime(secondsLeft)}
+          </div>
+
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setShowFinish(true)}
+            className="text-[11px] font-semibold px-3 py-1.5 rounded-lg ring-1 ring-border/60 hover:bg-secondary cursor-pointer transition-all duration-500"
+          >
+            Finish
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Main split */}
+      <ResizablePanelGroup orientation="horizontal" className="flex-1 min-h-0">
+        {/* Left: problem description */}
+        <ResizablePanel defaultSize={45} minSize={25}>
+          <div className="h-full overflow-y-auto px-6 py-5">
+            <ProblemDescription problem={activeProblem} />
+          </div>
+        </ResizablePanel>
+
+        <ResizableHandle className="w-1 bg-border hover:bg-primary/30 transition-colors cursor-col-resize" />
+
+        {/* Right: editor + results */}
+        <ResizablePanel defaultSize={55} minSize={30}>
+          <ResizablePanelGroup orientation="vertical" className="h-full">
+            <ResizablePanel defaultSize={65} minSize={30}>
+              <div className="flex flex-col h-full min-h-0">
+                <div className="flex items-center justify-between px-3 h-10 border-b border-border bg-muted/50 dark:bg-card/50 shrink-0">
+                  <span className="text-[11px] font-medium text-muted-foreground px-1">
+                    {activeProblem.stack === "django" ? "Django" : "Python"} · main.py
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <motion.button
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => submitMutation.mutate(activeProblem.id)}
+                      disabled={running}
+                      className="flex items-center gap-1.5 text-[11px] font-medium text-primary-foreground px-2.5 py-1 rounded-md bg-primary hover:bg-primary/90 disabled:opacity-50 cursor-pointer transition-all duration-500"
+                    >
+                      {running ? (
+                        <><Loader2 className="w-3 h-3 animate-spin" /> Running…</>
+                      ) : (
+                        <><Send className="w-3 h-3" /> Submit</>
+                      )}
+                    </motion.button>
+                  </div>
+                </div>
+                <div className="flex-1 min-h-0">
+                  <MonacoCodeEditor
+                    value={codes[activeProblem.id] ?? activeProblem.starter_code}
+                    onChange={(v) => setCodes((prev) => ({ ...prev, [activeProblem.id]: v }))}
+                    language="python"
+                  />
+                </div>
+              </div>
+            </ResizablePanel>
+
+            <ResizableHandle className="h-1 bg-border hover:bg-primary/30 transition-colors cursor-row-resize" />
+
+            <ResizablePanel defaultSize={35} minSize={15}>
+              <ResultsPanel
+                testCases={activeProblem.test_cases}
+                results={results[activeProblem.id] ?? []}
+                score={scores[activeProblem.id]}
+                running={running}
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+
+      {/* Finish confirmation */}
+      <AnimatePresence>
+        {showFinish && (
+          <FinishModal
+            submittedCount={submittedProblems.size}
+            totalCount={session.problems.length}
+            onConfirm={() => finishMutation.mutate()}
+            onCancel={() => setShowFinish(false)}
+            isLoading={finishMutation.isPending}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function ProblemDescription({ problem }: { problem: AssessProblem }) {
+  const diffColor =
+    problem.difficulty === "easy"
+      ? "bg-difficulty-easy/10 text-difficulty-easy"
+      : problem.difficulty === "medium"
+      ? "bg-difficulty-medium/10 text-difficulty-medium"
+      : "bg-difficulty-hard/10 text-difficulty-hard";
+
+  const typeLabels: Record<string, string> = {
+    write_code: "Write Code",
+    fix_code: "Fix the Code",
+    refactor: "Refactor",
+    mcq: "MCQ",
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="space-y-2">
+        <h1 className="text-xl font-semibold tracking-tight leading-tight">{problem.title}</h1>
+        <div className="flex items-center gap-2">
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${diffColor}`}>
+            {problem.difficulty}
+          </span>
+          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+            {typeLabels[problem.type] ?? problem.type}
+          </span>
+          {problem.concept && (
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+              {problem.concept}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="h-px bg-border/50" />
+
+      <TipTapRenderer content={problem.description} />
+
+      {problem.function_signature && (
+        <div>
+          <h3 className="text-[10px] font-semibold text-muted-foreground tracking-wide uppercase mb-2">
+            Function Signature
+          </h3>
+          <div className="font-mono text-[12px] border border-border/50 bg-muted rounded-lg p-3.5 overflow-x-auto">
+            <span className="text-primary">def</span>{" "}
+            <span className="text-foreground">{problem.function_signature.replace(/^(def|class)\s+/, "")}</span>
+          </div>
+        </div>
+      )}
+
+      {problem.examples.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-[10px] font-semibold text-muted-foreground tracking-wide uppercase">Examples</h3>
+          {problem.examples.map((ex, i) => (
+            <div key={i} className="rounded-lg border border-border/50 bg-muted p-3.5 space-y-2">
+              <div className="font-mono text-[11px] space-y-0.5 leading-relaxed">
+                <p><span className="text-muted-foreground select-none">Input: </span><span>{ex.input}</span></p>
+                <p><span className="text-muted-foreground select-none">Output: </span><span className="text-primary font-medium">{ex.output}</span></p>
+              </div>
+              {ex.explanation && (
+                <p className="text-[11px] text-muted-foreground leading-relaxed">{ex.explanation}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ResultsPanel({
+  testCases,
+  results,
+  score,
+  running,
+}: {
+  testCases: { input: string }[];
+  results: CandidateTestResult[];
+  score: number | undefined;
+  running: boolean;
+}) {
+  return (
+    <div className="h-full overflow-y-auto">
+      <div className="flex items-center justify-between px-4 h-9 border-b border-border bg-muted/30 shrink-0">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Test Results
+        </span>
+        {score !== undefined && (
+          <span className={`text-[11px] font-semibold tabular-nums ${score >= 80 ? "text-green-500" : score >= 50 ? "text-yellow-500" : "text-destructive"}`}>
+            {score}%
+          </span>
+        )}
+      </div>
+
+      <div className="p-3 space-y-1.5">
+        {running && (
+          <div className="flex items-center gap-2 py-6 justify-center">
+            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            <span className="text-[12px] text-muted-foreground">Running tests…</span>
+          </div>
+        )}
+
+        {!running && results.length === 0 && testCases.length > 0 && (
+          <div className="space-y-1">
+            {testCases.map((tc, i) => (
+              <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-muted/40 font-mono text-[11px]">
+                <span className="text-muted-foreground/50 w-4 shrink-0">{i + 1}</span>
+                <span className="text-muted-foreground truncate">in: {tc.input}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!running && results.length > 0 && results.map((r, i) => (
+          <div
+            key={i}
+            className={`flex items-start gap-2.5 px-3 py-2 rounded-lg font-mono text-[11px] ${
+              r.passed ? "bg-green-500/8 border border-green-500/20" : "bg-destructive/8 border border-destructive/20"
+            }`}
+          >
+            {r.passed
+              ? <Check className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
+              : <X className="w-3.5 h-3.5 text-destructive mt-0.5 shrink-0" />
+            }
+            <div className="space-y-0.5 min-w-0">
+              <p className="text-muted-foreground truncate">in: {r.input}</p>
+              {!r.passed && (
+                <>
+                  <p className="truncate">expected: {r.expected}</p>
+                  <p className="text-destructive truncate">got: {r.actual}</p>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FinishModal({
+  submittedCount,
+  totalCount,
+  onConfirm,
+  onCancel,
+  isLoading,
+}: {
+  submittedCount: number;
+  totalCount: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isLoading: boolean;
+}) {
+  const unsubmitted = totalCount - submittedCount;
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/65"
+    >
+      <motion.div
+        initial={{ scale: 0.96, y: 8 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.96, y: 8 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="bg-card border border-border rounded-2xl w-full max-w-sm mx-4 p-6 space-y-4"
+      >
+        <div className="flex items-start gap-3">
+          {unsubmitted > 0 ? (
+            <div className="w-9 h-9 rounded-xl bg-yellow-500/10 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-4 h-4 text-yellow-500" />
+            </div>
+          ) : (
+            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Check className="w-4 h-4 text-primary" />
+            </div>
+          )}
+          <div>
+            <p className="text-[14px] font-semibold">Finish assessment?</p>
+            <p className="text-[12px] text-muted-foreground mt-0.5 leading-relaxed">
+              {unsubmitted > 0
+                ? `You have ${unsubmitted} unsubmitted ${unsubmitted === 1 ? "problem" : "problems"}. Once finished you cannot make changes.`
+                : "All problems submitted. This will lock your assessment."}
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={onCancel}
+            className="flex-1 text-[12px] font-medium py-2 rounded-lg ring-1 ring-border/60 hover:bg-secondary cursor-pointer transition-all duration-500"
+          >
+            Keep working
+          </button>
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={onConfirm}
+            disabled={isLoading}
+            className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-semibold py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer transition-all duration-500"
+          >
+            {isLoading ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finishing…</> : "Finish"}
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ── Completed screen ──
+
+function CompletedScreen({ session }: { session: AssessSession }) {
+  const totalScore =
+    session.submissions.length > 0
+      ? Math.round(session.submissions.reduce((acc, s) => acc + s.score, 0) / session.submissions.length)
+      : 0;
+
+  return (
+    <div className="flex h-screen items-center justify-center bg-background px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md text-center space-y-6"
+      >
+        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
+          <Check className="w-7 h-7 text-primary" />
+        </div>
+        <div className="space-y-1.5">
+          <h1 className="text-[22px] font-semibold tracking-tight">Assessment complete</h1>
+          <p className="text-[13px] text-muted-foreground">
+            Your responses have been submitted. The hiring team will be in touch.
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="px-4 py-3 rounded-xl bg-card border border-border/60 space-y-0.5">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Problems</p>
+            <p className="text-[20px] font-semibold tabular-nums">{session.submissions.length}/{session.problems.length}</p>
+          </div>
+          <div className="px-4 py-3 rounded-xl bg-card border border-border/60 space-y-0.5">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Score</p>
+            <p className={`text-[20px] font-semibold tabular-nums ${totalScore >= 80 ? "text-green-500" : totalScore >= 50 ? "text-yellow-500" : "text-destructive"}`}>
+              {totalScore}%
+            </p>
+          </div>
+          <div className="px-4 py-3 rounded-xl bg-card border border-border/60 space-y-0.5">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Status</p>
+            <p className="text-[20px] font-semibold text-primary">Done</p>
+          </div>
+        </div>
+        <a
+          href="https://codetail.cc"
+          className="block text-[12px] text-muted-foreground hover:text-foreground transition-all duration-500"
+        >
+          Powered by Codetail →
+        </a>
+      </motion.div>
+    </div>
+  );
+}

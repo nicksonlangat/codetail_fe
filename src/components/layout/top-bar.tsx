@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard, Route, Workflow,
+  LayoutDashboard, Route, Workflow, ClipboardList,
   Settings, LogOut, Sun, Moon,
   Shield, Sparkles, Zap, CreditCard, Crown,
 } from "lucide-react";
@@ -20,6 +20,7 @@ const baseNavItems = [
   { icon: LayoutDashboard, label: "Home", path: "/dashboard" },
   { icon: Route, label: "Paths", path: "/paths" },
   { icon: Workflow, label: "Canvas", path: "/canvas" },
+  { icon: ClipboardList, label: "Interviews", path: "/interviews" },
 ];
 
 const spring = { type: "spring" as const, stiffness: 400, damping: 30 };
