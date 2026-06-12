@@ -273,7 +273,7 @@ export default function ChallengePage() {
             <CodePanel problemId={problem.id} code={code} onCodeChange={setCode}
               onReset={handleReset} onRun={handleRun} onSubmit={handleRun}
               running={running}
-              examples={content.examples ?? []}
+              testCases={problem.test_cases ?? []}
               testResults={testResults}
               challengeType={challengeType}
               stack={problem.stack}

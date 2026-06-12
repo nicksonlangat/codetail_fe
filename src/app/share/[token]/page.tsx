@@ -170,7 +170,7 @@ export default function SharePage() {
                 <ResizableHandle className="h-1 bg-border hover:bg-primary/30 transition-colors cursor-row-resize" />
                 <ResizablePanel defaultSize={35} minSize={20}>
                   <TestCasesPanel
-                    examples={(shared.examples ?? []).map((e) => ({ input: e.input, output: e.output, explanation: e.explanation ?? undefined }))}
+                    testCases={shared.test_cases ?? []}
                     results={testResults}
                     running={running}
                   />

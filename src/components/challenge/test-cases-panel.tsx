@@ -15,7 +15,7 @@ function formatInput(raw: string): string {
   }
   return raw;
 }
-import type { ChallengeExample } from "@/types";
+import type { TestCaseItem } from "@/lib/api/paths";
 
 export interface TestCaseResult {
   input: string;
@@ -24,16 +24,26 @@ export interface TestCaseResult {
   passed: boolean | null; // null = not run yet
 }
 
+function formatExpected(raw: string): string {
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === "string") return parsed;
+    return JSON.stringify(parsed);
+  } catch {
+    return raw;
+  }
+}
+
 interface TestCasesPanelProps {
-  examples: ChallengeExample[];
+  testCases: TestCaseItem[];
   results: TestCaseResult[];
   running: boolean;
 }
 
-export function TestCasesPanel({ examples, results, running }: TestCasesPanelProps) {
+export function TestCasesPanel({ testCases, results, running }: TestCasesPanelProps) {
   const hasResults = results.length > 0;
   const passed = results.filter((r) => r.passed === true).length;
-  const total = hasResults ? results.length : examples.length;
+  const total = hasResults ? results.length : testCases.length;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -55,9 +65,9 @@ export function TestCasesPanel({ examples, results, running }: TestCasesPanelPro
 
       {/* Test cases */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {(hasResults ? results : examples.map((ex) => ({
-          input: ex.input,
-          expected: ex.output,
+        {(hasResults ? results : testCases.map((tc) => ({
+          input: tc.input,
+          expected: formatExpected(tc.expected),
           actual: null,
           passed: null,
         }))).map((tc, i) => (

@@ -1,19 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Code2, Database, Layout } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { getDashboard } from "@/lib/api/progress";
 import { getIcon } from "@/lib/icons";
 
 const spring = { type: "spring" as const, stiffness: 300, damping: 30 };
-
-const starterPaths = [
-  { slug: "python-fundamentals", title: "Python Fundamentals", icon: Code2 },
-  { slug: "django-models", title: "Django Models", icon: Database },
-  { slug: "django-fundamentals", title: "Django Fundamentals", icon: Layout },
-];
 
 export function PathBanner() {
   const { data: dashboard, isLoading } = useQuery({
@@ -28,26 +22,7 @@ export function PathBanner() {
 
   const primary = dashboard?.active_paths?.[0];
 
-  /* No active path — compact path picker row */
-  if (!primary) {
-    return (
-      <div className="flex items-center gap-3 py-3 px-4 rounded-lg border border-border bg-card">
-        <span className="text-[11px] text-muted-foreground shrink-0">Pick a path to start</span>
-        <div className="flex items-center gap-2 flex-1">
-          {starterPaths.map((p) => {
-            const Icon = p.icon;
-            return (
-              <Link key={p.slug} href={`/paths/${p.slug}`}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border hover:border-primary/40 hover:bg-primary/3 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-all duration-200 cursor-pointer group">
-                <Icon className="w-3 h-3" />
-                {p.title}
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
+  if (!primary) return null;
 
   const Icon = getIcon(primary.path_icon);
   const remaining = dashboard?.remaining_in_closest ?? 0;

@@ -53,6 +53,11 @@ export interface ProblemFile {
   starter_code: string;
 }
 
+export interface TestCaseItem {
+  input: string;    // JSON dict string e.g. '{"n": 5}'
+  expected: string; // JSON value string e.g. '"hello"' or '42'
+}
+
 export interface ProblemDetail {
   id: string;
   path_id: string;
@@ -67,6 +72,7 @@ export interface ProblemDetail {
   description: string;
   function_signature: string;
   examples: Example[];
+  test_cases: TestCaseItem[];
   starter_code: string;
   mcq_options: McqOption[];
   explanation: string | null;

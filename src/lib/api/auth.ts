@@ -52,3 +52,18 @@ export async function getMe() {
   const res = await apiClient.get<UserResponse>("/auth/me");
   return res.data;
 }
+
+export interface RankResponse {
+  xp: number;
+  xp_today: number;
+  xp_week: number;
+  xp_month: number;
+  badges: string[];
+  streak_days: number;
+  problems_solved: number;
+}
+
+export async function getRank() {
+  const res = await apiClient.get<RankResponse>("/auth/me/rank");
+  return res.data;
+}
