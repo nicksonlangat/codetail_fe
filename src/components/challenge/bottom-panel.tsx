@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FlaskConical, Lightbulb, Bot, BookOpen, Loader2 } from "lucide-react";
-import type { ChallengeExample } from "@/types";
 import { TestCasesPanel, type TestCaseResult } from "./test-cases-panel";
+import type { TestCaseItem } from "@/lib/api/paths";
 import { getHint, getReview, getSolution, type HintResponse, type ReviewResponse } from "@/lib/api/submissions";
 import type { ReviewData } from "@/lib/api/progress";
 import { UpgradeModal } from "@/components/paywall/upgrade-modal";
@@ -31,7 +31,7 @@ const levelColor: Record<string, string> = {
 interface BottomPanelProps {
   problemId: string;
   code: string;
-  examples: ChallengeExample[];
+  testCases: TestCaseItem[];
   testResults: TestCaseResult[];
   running: boolean;
   stack?: string;
@@ -41,7 +41,7 @@ interface BottomPanelProps {
   initialSolution?: string | null;
 }
 
-export function BottomPanel({ problemId, code, examples, testResults, running, stack = "python", triggerReview = 0, initialHints = [], initialReview = null, initialSolution = null }: BottomPanelProps) {
+export function BottomPanel({ problemId, code, testCases, testResults, running, stack = "python", triggerReview = 0, initialHints = [], initialReview = null, initialSolution = null }: BottomPanelProps) {
   const isDjango = stack === "django";
   const [active, setActive] = useState<Tab>(isDjango ? "review" : "tests");
   const [hints, setHints] = useState<HintResponse[]>([]);
@@ -199,7 +199,7 @@ export function BottomPanel({ problemId, code, examples, testResults, running, s
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {active === "tests" && (
-          <TestCasesPanel examples={examples} results={testResults} running={running} />
+          <TestCasesPanel testCases={testCases} results={testResults} running={running} />
         )}
 
         {active === "hints" && (

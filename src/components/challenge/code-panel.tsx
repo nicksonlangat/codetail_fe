@@ -8,8 +8,8 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import type { ChallengeType, ChallengeExample } from "@/types";
-import type { ProblemFile } from "@/lib/api/paths";
+import type { ChallengeType } from "@/types";
+import type { ProblemFile, TestCaseItem } from "@/lib/api/paths";
 import { CodeEditor } from "./code-editor";
 import { BottomPanel } from "./bottom-panel";
 import type { TestCaseResult } from "./test-cases-panel";
@@ -22,7 +22,7 @@ interface CodePanelProps {
   onRun: () => void;
   onSubmit: () => void;
   running: boolean;
-  examples: ChallengeExample[];
+  testCases: TestCaseItem[];
   testResults: TestCaseResult[];
   challengeType: ChallengeType;
   stack?: string;
@@ -40,7 +40,7 @@ export function CodePanel({
   onRun,
   onSubmit,
   running,
-  examples,
+  testCases,
   testResults,
   challengeType,
   stack = "python",
@@ -181,7 +181,7 @@ export function CodePanel({
       <ResizablePanel defaultSize={40} minSize={15}>
         <BottomPanel
           problemId={problemId} code={combinedCode}
-          examples={examples} testResults={testResults} running={running}
+          testCases={testCases} testResults={testResults} running={running}
           stack={stack}
           triggerReview={reviewTrigger}
           initialHints={initialHints} initialReview={initialReview}

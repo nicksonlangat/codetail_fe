@@ -85,12 +85,17 @@ export function TodayChallenges() {
             <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">Today</span>
           </div>
           <div className="rounded-lg border border-dashed border-border px-4 py-5 flex items-center justify-between gap-4">
-            <p className="text-[12px] text-muted-foreground">No challenges queued yet.</p>
+            <div className="min-w-0">
+              <p className="text-[12px] font-medium text-foreground">No problems picked for today</p>
+              <p className="text-[11px] text-muted-foreground/60 mt-0.5">
+                Generate 3 AI-picked problems tailored to your weak areas.
+              </p>
+            </div>
             <button
               onClick={() => setGenerateOpen(true)}
               className="text-[11px] font-semibold text-primary hover:text-primary/80 cursor-pointer transition-colors shrink-0"
             >
-              Generate one →
+              Pick problems →
             </button>
           </div>
         </div>
