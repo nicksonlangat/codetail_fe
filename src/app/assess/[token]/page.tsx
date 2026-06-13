@@ -189,6 +189,10 @@ function AssessmentScreen({
   const [scores, setScores] = useState<Record<string, number>>(() =>
     Object.fromEntries(session.submissions.map((s) => [s.problem_id.toString(), s.score]))
   );
+  const [aiFeedbacks, setAiFeedbacks] = useState<Record<string, string | null>>(() =>
+    Object.fromEntries(session.submissions.map((s) => [s.problem_id.toString(), s.ai_feedback]))
+  );
+  const [submitErrors, setSubmitErrors] = useState<Record<string, string | null>>({});
   const [running, setRunning] = useState(false);
   const [showFinish, setShowFinish] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(session.seconds_remaining ?? session.time_limit_minutes * 60);
@@ -223,6 +227,8 @@ function AssessmentScreen({
     onSuccess: (res) => {
       setResults((prev) => ({ ...prev, [res.problem_id]: res.test_results }));
       setScores((prev) => ({ ...prev, [res.problem_id]: res.score }));
+      setAiFeedbacks((prev) => ({ ...prev, [res.problem_id]: res.ai_feedback }));
+      setSubmitErrors((prev) => ({ ...prev, [res.problem_id]: res.error }));
       setRunning(false);
     },
     onError: () => setRunning(false),
@@ -350,6 +356,8 @@ function AssessmentScreen({
                 testCases={activeProblem.test_cases}
                 results={results[activeProblem.id] ?? []}
                 score={scores[activeProblem.id]}
+                aiFeedback={aiFeedbacks[activeProblem.id] ?? null}
+                submitError={submitErrors[activeProblem.id] ?? null}
                 running={running}
               />
             </ResizablePanel>
@@ -447,67 +455,135 @@ function ResultsPanel({
   testCases,
   results,
   score,
+  aiFeedback,
+  submitError,
   running,
 }: {
   testCases: { input: string }[];
   results: CandidateTestResult[];
   score: number | undefined;
+  aiFeedback: string | null;
+  submitError: string | null;
   running: boolean;
 }) {
+  const hasRun = score !== undefined;
+  const passedCount = results.filter((r) => r.passed).length;
+  const isAiReviewed = hasRun && results.length === 0;
+
+  const scoreColor =
+    score !== undefined
+      ? score >= 80
+        ? "text-green-500"
+        : score >= 50
+        ? "text-yellow-500"
+        : "text-destructive"
+      : "";
+
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Header */}
       <div className="flex items-center justify-between px-4 h-9 border-b border-border bg-muted/30 shrink-0">
         <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Test Results
+          {running ? "Running…" : hasRun ? "Results" : "Test Cases"}
         </span>
         {score !== undefined && (
-          <span className={`text-[11px] font-semibold tabular-nums ${score >= 80 ? "text-green-500" : score >= 50 ? "text-yellow-500" : "text-destructive"}`}>
-            {score}%
-          </span>
+          <div className="flex items-center gap-2">
+            {results.length > 0 && (
+              <span className="text-[10px] text-muted-foreground">
+                {passedCount}/{results.length} passed
+              </span>
+            )}
+            <span className={`text-[11px] font-semibold tabular-nums ${scoreColor}`}>
+              {score}%
+            </span>
+          </div>
         )}
       </div>
 
-      <div className="p-3 space-y-1.5">
+      <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+        {/* Running spinner */}
         {running && (
-          <div className="flex items-center gap-2 py-6 justify-center">
+          <div className="flex items-center gap-2 py-8 justify-center">
             <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
             <span className="text-[12px] text-muted-foreground">Running tests…</span>
           </div>
         )}
 
-        {!running && results.length === 0 && testCases.length > 0 && (
-          <div className="space-y-1">
-            {testCases.map((tc, i) => (
-              <div key={i} className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-muted/40 font-mono text-[11px]">
-                <span className="text-muted-foreground/50 w-4 shrink-0">{i + 1}</span>
-                <span className="text-muted-foreground truncate">in: {tc.input}</span>
-              </div>
-            ))}
+        {/* Error from sandbox */}
+        {!running && submitError && (
+          <div className="rounded-lg bg-destructive/8 border border-destructive/20 p-3 space-y-1.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-destructive">Error</p>
+            <pre className="text-[11px] font-mono text-destructive/80 whitespace-pre-wrap break-words leading-relaxed">{submitError}</pre>
           </div>
         )}
 
+        {/* AI feedback (no sandbox test results) */}
+        {!running && isAiReviewed && aiFeedback && (
+          <div className="rounded-lg bg-primary/5 border border-primary/20 p-3.5 space-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">AI Review</span>
+            </div>
+            <p className="text-[12px] text-foreground/80 leading-relaxed">{aiFeedback}</p>
+          </div>
+        )}
+
+        {/* Sandbox test results */}
         {!running && results.length > 0 && results.map((r, i) => (
           <div
             key={i}
-            className={`flex items-start gap-2.5 px-3 py-2 rounded-lg font-mono text-[11px] ${
-              r.passed ? "bg-green-500/8 border border-green-500/20" : "bg-destructive/8 border border-destructive/20"
+            className={`rounded-lg border font-mono text-[11px] overflow-hidden ${
+              r.passed
+                ? "bg-green-500/5 border-green-500/20"
+                : "bg-destructive/5 border-destructive/20"
             }`}
           >
-            {r.passed
-              ? <Check className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
-              : <X className="w-3.5 h-3.5 text-destructive mt-0.5 shrink-0" />
-            }
-            <div className="space-y-0.5 min-w-0">
-              <p className="text-muted-foreground truncate">in: {r.input}</p>
+            <div className={`flex items-center gap-2 px-3 py-1.5 border-b ${r.passed ? "border-green-500/15 bg-green-500/5" : "border-destructive/15 bg-destructive/5"}`}>
+              {r.passed
+                ? <Check className="w-3 h-3 text-green-500 shrink-0" />
+                : <X className="w-3 h-3 text-destructive shrink-0" />
+              }
+              <span className={`text-[10px] font-semibold ${r.passed ? "text-green-500" : "text-destructive"}`}>
+                Test {i + 1} · {r.passed ? "Passed" : "Failed"}
+              </span>
+            </div>
+            <div className="px-3 py-2 space-y-1">
+              <div className="flex gap-2">
+                <span className="text-muted-foreground/60 w-16 shrink-0">Input</span>
+                <span className="text-foreground/80 break-all">{r.input}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-muted-foreground/60 w-16 shrink-0">Expected</span>
+                <span className="text-foreground/80 break-all">{r.expected}</span>
+              </div>
               {!r.passed && (
-                <>
-                  <p className="truncate">expected: {r.expected}</p>
-                  <p className="text-destructive truncate">got: {r.actual}</p>
-                </>
+                <div className="flex gap-2">
+                  <span className="text-destructive/70 w-16 shrink-0">Got</span>
+                  <span className="text-destructive break-all">{r.actual}</span>
+                </div>
               )}
             </div>
           </div>
         ))}
+
+        {/* Pre-run: show test case inputs */}
+        {!running && !hasRun && testCases.map((tc, i) => (
+          <div key={i} className="rounded-lg border border-border/50 bg-muted/40 font-mono text-[11px] overflow-hidden">
+            <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border/40 bg-muted/60">
+              <span className="text-muted-foreground/50 text-[10px] font-semibold">Test {i + 1}</span>
+            </div>
+            <div className="px-3 py-2 flex gap-2">
+              <span className="text-muted-foreground/60 w-16 shrink-0">Input</span>
+              <span className="text-foreground/70 break-all">{tc.input}</span>
+            </div>
+          </div>
+        ))}
+
+        {/* No test cases at all */}
+        {!running && !hasRun && testCases.length === 0 && (
+          <div className="py-8 text-center">
+            <p className="text-[11px] text-muted-foreground">Submit to run the review.</p>
+          </div>
+        )}
       </div>
     </div>
   );
