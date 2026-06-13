@@ -43,6 +43,7 @@ export interface CreateInterviewRequest {
 export interface InviteRequest {
   candidate_name: string;
   candidate_email: string;
+  expires_in_hours?: number;
 }
 
 export interface InviteResponse {

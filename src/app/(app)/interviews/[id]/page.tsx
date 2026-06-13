@@ -235,6 +235,14 @@ function SessionRow({
   );
 }
 
+const EXPIRY_OPTIONS = [
+  { label: "24 hours", value: 24 },
+  { label: "48 hours", value: 48 },
+  { label: "3 days", value: 72 },
+  { label: "7 days", value: 168 },
+  { label: "14 days", value: 336 },
+];
+
 function InviteModal({
   interviewId,
   onClose,
@@ -246,17 +254,23 @@ function InviteModal({
 }) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [link, setLink] = useState<string | null>(null);
+  const [expiresInHours, setExpiresInHours] = useState(168);
+  const [result, setResult] = useState<{ url: string; sentTo: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
   const inviteMutation = useMutation({
-    mutationFn: () => inviteCandidate(interviewId, { candidate_email: email, candidate_name: name }),
-    onSuccess: (res) => setLink(res.assess_url),
+    mutationFn: () =>
+      inviteCandidate(interviewId, {
+        candidate_email: email,
+        candidate_name: name,
+        expires_in_hours: expiresInHours,
+      }),
+    onSuccess: (res) => setResult({ url: res.assess_url, sentTo: email }),
   });
 
   const copyLink = () => {
-    if (!link) return;
-    navigator.clipboard.writeText(link);
+    if (!result) return;
+    navigator.clipboard.writeText(result.url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -286,7 +300,7 @@ function InviteModal({
             </button>
           </div>
 
-          {!link ? (
+          {!result ? (
             <>
               <div className="space-y-3">
                 <div className="space-y-1.5">
@@ -308,6 +322,24 @@ function InviteModal({
                     className="w-full text-[13px] bg-background border border-border/60 rounded-lg px-3 py-2 placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all duration-500"
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-medium text-muted-foreground">Link expires in</label>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {EXPIRY_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setExpiresInHours(opt.value)}
+                        className={`text-[11px] font-medium px-2.5 py-1 rounded-lg border cursor-pointer transition-all duration-500 ${
+                          expiresInHours === opt.value
+                            ? "bg-primary/8 border-primary/30 text-primary"
+                            : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
               <motion.button
                 whileTap={{ scale: 0.97 }}
@@ -315,17 +347,24 @@ function InviteModal({
                 disabled={!email.trim() || inviteMutation.isPending}
                 className="w-full flex items-center justify-center gap-2 text-[13px] font-semibold py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all duration-500"
               >
-                {inviteMutation.isPending ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Generating…</> : "Generate Link"}
+                {inviteMutation.isPending ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending…</> : <><Send className="w-3.5 h-3.5" /> Send Invite</>}
               </motion.button>
             </>
           ) : (
             <div className="space-y-4">
-              <div className="space-y-2">
-                <p className="text-[12px] text-muted-foreground">
-                  Share this link with the candidate. It's unique and single-use.
-                </p>
+              <div className="flex items-start gap-3 p-3.5 rounded-xl bg-green-500/8 border border-green-500/20">
+                <Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-[12px] font-semibold text-foreground">Invite sent</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    An email with the assessment link was sent to <span className="font-medium text-foreground">{result.sentTo}</span>.
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Link (backup copy)</p>
                 <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-muted border border-border/60">
-                  <span className="flex-1 text-[11px] font-mono text-foreground/80 truncate">{link}</span>
+                  <span className="flex-1 text-[11px] font-mono text-foreground/80 truncate">{result.url}</span>
                   <button
                     onClick={copyLink}
                     className="shrink-0 text-muted-foreground hover:text-foreground cursor-pointer transition-all duration-500"
@@ -342,7 +381,7 @@ function InviteModal({
                   {copied ? <><Check className="w-3.5 h-3.5 text-primary" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy link</>}
                 </button>
                 <button
-                  onClick={() => { onSuccess(); }}
+                  onClick={onSuccess}
                   className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-semibold py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer transition-all duration-500"
                 >
                   Done
