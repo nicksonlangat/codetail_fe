@@ -12,6 +12,7 @@ import {
   finishAssessSession,
   type AssessSession,
   type AssessProblem,
+  type AssessMcqOption,
   type CandidateSubmission,
   type CandidateTestResult,
 } from "@/lib/api/interviews";
@@ -193,6 +194,8 @@ function AssessmentScreen({
     Object.fromEntries(session.submissions.map((s) => [s.problem_id.toString(), s.ai_feedback]))
   );
   const [submitErrors, setSubmitErrors] = useState<Record<string, string | null>>({});
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  const [correctOptions, setCorrectOptions] = useState<Record<string, string | null>>({});
   const [running, setRunning] = useState(false);
   const [showFinish, setShowFinish] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(session.seconds_remaining ?? session.time_limit_minutes * 60);
@@ -217,17 +220,23 @@ function AssessmentScreen({
   }, [session.status]);
 
   const submitMutation = useMutation({
-    mutationFn: (problemId: string) =>
-      submitAssessProblem(token, {
+    mutationFn: (problemId: string) => {
+      const problem = session.problems.find((p) => p.id === problemId);
+      const isMcq = problem?.type === "mcq";
+      return submitAssessProblem(token, {
         problem_id: problemId,
-        code: codes[problemId] ?? "",
+        ...(isMcq
+          ? { selected_option: selectedOptions[problemId] }
+          : { code: codes[problemId] ?? "" }),
         time_spent_seconds: Math.round((Date.now() - startTimeRef.current) / 1000),
-      }),
+      });
+    },
     onMutate: () => setRunning(true),
     onSuccess: (res) => {
       setResults((prev) => ({ ...prev, [res.problem_id]: res.test_results }));
       setScores((prev) => ({ ...prev, [res.problem_id]: res.score }));
       setAiFeedbacks((prev) => ({ ...prev, [res.problem_id]: res.ai_feedback }));
+      setCorrectOptions((prev) => ({ ...prev, [res.problem_id]: res.correct_option }));
       setSubmitErrors((prev) => ({ ...prev, [res.problem_id]: res.error }));
       setRunning(false);
     },
@@ -315,53 +324,67 @@ function AssessmentScreen({
 
         <ResizableHandle className="w-1 bg-border hover:bg-primary/30 transition-colors cursor-col-resize" />
 
-        {/* Right: editor + results */}
+        {/* Right: MCQ choices OR editor + results */}
         <ResizablePanel defaultSize={55} minSize={30}>
-          <ResizablePanelGroup orientation="vertical" className="h-full">
-            <ResizablePanel defaultSize={65} minSize={30}>
-              <div className="flex flex-col h-full min-h-0">
-                <div className="flex items-center justify-between px-3 h-10 border-b border-border bg-muted/50 dark:bg-card/50 shrink-0">
-                  <span className="text-[11px] font-medium text-muted-foreground px-1">
-                    {activeProblem.stack === "django" ? "Django" : "Python"} · main.py
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <motion.button
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => submitMutation.mutate(activeProblem.id)}
-                      disabled={running}
-                      className="flex items-center gap-1.5 text-[11px] font-medium text-primary-foreground px-2.5 py-1 rounded-md bg-primary hover:bg-primary/90 disabled:opacity-50 cursor-pointer transition-all duration-500"
-                    >
-                      {running ? (
-                        <><Loader2 className="w-3 h-3 animate-spin" /> Running…</>
-                      ) : (
-                        <><Send className="w-3 h-3" /> Submit</>
-                      )}
-                    </motion.button>
+          {activeProblem.type === "mcq" ? (
+            <McqPanel
+              problem={activeProblem}
+              selectedOption={selectedOptions[activeProblem.id] ?? null}
+              correctOption={correctOptions[activeProblem.id] ?? null}
+              score={scores[activeProblem.id]}
+              running={running}
+              onSelect={(optId) =>
+                setSelectedOptions((prev) => ({ ...prev, [activeProblem.id]: optId }))
+              }
+              onSubmit={() => submitMutation.mutate(activeProblem.id)}
+            />
+          ) : (
+            <ResizablePanelGroup orientation="vertical" className="h-full">
+              <ResizablePanel defaultSize={65} minSize={30}>
+                <div className="flex flex-col h-full min-h-0">
+                  <div className="flex items-center justify-between px-3 h-10 border-b border-border bg-muted/50 dark:bg-card/50 shrink-0">
+                    <span className="text-[11px] font-medium text-muted-foreground px-1">
+                      {activeProblem.stack === "django" ? "Django" : "Python"} · main.py
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => submitMutation.mutate(activeProblem.id)}
+                        disabled={running}
+                        className="flex items-center gap-1.5 text-[11px] font-medium text-primary-foreground px-2.5 py-1 rounded-md bg-primary hover:bg-primary/90 disabled:opacity-50 cursor-pointer transition-all duration-500"
+                      >
+                        {running ? (
+                          <><Loader2 className="w-3 h-3 animate-spin" /> Running…</>
+                        ) : (
+                          <><Send className="w-3 h-3" /> Submit</>
+                        )}
+                      </motion.button>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-h-0">
+                    <MonacoCodeEditor
+                      value={codes[activeProblem.id] ?? activeProblem.starter_code}
+                      onChange={(v) => setCodes((prev) => ({ ...prev, [activeProblem.id]: v }))}
+                      language="python"
+                    />
                   </div>
                 </div>
-                <div className="flex-1 min-h-0">
-                  <MonacoCodeEditor
-                    value={codes[activeProblem.id] ?? activeProblem.starter_code}
-                    onChange={(v) => setCodes((prev) => ({ ...prev, [activeProblem.id]: v }))}
-                    language="python"
-                  />
-                </div>
-              </div>
-            </ResizablePanel>
+              </ResizablePanel>
 
-            <ResizableHandle className="h-1 bg-border hover:bg-primary/30 transition-colors cursor-row-resize" />
+              <ResizableHandle className="h-1 bg-border hover:bg-primary/30 transition-colors cursor-row-resize" />
 
-            <ResizablePanel defaultSize={35} minSize={15}>
-              <ResultsPanel
-                testCases={activeProblem.test_cases}
-                results={results[activeProblem.id] ?? []}
-                score={scores[activeProblem.id]}
-                aiFeedback={aiFeedbacks[activeProblem.id] ?? null}
-                submitError={submitErrors[activeProblem.id] ?? null}
-                running={running}
-              />
-            </ResizablePanel>
-          </ResizablePanelGroup>
+              <ResizablePanel defaultSize={35} minSize={15}>
+                <ResultsPanel
+                  testCases={activeProblem.test_cases}
+                  results={results[activeProblem.id] ?? []}
+                  score={scores[activeProblem.id]}
+                  aiFeedback={aiFeedbacks[activeProblem.id] ?? null}
+                  submitError={submitErrors[activeProblem.id] ?? null}
+                  running={running}
+                />
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          )}
         </ResizablePanel>
       </ResizablePanelGroup>
 
@@ -445,6 +468,110 @@ function ProblemDescription({ problem }: { problem: AssessProblem }) {
               )}
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function McqPanel({
+  problem,
+  selectedOption,
+  correctOption,
+  score,
+  running,
+  onSelect,
+  onSubmit,
+}: {
+  problem: AssessProblem;
+  selectedOption: string | null;
+  correctOption: string | null;
+  score: number | undefined;
+  running: boolean;
+  onSelect: (id: string) => void;
+  onSubmit: () => void;
+}) {
+  const hasSubmitted = score !== undefined;
+
+  return (
+    <div className="h-full flex flex-col overflow-hidden">
+      <div className="flex items-center justify-between px-4 h-10 border-b border-border bg-muted/50 dark:bg-card/50 shrink-0">
+        <span className="text-[11px] font-medium text-muted-foreground">Choose one answer</span>
+        {hasSubmitted && (
+          <span className={`text-[11px] font-semibold ${score === 100 ? "text-green-500" : "text-destructive"}`}>
+            {score === 100 ? "Correct" : "Incorrect"}
+          </span>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+        {problem.mcq_options.map((opt) => {
+          const isSelected = selectedOption === opt.id;
+          const isCorrect = correctOption === opt.id;
+          const isWrong = hasSubmitted && isSelected && !isCorrect;
+          const revealCorrect = hasSubmitted && isCorrect;
+
+          let cardClass = "border-border/50 bg-card hover:border-border hover:bg-muted/30";
+          let labelClass = "text-foreground/80";
+          if (revealCorrect) {
+            cardClass = "border-green-500/40 bg-green-500/5";
+            labelClass = "text-green-600 dark:text-green-400 font-medium";
+          } else if (isWrong) {
+            cardClass = "border-destructive/40 bg-destructive/5";
+            labelClass = "text-destructive font-medium";
+          } else if (isSelected && !hasSubmitted) {
+            cardClass = "border-primary/40 bg-primary/5";
+            labelClass = "text-foreground font-medium";
+          }
+
+          return (
+            <motion.button
+              key={opt.id}
+              onClick={() => !hasSubmitted && onSelect(opt.id)}
+              disabled={hasSubmitted}
+              whileTap={hasSubmitted ? {} : { scale: 0.99 }}
+              className={`w-full text-left rounded-xl border p-3.5 cursor-pointer transition-all duration-300 disabled:cursor-default ${cardClass}`}
+            >
+              <div className="flex items-start gap-3">
+                <div className={`w-4 h-4 rounded-full border-2 mt-0.5 shrink-0 flex items-center justify-center transition-all duration-300 ${
+                  revealCorrect
+                    ? "border-green-500 bg-green-500"
+                    : isWrong
+                    ? "border-destructive bg-destructive"
+                    : isSelected
+                    ? "border-primary bg-primary"
+                    : "border-border/60"
+                }`}>
+                  {(isSelected || revealCorrect) && (
+                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-[13px] leading-relaxed ${labelClass}`}>{opt.label}</p>
+                  {opt.code && (
+                    <pre className="mt-2 text-[11px] font-mono bg-muted/80 rounded-lg p-3 overflow-x-auto leading-relaxed whitespace-pre-wrap">
+                      {opt.code}
+                    </pre>
+                  )}
+                </div>
+                {revealCorrect && <Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />}
+                {isWrong && <X className="w-4 h-4 text-destructive shrink-0 mt-0.5" />}
+              </div>
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {!hasSubmitted && (
+        <div className="px-4 py-3 border-t border-border/50 shrink-0">
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={onSubmit}
+            disabled={!selectedOption || running}
+            className="w-full flex items-center justify-center gap-2 text-[12px] font-semibold py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all duration-500"
+          >
+            {running ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Checking…</> : <><Send className="w-3.5 h-3.5" /> Submit Answer</>}
+          </motion.button>
         </div>
       )}
     </div>

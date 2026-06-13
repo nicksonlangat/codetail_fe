@@ -92,6 +92,12 @@ export interface InterviewResults {
 
 // ── Assess (candidate-facing) ──
 
+export interface AssessMcqOption {
+  id: string;
+  label: string;
+  code: string | null;
+}
+
 export interface AssessProblem {
   id: string;
   title: string;
@@ -105,6 +111,7 @@ export interface AssessProblem {
   examples: { input: string; output: string; explanation?: string }[];
   hints: string[];
   test_cases: { input: string }[];
+  mcq_options: AssessMcqOption[];
 }
 
 export interface AssessSession {
@@ -127,6 +134,7 @@ export interface AssessSubmitResponse {
   score: number;
   test_results: CandidateTestResult[];
   ai_feedback: string | null;
+  correct_option: string | null;
   error: string | null;
 }
 
@@ -187,7 +195,7 @@ export async function startAssessSession(token: string, candidateName: string) {
 
 export async function submitAssessProblem(
   token: string,
-  data: { problem_id: string; code: string; time_spent_seconds: number }
+  data: { problem_id: string; code?: string; selected_option?: string; time_spent_seconds: number }
 ) {
   const res = await apiClient.post<AssessSubmitResponse>(`/assess/${token}/submit`, data);
   return res.data;
