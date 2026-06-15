@@ -26,7 +26,7 @@ export function ContinueList() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-xl border border-border bg-card p-5 h-28 animate-pulse" />
+            <div key={i} className="rounded-xl bg-card/50 p-5 h-28 animate-pulse" />
           ))}
         </div>
       </div>

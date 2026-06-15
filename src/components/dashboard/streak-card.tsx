@@ -45,7 +45,7 @@ export function StreakCard() {
 
   return (
     <motion.div
-      className="relative rounded-xl bg-card border border-border p-6 cursor-pointer overflow-hidden"
+      className="relative rounded-xl bg-card/50 p-6 cursor-pointer overflow-hidden"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 200, damping: 24 }}

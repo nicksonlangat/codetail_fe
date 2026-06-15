@@ -54,7 +54,7 @@ export function LeaderboardCard() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ ...spring, delay: 0.06 }}
-      className="rounded-xl border border-border bg-card overflow-hidden"
+      className="rounded-xl bg-card/50 overflow-hidden"
     >
       {/* Header */}
       <div className="px-4 pt-4 pb-3 flex items-center justify-between">

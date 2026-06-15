@@ -376,7 +376,7 @@ function TierRoad({ currentLevel }: { currentLevel: number }) {
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 function RankCardSkeleton() {
   return (
-    <div className="relative overflow-hidden rounded-xl border border-border bg-card flex min-h-65">
+    <div className="relative overflow-hidden rounded-xl bg-card/50 flex min-h-65">
       <div className="shrink-0 w-50 xl:w-60 bg-muted/40 animate-pulse" />
       <div className="flex-1 flex flex-col gap-4 p-5 xl:p-6">
         <div className="flex items-center justify-between">
@@ -447,7 +447,7 @@ export function RankCard() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={spring}
-      className="relative overflow-hidden rounded-xl border border-border bg-card"
+      className="relative overflow-hidden rounded-xl bg-card/50"
     >
       {/* Overall card gradient wash */}
       <div className={`absolute inset-0 bg-linear-to-br ${tier.cardBg} pointer-events-none`} />

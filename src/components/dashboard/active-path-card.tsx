@@ -32,7 +32,7 @@ export function ActivePathCard() {
   });
 
   if (isLoading) {
-    return <div className="rounded-xl border border-border bg-card p-5 h-44 animate-pulse" />;
+    return <div className="rounded-xl bg-card/50 p-5 h-44 animate-pulse" />;
   }
 
   const activePaths = dashboard?.active_paths ?? [];
@@ -45,7 +45,7 @@ export function ActivePathCard() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={spring}
-        className="rounded-xl border border-border bg-card p-5"
+        className="rounded-xl bg-card/50 p-5"
       >
         <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-semibold mb-0.5">Start here</p>
         <h3 className="text-[14px] font-semibold mb-4">Pick your first path</h3>

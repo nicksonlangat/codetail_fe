@@ -57,10 +57,10 @@ export default function PathsPage() {
       {/* ── Content ────────────────────────────────────────────────── */}
       {isLoading ? (
         <div className="space-y-4">
-          <div className={`relative rounded-xl border border-border bg-muted h-36 ${sh}`} />
+          <div className={`relative rounded-xl bg-muted h-36 ${sh}`} />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className={`relative rounded-xl border border-border bg-muted h-40 ${sh}`} />
+              <div key={i} className={`relative rounded-xl bg-muted h-40 ${sh}`} />
             ))}
           </div>
         </div>
@@ -116,9 +116,8 @@ function FeaturedCard({ path }: { path: PathResponse }) {
   return (
     <Link href={`/paths/${path.slug}`} className="block group cursor-pointer">
       <motion.div
-        whileHover={{ y: -2 }}
         transition={springFast}
-        className="relative rounded-xl border border-border bg-card p-6 transition-all duration-500 hover:border-primary/30 hover:shadow-md overflow-hidden"
+        className="relative rounded-xl bg-card/50 p-6 transition-all duration-500 hover:shadow-md overflow-hidden"
       >
         {/* Top teal accent line */}
         <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-primary/70 via-primary/25 to-transparent" />
@@ -171,7 +170,7 @@ function FeaturedCard({ path }: { path: PathResponse }) {
 
 function ComingSoonCard({ stack, title, description, topics }: { stack: string; title: string; description: string; topics: string[] }) {
   return (
-    <div className="relative flex flex-col rounded-xl border border-border/50 bg-card/50 p-5 overflow-hidden h-full opacity-60 select-none">
+    <div className="relative flex flex-col rounded-xl bg-card/50 p-5 overflow-hidden h-full opacity-60 select-none">
       <div className="absolute inset-0 bg-linear-to-br from-muted/30 to-transparent pointer-events-none" />
 
       <div className="relative flex flex-col gap-4 flex-1">
@@ -212,9 +211,8 @@ function PathCard({ path }: { path: PathResponse }) {
   return (
     <Link href={`/paths/${path.slug}`} className="block group cursor-pointer h-full">
       <motion.div
-        whileHover={{ y: -2 }}
         transition={springFast}
-        className="relative flex flex-col rounded-xl border border-border bg-card p-5 transition-all duration-500 hover:border-primary/30 hover:shadow-sm overflow-hidden h-full"
+        className="relative flex flex-col rounded-xl bg-card/50 p-5 transition-all duration-500 hover:shadow-sm overflow-hidden h-full"
       >
         <div className="absolute inset-0 bg-linear-to-br from-primary/2 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none" />
 
