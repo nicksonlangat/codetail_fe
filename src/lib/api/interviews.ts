@@ -181,6 +181,27 @@ export async function searchProblems(params: {
   return res.data;
 }
 
+export interface CreateInterviewProblemRequest {
+  title: string;
+  type: string;
+  difficulty: string;
+  stack: string;
+  concept: string;
+  description: string;
+  starter_code?: string;
+  function_signature?: string;
+  test_cases?: { input: string; expected: string }[];
+  mcq_options?: { id: string; label: string; code?: string }[];
+  correct_answer?: string;
+  ai_rubric?: string;
+  hints?: string[];
+}
+
+export async function createInterviewProblem(data: CreateInterviewProblemRequest) {
+  const res = await apiClient.post<ProblemBrief>("/interviews/problems", data);
+  return res.data;
+}
+
 // ── Candidate (no auth) ──
 
 export async function getAssessSession(token: string) {
