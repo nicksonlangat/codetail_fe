@@ -167,7 +167,7 @@ export function BottomPanel({ problemId, code, testCases, testResults, running, 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Tab bar */}
-      <div className="flex items-center gap-0 px-2 border-b border-border bg-muted/50 dark:bg-card/50 dark:border-border/40 shrink-0">
+      <div className="flex items-stretch gap-0 px-2 border-b border-border bg-muted/50 dark:bg-card/50 dark:border-border shrink-0 h-10">
         {tabs.filter((tab) => !(isDjango && tab.id === "tests")).map((tab) => {
           const Icon = tab.icon;
           const isActive = active === tab.id;
@@ -175,7 +175,7 @@ export function BottomPanel({ problemId, code, testCases, testResults, running, 
             <button
               key={tab.id}
               onClick={() => setActive(tab.id)}
-              className={`relative flex items-center gap-1.5 px-3 py-2 text-[11px] font-medium cursor-pointer transition-all duration-500 ${
+              className={`relative flex items-center gap-1.5 px-3 text-[11px] font-medium cursor-pointer transition-all duration-500 ${
                 isActive ? "text-foreground" : "text-muted-foreground/50 hover:text-muted-foreground"
               }`}
             >
