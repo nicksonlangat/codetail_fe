@@ -3,6 +3,7 @@
 import Editor, { type OnMount, loader } from "@monaco-editor/react";
 import { useTheme } from "next-themes";
 import { useCallback, useRef, useEffect, useState } from "react";
+import type * as monaco from "monaco-editor";
 
 // Define custom themes that match our design system
 function defineThemes() {
@@ -10,45 +11,46 @@ function defineThemes() {
     monaco.editor.defineTheme("codetail-dark", {
       base: "vs-dark",
       inherit: true,
+      // GitHub Dark syntax token colors
       rules: [
-        { token: "keyword", foreground: "#6c9ef8" },
-        { token: "keyword.control", foreground: "#6c9ef8" },
-        { token: "type", foreground: "#e5c07b" },
-        { token: "type.identifier", foreground: "#e5c07b" },
-        { token: "identifier", foreground: "#d4d8e8" },
-        { token: "variable", foreground: "#d4d8e8" },
-        { token: "number", foreground: "#d19a66" },
-        { token: "string", foreground: "#89b482" },
-        { token: "string.escape", foreground: "#d19a66" },
-        { token: "comment", foreground: "#5c6370", fontStyle: "italic" },
-        { token: "delimiter", foreground: "#8b92a8" },
-        { token: "delimiter.bracket", foreground: "#8b92a8" },
-        { token: "delimiter.parenthesis", foreground: "#8b92a8" },
-        { token: "operator", foreground: "#8b92a8" },
-        { token: "function", foreground: "#61afef" },
-        { token: "method", foreground: "#61afef" },
-        { token: "class", foreground: "#e5c07b" },
-        { token: "decorator", foreground: "#e5c07b" },
-        { token: "constant", foreground: "#d19a66" },
-        { token: "builtin", foreground: "#d19a66" },
-        { token: "parameter", foreground: "#d4d8e8" },
-        { token: "regexp", foreground: "#89b482" },
+        { token: "keyword",              foreground: "FF7B72" },
+        { token: "keyword.control",      foreground: "FF7B72" },
+        { token: "type",                 foreground: "FFA657" },
+        { token: "type.identifier",      foreground: "FFA657" },
+        { token: "class",                foreground: "FFA657" },
+        { token: "decorator",            foreground: "D2A8FF" },
+        { token: "identifier",           foreground: "E6EDF3" },
+        { token: "variable",             foreground: "E6EDF3" },
+        { token: "parameter",            foreground: "E6EDF3" },
+        { token: "number",               foreground: "79C0FF" },
+        { token: "constant",             foreground: "79C0FF" },
+        { token: "builtin",              foreground: "79C0FF" },
+        { token: "string",               foreground: "A5D6FF" },
+        { token: "string.escape",        foreground: "A5D6FF" },
+        { token: "regexp",               foreground: "A5D6FF" },
+        { token: "comment",              foreground: "8B949E", fontStyle: "italic" },
+        { token: "delimiter",            foreground: "C9D1D9" },
+        { token: "delimiter.bracket",    foreground: "C9D1D9" },
+        { token: "delimiter.parenthesis",foreground: "C9D1D9" },
+        { token: "operator",             foreground: "FF7B72" },
+        { token: "function",             foreground: "D2A8FF" },
+        { token: "method",               foreground: "D2A8FF" },
       ],
       colors: {
-        "editor.background": "#131620",
-        "editor.foreground": "#d4d8e8",
-        "editor.lineHighlightBackground": "#1a1d2e",
-        "editor.selectionBackground": "#1a9a7a30",
-        "editorLineNumber.foreground": "#3a3f55",
-        "editorLineNumber.activeForeground": "#6b7394",
-        "editorCursor.foreground": "#1a9a7a",
-        "editor.selectionHighlightBackground": "#1a9a7a15",
-        "editorGutter.background": "#131620",
-        "editorWidget.background": "#181b28",
-        "editorWidget.border": "#252940",
-        "input.background": "#1a1d2e",
-        "scrollbarSlider.background": "#ffffff10",
-        "scrollbarSlider.hoverBackground": "#ffffff20",
+        "editor.background":                  "#1B1D20",
+        "editor.foreground":                  "#E6EDF3",
+        "editor.lineHighlightBackground":     "#2A2D3160",
+        "editor.selectionBackground":         "#1FAD8728",
+        "editor.selectionHighlightBackground":"#1FAD8714",
+        "editorLineNumber.foreground":        "#42464E",
+        "editorLineNumber.activeForeground":  "#8C95A3",
+        "editorCursor.foreground":            "#1FAD87",
+        "editorGutter.background":            "#1B1D20",
+        "editorWidget.background":            "#2A2D31",
+        "editorWidget.border":                "#42464E",
+        "input.background":                   "#2A2D31",
+        "scrollbarSlider.background":         "#42464E40",
+        "scrollbarSlider.hoverBackground":    "#42464E80",
       },
     });
 
@@ -89,6 +91,7 @@ export function MonacoCodeEditor({
 }: MonacoCodeEditorProps) {
   const { resolvedTheme } = useTheme();
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
+  const changeListenerRef = useRef<{ dispose: () => void } | null>(null);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -96,10 +99,46 @@ export function MonacoCodeEditor({
     setReady(true);
   }, []);
 
-  const handleMount: OnMount = useCallback((editor) => {
+  const handleMount: OnMount = useCallback((editor, monacoInstance) => {
     editorRef.current = editor;
     editor.focus();
+
+    // Decorate function/method call sites with GitHub Dark purple (#D2A8FF).
+    // Monaco's Python tokenizer classifies all identifiers the same; this post-pass
+    // uses a lookahead regex to find identifiers followed by ( and marks them.
+    const PY_KEYWORDS = new Set([
+      "False","None","True","and","as","assert","async","await","break","class",
+      "continue","def","del","elif","else","except","finally","for","from",
+      "global","if","import","in","is","lambda","nonlocal","not","or","pass",
+      "raise","return","try","while","with","yield",
+    ]);
+    const decColl = editor.createDecorationsCollection([]);
+    const FN_RE = /\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(?=\()/g;
+
+    const decorate = () => {
+      const model = editor.getModel();
+      if (!model) return;
+      const text = model.getValue();
+      const next: monaco.editor.IModelDeltaDecoration[] = [];
+      let m: RegExpExecArray | null;
+      FN_RE.lastIndex = 0;
+      while ((m = FN_RE.exec(text)) !== null) {
+        if (PY_KEYWORDS.has(m[1])) continue;
+        const s = model.getPositionAt(m.index);
+        const e = model.getPositionAt(m.index + m[1].length);
+        next.push({
+          range: new monacoInstance.Range(s.lineNumber, s.column, e.lineNumber, e.column),
+          options: { inlineClassName: "codetail-fn-call" },
+        });
+      }
+      decColl.set(next);
+    };
+
+    decorate();
+    changeListenerRef.current = editor.onDidChangeModelContent(decorate);
   }, []);
+
+  useEffect(() => () => { changeListenerRef.current?.dispose(); }, []);
 
   if (!ready) return null;
 

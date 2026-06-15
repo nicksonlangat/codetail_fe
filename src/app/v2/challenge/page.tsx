@@ -116,11 +116,13 @@ function scoreColor(v: number) {
 function highlight(code: string) {
   const esc = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   return esc
-    .replace(/(#[^\n]*)/g, `<span style="color:${t.muted}">$1</span>`)
-    .replace(/\b(class|def|if|else|elif|while|for|return|not|in|and|or|True|False|None|self)\b/g, `<span style="color:${t.violet}">$1</span>`)
-    .replace(/\b(int|str|list|bool|float)\b/g, `<span style="color:#60A5FA">$1</span>`)
-    .replace(/\b(\d+)\b/g, `<span style="color:${t.amber}">$1</span>`)
-    .replace(/(["'][^"']*["'])/g, `<span style="color:${t.primary}">$1</span>`);
+    // GitHub Dark syntax colors
+    .replace(/(#[^\n]*)/g, `<span style="color:#8B949E;font-style:italic">$1</span>`)
+    .replace(/\b(class|def|if|else|elif|while|for|return|not|in|and|or|True|False|None|self|import|from|as|with|try|except|raise|pass|lambda)\b/g, `<span style="color:#FF7B72">$1</span>`)
+    .replace(/\b(int|str|list|bool|float|dict|set|tuple|Optional|List|Any)\b/g, `<span style="color:#FFA657">$1</span>`)
+    .replace(/\b(\d+)\b/g, `<span style="color:#79C0FF">$1</span>`)
+    .replace(/(["'][^"']*["'])/g, `<span style="color:#A5D6FF">$1</span>`)
+    .replace(/\b([a-z_][a-z0-9_]*)\s*(?=\()/g, `<span style="color:#D2A8FF">$1</span>`);
 }
 
 // ── Sub-panels ─────────────────────────────────────────────────────────────

@@ -45,7 +45,7 @@ export function LeftPanel({ content, meta, showHints, onToggleHints, isGenerated
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Tab bar */}
-      <div className="flex items-center gap-0 px-5 border-b border-border bg-muted/50 dark:bg-card/50 dark:border-border/40 flex-shrink-0">
+      <div className="flex items-stretch gap-0 px-5 border-b border-border flex-shrink-0 h-10 bg-muted/50 dark:bg-card/50">
         {([
           { id: "description" as Tab, label: "Description", icon: FileText },
           { id: "notes" as Tab, label: "Notes", icon: StickyNote },
@@ -56,7 +56,7 @@ export function LeftPanel({ content, meta, showHints, onToggleHints, isGenerated
             <button
               key={tab.id}
               onClick={() => setActive(tab.id)}
-              className={`relative flex items-center gap-1.5 px-3 py-2 text-[11px] font-medium cursor-pointer transition-all duration-500 ${
+              className={`relative flex items-center gap-1.5 px-3 text-[11px] font-medium cursor-pointer transition-all duration-500 ${
                 isActive ? "text-foreground" : "text-muted-foreground/50 hover:text-muted-foreground"
               }`}
             >
@@ -75,7 +75,7 @@ export function LeftPanel({ content, meta, showHints, onToggleHints, isGenerated
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden bg-card/50">
         {active === "description" && (
           <ProblemDescription content={content} meta={meta} diffColor={diffColor} typeLabel={typeLabel[meta.type] ?? meta.type} showHints={showHints} onToggleHints={onToggleHints} isGenerated={isGenerated} onEnriched={onEnriched} />
         )}

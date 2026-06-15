@@ -123,8 +123,12 @@ export default function ChallengePage() {
     }
   }, [problem, code, running]);
 
-  const unlocked = useMemo(() => Array.isArray(siblings) ? siblings.filter((s) => !s.locked) : [], [siblings]);
-  const hasLocked = useMemo(() => Array.isArray(siblings) ? siblings.some((s) => s.locked) : false, [siblings]);
+  const unitSiblings = useMemo(() => {
+    if (!Array.isArray(siblings)) return [];
+    return problem?.unit ? siblings.filter((s) => s.unit === problem.unit) : siblings;
+  }, [siblings, problem?.unit]);
+  const unlocked = useMemo(() => unitSiblings.filter((s) => !s.locked), [unitSiblings]);
+  const hasLocked = useMemo(() => unitSiblings.some((s) => s.locked), [unitSiblings]);
   const currentIdx = unlocked.findIndex((p) => p.id === problemId);
   const prevProblem = currentIdx > 0 ? unlocked[currentIdx - 1] : null;
   const nextProblem = currentIdx >= 0 && currentIdx < unlocked.length - 1 ? unlocked[currentIdx + 1] : null;
@@ -162,7 +166,7 @@ export default function ChallengePage() {
   return (
     <div className="flex flex-col h-full bg-background" key={problemId}>
       {/* Top bar — navigation only */}
-      <div className="flex items-center justify-between h-11 px-4 border-b border-border/40 bg-card/50 shrink-0">
+      <div className="flex items-center justify-between h-11 px-4 border-b border-border bg-card/50 shrink-0">
         <div className="flex items-center gap-3">
           <Link href={`/paths/${pathSlug}`}
             className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-all duration-500">
