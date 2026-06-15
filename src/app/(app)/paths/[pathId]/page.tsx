@@ -62,7 +62,6 @@ function UnitCard({ unit, index, slug, isPython }: { unit: UnitItem; index: numb
     >
       <Link href={`/paths/${slug}/${unit.unit}`} className="cursor-pointer">
         <motion.div
-          whileHover={{ y: -2 }}
           transition={spring}
           className={`relative bg-card border rounded-xl cursor-pointer overflow-hidden transition-all duration-500 ${borderClass}`}
         >
@@ -242,7 +241,7 @@ export default function PathDetailPage() {
         <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ ...spring, delay: 0.1 }}>
           <Link href={`/paths/${slug}/${nextUnit.unit}`} className="cursor-pointer">
             <motion.div
-              whileHover={{ y: -2 }} transition={spring}
+              transition={spring}
               className="relative bg-foreground dark:bg-card rounded-xl px-6 py-5 cursor-pointer overflow-hidden transition-all duration-500"
             >
               {/* Watermark */}

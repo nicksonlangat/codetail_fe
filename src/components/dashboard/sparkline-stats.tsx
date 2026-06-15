@@ -156,7 +156,7 @@ function WelcomeState() {
                 transition={{ ...entranceSpring, delay: 0.1 + i * 0.06 }}
                 whileHover={{ x: 2 }}
                 whileTap={{ scale: 0.98 }}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card border border-border hover:border-primary/30 hover:bg-primary/2 cursor-pointer transition-all duration-300 group"
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-card/50 hover:bg-primary/5 cursor-pointer transition-all duration-300 group"
               >
                 <div className={`w-6 h-6 rounded-md ${path.bg} flex items-center justify-center shrink-0`}>
                   <Icon className={`w-3.5 h-3.5 ${path.color}`} />
@@ -291,7 +291,7 @@ export function SparklineStats() {
     return (
       <div className="py-2 grid grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-card rounded-xl border border-border/50 p-4 h-28 animate-pulse" />
+          <div key={i} className="bg-card/50 rounded-xl p-4 h-28 animate-pulse" />
         ))}
       </div>
     );
@@ -348,8 +348,7 @@ export function SparklineStats() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ...entranceSpring, delay: i * 0.06 }}
-            className="bg-card rounded-xl border border-border/50 p-4 cursor-pointer"
-            whileHover={{ y: -2 }}
+            className="bg-card/50 rounded-xl p-4 cursor-pointer"
           >
             <p className="text-[11px] text-muted-foreground mb-1">{m.label}</p>
             <div className="flex items-baseline gap-1.5 mb-3">

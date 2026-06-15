@@ -15,9 +15,8 @@ function EmptyPathCard({ path }: { path: PathResponse }) {
   return (
     <Link href={`/paths/${path.slug}`} className="block group cursor-pointer">
       <motion.div
-        whileHover={{ y: -2 }}
         transition={springFast}
-        className="relative flex flex-col rounded-xl border border-border bg-card p-5 transition-all duration-500 hover:border-primary/30 hover:shadow-sm overflow-hidden h-full"
+        className="relative flex flex-col rounded-xl bg-card/50 p-5 transition-all duration-500 hover:shadow-sm overflow-hidden h-full"
       >
         <div className="absolute inset-0 bg-linear-to-br from-primary/2 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none" />
 
@@ -238,7 +237,7 @@ export function ActivityTable() {
             <p className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/35 mb-2 px-1">
               {group.label}
             </p>
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="rounded-xl bg-card/50 overflow-hidden">
               {group.items.map((item) => {
                 const idx = globalIndex++;
                 return <ActivityRow key={item.problem_id} item={item} index={idx} />;

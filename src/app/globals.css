@@ -206,48 +206,54 @@
 }
 
 /* ── Dark mode ── */
+/* Palette: bg #1B1D20 · surface #2A2D31 · raised #32363C · border #42464E */
+/*          text #F1F3F5 · sub #C8D0DC · muted #8C95A3 · primary #1FAD87   */
 .dark {
-  --background: hsl(220 16% 8%);
-  --foreground: hsl(220 14% 92%);
-  --card: hsl(220 16% 11%);
-  --card-foreground: hsl(220 14% 92%);
-  --popover: hsl(220 16% 11%);
-  --popover-foreground: hsl(220 14% 92%);
-  --primary: #1fad87;
+  --background: #1B1D20;
+  --foreground: #F1F3F5;
+  --card: #2A2D31;
+  --card-foreground: #F1F3F5;
+  --popover: #2A2D31;
+  --popover-foreground: #F1F3F5;
+  --primary: #1FAD87;
   --primary-foreground: #FFFFFF;
-  --secondary: hsl(220 14% 16%);
-  --secondary-foreground: hsl(220 14% 70%);
-  --muted: hsl(220 14% 16%);
-  --muted-foreground: hsl(220 9% 55%);
-  --accent: hsl(164 40% 14%);
-  --accent-foreground: hsl(164 70% 60%);
+  --secondary: #32363C;
+  --secondary-foreground: #C8D0DC;
+  --muted: #32363C;
+  --muted-foreground: #8C95A3;
+  --accent: #32363C;
+  --accent-foreground: #1FAD87;
   --destructive: hsl(0 68% 50%);
-  --destructive-foreground: hsl(0 0% 100%);
-  --border: hsl(220 13% 18%);
-  --input: hsl(220 13% 18%);
-  --ring: hsl(164 70% 40%);
+  --destructive-foreground: #FFFFFF;
+  --border: #42464E;
+  --input: #42464E;
+  --ring: #1FAD87;
 
-  --surface-1: hsl(220 16% 11%);
-  --surface-2: hsl(220 16% 9%);
-  --surface-3: hsl(220 16% 13%);
+  --surface-1: #2A2D31;
+  --surface-2: #1B1D20;
+  --surface-3: #32363C;
 
   --success: hsl(142 60% 42%);
-  --warning: hsl(38 85% 52%);
+  --warning: #F97316;
   --info: hsl(217 80% 56%);
 
-  --editor-bg: hsl(220 16% 9%);
-  --editor-gutter: hsl(220 10% 35%);
-  --editor-line-hover: hsl(220 16% 13%);
-  --editor-cursor: hsl(164 70% 40%);
+  --editor-bg: #1B1D20;
+  --editor-gutter: #42464E;
+  --editor-line-hover: #2A2D31;
+  --editor-cursor: #1FAD87;
 
-  --sidebar: hsl(220 16% 9%);
-  --sidebar-foreground: hsl(220 14% 70%);
-  --sidebar-primary: hsl(164 70% 40%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(164 40% 14%);
-  --sidebar-accent-foreground: hsl(164 70% 60%);
-  --sidebar-border: hsl(220 13% 18%);
-  --sidebar-ring: hsl(164 70% 40%);
+  --difficulty-easy: #1FAD87;
+  --difficulty-medium: #F97316;
+  --difficulty-hard: #EF4444;
+
+  --sidebar: #2A2D31;
+  --sidebar-foreground: #8C95A3;
+  --sidebar-primary: #1FAD87;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #32363C;
+  --sidebar-accent-foreground: #1FAD87;
+  --sidebar-border: #42464E;
+  --sidebar-ring: #1FAD87;
 }
 
 @layer base {

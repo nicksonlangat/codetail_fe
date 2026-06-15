@@ -160,9 +160,9 @@ export default function ChallengePage() {
     ? "text-difficulty-medium" : "text-difficulty-hard";
 
   return (
-    <div className="flex flex-col h-screen bg-background" key={problemId}>
+    <div className="flex flex-col h-full bg-background" key={problemId}>
       {/* Top bar — navigation only */}
-      <div className="flex items-center justify-between h-14 px-6 border-b border-border/60 bg-card/50 shrink-0">
+      <div className="flex items-center justify-between h-11 px-4 border-b border-border/40 bg-card/50 shrink-0">
         <div className="flex items-center gap-3">
           <Link href={`/paths/${pathSlug}`}
             className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground cursor-pointer transition-all duration-500">

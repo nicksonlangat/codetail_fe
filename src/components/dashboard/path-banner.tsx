@@ -32,7 +32,7 @@ export function PathBanner() {
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={spring}
-      className="flex items-center gap-5 px-5 py-3.5 rounded-lg border-l-[3px] border-l-primary border border-border bg-card"
+      className="flex items-center gap-5 px-5 py-3.5 rounded-lg border-l-[3px] border-l-primary bg-card/50"
     >
       {/* Path identity */}
       <div className="flex items-center gap-2.5 shrink-0">

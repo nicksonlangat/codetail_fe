@@ -39,7 +39,7 @@ export function TodayChallenges() {
           <div className="flex items-center justify-between mb-3">
             <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">Today</span>
           </div>
-          <div className="rounded-lg border border-border bg-card px-4 py-5 flex items-center gap-4">
+          <div className="rounded-lg bg-card/50 px-4 py-5 flex items-center gap-4">
             <Lock className="w-4 h-4 text-muted-foreground/40 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-[12px] font-medium text-foreground">Daily challenges are a Pro feature</p>
@@ -115,7 +115,7 @@ export function TodayChallenges() {
       </div>
 
       {/* Challenge rows */}
-      <div className="rounded-lg border border-border bg-card overflow-hidden divide-y divide-border/50">
+      <div className="rounded-lg bg-card/50 overflow-hidden divide-y divide-border/50">
         {problems.map((problem, i) => {
           const pathSlug = problem.stack === "django" ? "django-models" : "python-fundamentals";
           const done = problem.attempted;
