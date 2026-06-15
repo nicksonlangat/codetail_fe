@@ -118,6 +118,9 @@ Light mode uses real depth through distinct surface colors — not everything wh
 - No scrollbars — hidden globally via `scrollbar-width: none`.
 - TopBar uses `bg-card/80 backdrop-blur-md` — white with blur, sits above the off-white page.
 
+### Icons
+- Use `WandSparkles` (not `Sparkles`) for all AI-related features and actions. This is the project standard.
+
 ### Components
 - Max 300 lines per file. Split into sub-components if exceeding.
 - Self-contained: mock data at top of file, local state, no unnecessary global dependencies.
