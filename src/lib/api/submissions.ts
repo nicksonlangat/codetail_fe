@@ -14,6 +14,7 @@ export interface RunCodeResponse {
   test_results: TestResultResponse[];
   error: string | null;
   newly_earned_badges: string[];
+  xp_earned: number;
 }
 
 export async function runCode(problemId: string, code: string) {
@@ -29,6 +30,7 @@ export interface McqSubmitResponse {
   correct_answer: string;
   explanation: string | null;
   newly_earned_badges: string[];
+  xp_earned: number;
 }
 
 export async function submitMcq(problemId: string, selectedAnswer: string) {

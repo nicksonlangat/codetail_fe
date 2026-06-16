@@ -11,16 +11,18 @@ const STORAGE_PREFIX = "codetail-code-";
 interface UseChallengeParams {
   content: ChallengeContent | undefined;
   savedCode?: string | null;
-  onBadgesEarned?: (badges: string[]) => void;
+  initialMcqSolved?: boolean;
+  onBadgesEarned?: (badges: string[], xpEarned: number) => void;
 }
 
-export function useChallenge({ content, savedCode, onBadgesEarned }: UseChallengeParams) {
+export function useChallenge({ content, savedCode, initialMcqSolved, onBadgesEarned }: UseChallengeParams) {
   const [code, setCode] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState<FeedbackStatus>("idle");
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [showHints, setShowHints] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [mcqSubmitted, setMcqSubmitted] = useState(false);
+  const [mcqWasSolved, setMcqWasSolved] = useState(false);
   const [mcqCorrectAnswer, setMcqCorrectAnswer] = useState<string | null>(null);
   const [mcqExplanation, setMcqExplanation] = useState<string | null>(null);
   const [mcqSubmitting, setMcqSubmitting] = useState(false);
@@ -30,7 +32,7 @@ export function useChallenge({ content, savedCode, onBadgesEarned }: UseChalleng
   const problemId = content?.problemId;
   const storageKey = problemId ? `${STORAGE_PREFIX}${problemId}` : null;
 
-  // Load code: savedCode from API > localStorage > starter code
+  // Load code: savedCode from API > localStorage > starter code; restore MCQ solved state
   useEffect(() => {
     if (!content || initialized) return;
 
@@ -40,8 +42,12 @@ export function useChallenge({ content, savedCode, onBadgesEarned }: UseChalleng
       const local = storageKey ? localStorage.getItem(storageKey) : null;
       setCode(local ?? content.starterCode ?? "");
     }
+    if (initialMcqSolved && content.type === "mcq") {
+      setMcqSubmitted(true);
+      setMcqWasSolved(true);
+    }
     setInitialized(true);
-  }, [content, savedCode, initialized, storageKey]);
+  }, [content, savedCode, initialized, storageKey, initialMcqSolved]);
 
   // Auto-save (debounced 1s)
   useEffect(() => {
@@ -69,7 +75,7 @@ export function useChallenge({ content, savedCode, onBadgesEarned }: UseChalleng
         setMcqCorrectAnswer(result.correct_answer);
         setMcqExplanation(result.explanation ?? null);
         setMcqSubmitted(true);
-        if (result.correct) onBadgesEarned?.(result.newly_earned_badges ?? []);
+        if (result.correct) onBadgesEarned?.(result.newly_earned_badges ?? [], result.xp_earned ?? 0);
       } catch {
         // Silently fail — user can retry
       } finally {
@@ -101,6 +107,7 @@ export function useChallenge({ content, savedCode, onBadgesEarned }: UseChalleng
     setFeedbackStatus("idle");
     setSelectedOption(null);
     setMcqSubmitted(false);
+    setMcqWasSolved(false);
     setMcqCorrectAnswer(null);
     setMcqExplanation(null);
   }, []);
@@ -111,6 +118,7 @@ export function useChallenge({ content, savedCode, onBadgesEarned }: UseChalleng
     setFeedbackStatus("idle");
     setSelectedOption(null);
     setMcqSubmitted(false);
+    setMcqWasSolved(false);
     setMcqCorrectAnswer(null);
     setMcqExplanation(null);
     setShowHints(false);
@@ -121,7 +129,7 @@ export function useChallenge({ content, savedCode, onBadgesEarned }: UseChalleng
     setShowHints((prev) => !prev);
   }, []);
 
-  const mcqCorrect = mcqCorrectAnswer ? selectedOption === mcqCorrectAnswer : false;
+  const mcqCorrect = mcqWasSolved || (mcqCorrectAnswer ? selectedOption === mcqCorrectAnswer : false);
 
   return {
     code,

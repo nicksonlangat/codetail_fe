@@ -98,15 +98,23 @@ export default function ChallengePage() {
 
   const content = useMemo(() => problem ? apiToContent(problem) : undefined, [problem]);
 
-  const handleBadgesEarned = useCallback((badges: string[]) => {
+  const handleBadgesEarned = useCallback((badges: string[], xpEarned: number) => {
     queryClient.invalidateQueries({ queryKey: ["rank"] });
+    queryClient.invalidateQueries({ queryKey: ["progress", problemId] });
+    queryClient.invalidateQueries({ queryKey: ["path-problems", pathSlug] });
+    if (xpEarned > 0) {
+      toast.success(`+${xpEarned} XP earned`, {
+        description: "Keep going — you're building momentum.",
+        duration: 4000,
+      });
+    }
     badges.forEach((id) => {
       toast.success(`Badge unlocked: ${BADGE_LABELS[id] ?? id}`, {
         description: "Check your dashboard to see all your badges.",
         duration: 5000,
       });
     });
-  }, [queryClient]);
+  }, [queryClient, problemId, pathSlug]);
 
   const {
     code, setCode, feedbackStatus, feedback, showHints, toggleHints,
@@ -114,7 +122,12 @@ export default function ChallengePage() {
     mcqCorrectAnswer, mcqExplanation,
     challengeType, handleSubmit, handleReset, handleRetake, handleKeyDown,
     resetForNavigation,
-  } = useChallenge({ content, savedCode: progress?.code, onBadgesEarned: handleBadgesEarned });
+  } = useChallenge({
+    content,
+    savedCode: progress?.code,
+    initialMcqSolved: progress?.status === "solved",
+    onBadgesEarned: handleBadgesEarned,
+  });
 
   const [testResults, setTestResults] = useState<TestCaseResult[]>([]);
   const [resultsLoaded, setResultsLoaded] = useState(false);
@@ -141,7 +154,7 @@ export default function ChallengePage() {
         actual: tr.actual,
         passed: tr.passed,
       })));
-      if (res.passed) handleBadgesEarned(res.newly_earned_badges ?? []);
+      if (res.passed) handleBadgesEarned(res.newly_earned_badges ?? [], res.xp_earned ?? 0);
     } catch (err: any) {
       const detail = err.response?.data?.detail;
       setTestResults([{ input: "", expected: "", actual: detail || "Error running code", passed: false }]);
