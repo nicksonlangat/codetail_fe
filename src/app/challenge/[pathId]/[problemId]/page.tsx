@@ -10,8 +10,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { ArrowLeft, ChevronRight, ChevronLeft, Code, ListChecks, Bug, Wrench, Loader2, Sun, Moon } from "lucide-react";
-import { useTheme } from "next-themes";
+import { ArrowLeft, ChevronRight, ChevronLeft, Code, ListChecks, Bug, Wrench, Loader2 } from "lucide-react";
 import { getProblem, getPathProblems, getPath, type ProblemDetail } from "@/lib/api/paths";
 import { useChallenge } from "@/features/challenges/hooks/use-challenge";
 import { LeftPanel } from "@/components/challenge/left-panel";
@@ -269,8 +268,6 @@ export default function ChallengePage() {
               Next <ChevronRight className="w-3.5 h-3.5" />
             </button>
           )}
-          <div className="w-px h-5 bg-border/40 mx-1" />
-          <ThemeToggle />
         </div>
       </div>
 
@@ -326,15 +323,3 @@ export default function ChallengePage() {
   );
 }
 
-function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
-  return (
-    <button
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer transition-all duration-500"
-    >
-      <Sun className="w-3.5 h-3.5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute w-3.5 h-3.5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-    </button>
-  );
-}
