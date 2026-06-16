@@ -11,9 +11,10 @@ const STORAGE_PREFIX = "codetail-code-";
 interface UseChallengeParams {
   content: ChallengeContent | undefined;
   savedCode?: string | null;
+  onBadgesEarned?: (badges: string[]) => void;
 }
 
-export function useChallenge({ content, savedCode }: UseChallengeParams) {
+export function useChallenge({ content, savedCode, onBadgesEarned }: UseChallengeParams) {
   const [code, setCode] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState<FeedbackStatus>("idle");
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -68,6 +69,7 @@ export function useChallenge({ content, savedCode }: UseChallengeParams) {
         setMcqCorrectAnswer(result.correct_answer);
         setMcqExplanation(result.explanation ?? null);
         setMcqSubmitted(true);
+        if (result.correct) onBadgesEarned?.(result.newly_earned_badges ?? []);
       } catch {
         // Silently fail — user can retry
       } finally {

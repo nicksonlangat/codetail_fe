@@ -3,7 +3,8 @@
 import { useMemo, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -52,9 +53,25 @@ function apiToContent(p: ProblemDetail): ChallengeContent {
   };
 }
 
+const BADGE_LABELS: Record<string, string> = {
+  "first-blood":  "First Blood",
+  "week-warrior": "Week Warrior",
+  "debugger":     "Debugger",
+  "unit-clear":   "Unit Clear",
+  "pythonista":   "Pythonista",
+  "architect":    "Architect",
+  "path-blazer":  "Path Blazer",
+  "speed-demon":  "Speed Demon",
+  "django-dev":   "Django Dev",
+  "the-50":       "The 50",
+  "hard-mode":    "Hard Mode",
+  "night-owl":    "Night Owl",
+};
+
 export default function ChallengePage() {
   const params = useParams<{ pathId: string; problemId: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { pathId: pathSlug, problemId } = params;
 
   const { data: problem, isLoading: problemLoading } = useQuery({
@@ -82,13 +99,23 @@ export default function ChallengePage() {
 
   const content = useMemo(() => problem ? apiToContent(problem) : undefined, [problem]);
 
+  const handleBadgesEarned = useCallback((badges: string[]) => {
+    queryClient.invalidateQueries({ queryKey: ["rank"] });
+    badges.forEach((id) => {
+      toast.success(`Badge unlocked: ${BADGE_LABELS[id] ?? id}`, {
+        description: "Check your dashboard to see all your badges.",
+        duration: 5000,
+      });
+    });
+  }, [queryClient]);
+
   const {
     code, setCode, feedbackStatus, feedback, showHints, toggleHints,
     selectedOption, setSelectedOption, mcqSubmitted, mcqSubmitting, mcqCorrect,
     mcqCorrectAnswer, mcqExplanation,
     challengeType, handleSubmit, handleReset, handleRetake, handleKeyDown,
     resetForNavigation,
-  } = useChallenge({ content, savedCode: progress?.code });
+  } = useChallenge({ content, savedCode: progress?.code, onBadgesEarned: handleBadgesEarned });
 
   const [testResults, setTestResults] = useState<TestCaseResult[]>([]);
   const [resultsLoaded, setResultsLoaded] = useState(false);
@@ -115,13 +142,14 @@ export default function ChallengePage() {
         actual: tr.actual,
         passed: tr.passed,
       })));
+      if (res.passed) handleBadgesEarned(res.newly_earned_badges ?? []);
     } catch (err: any) {
       const detail = err.response?.data?.detail;
       setTestResults([{ input: "", expected: "", actual: detail || "Error running code", passed: false }]);
     } finally {
       setRunning(false);
     }
-  }, [problem, code, running]);
+  }, [problem, code, running, handleBadgesEarned]);
 
   const unitSiblings = useMemo(() => {
     if (!Array.isArray(siblings)) return [];
