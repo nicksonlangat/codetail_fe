@@ -322,7 +322,8 @@ export default function ChallengePage() {
               files={problem.files ?? []}
               initialHints={progress?.saved_hints ?? []}
               initialReview={progress?.last_review ?? null}
-              initialSolution={progress?.last_solution ?? null} />
+              initialSolution={progress?.last_solution ?? null}
+              onBadgesEarned={handleBadgesEarned} />
           )}
         </ResizablePanel>
       </ResizablePanelGroup>

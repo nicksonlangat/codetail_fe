@@ -30,6 +30,7 @@ interface CodePanelProps {
   initialHints?: { hint: string; hint_number: number; level: string }[];
   initialReview?: any;
   initialSolution?: string | null;
+  onBadgesEarned?: (badges: string[], xpEarned: number) => void;
 }
 
 export function CodePanel({
@@ -48,6 +49,7 @@ export function CodePanel({
   initialHints = [],
   initialReview = null,
   initialSolution = null,
+  onBadgesEarned,
 }: CodePanelProps) {
   const isDjango = stack === "django";
   const isMultiFile = files.length > 0;
@@ -186,6 +188,7 @@ export function CodePanel({
           triggerReview={reviewTrigger}
           initialHints={initialHints} initialReview={initialReview}
           initialSolution={initialSolution}
+          onBadgesEarned={onBadgesEarned}
         />
       </ResizablePanel>
     </ResizablePanelGroup>
