@@ -91,8 +91,17 @@ export function Sidebar() {
           </nav>
         </div>
 
-        {/* Bottom: avatar + tier */}
+        {/* Bottom: theme toggle + avatar + tier */}
         <div className="flex flex-col items-center gap-2" ref={menuRef}>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            transition={SP}
+            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer transition-all duration-500"
+            title={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {resolvedTheme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+          </motion.button>
           <div className="relative">
             <button
               onClick={() => setMenuOpen(o => !o)}
