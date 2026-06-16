@@ -11,6 +11,7 @@ interface McqOptionsProps {
   submitted: boolean;
   correctOptionId?: string;
   explanation?: string;
+  wasCorrect?: boolean; // override for when correct answer is known from DB
 }
 
 export function McqOptions({
@@ -20,8 +21,9 @@ export function McqOptions({
   submitted,
   correctOptionId,
   explanation,
+  wasCorrect,
 }: McqOptionsProps) {
-  const isCorrect = selectedOption === correctOptionId;
+  const isCorrect = wasCorrect ?? (selectedOption === correctOptionId);
 
   return (
     <div className="p-5 space-y-4">
@@ -34,11 +36,14 @@ export function McqOptions({
           const isSelected = selectedOption === opt.id;
           const isCorrectOption = opt.id === correctOptionId;
 
+          const isSelectedCorrect = isCorrectOption || (!!wasCorrect && isSelected);
+          const isSelectedWrong = submitted && isSelected && !isCorrectOption && !wasCorrect;
+
           let borderClass =
             "ring-border/60 hover:ring-primary/40 hover:bg-secondary/50";
-          if (submitted && isCorrectOption)
+          if (submitted && isSelectedCorrect)
             borderClass = "ring-difficulty-easy/60 bg-difficulty-easy/5";
-          else if (submitted && isSelected && !isCorrectOption)
+          else if (isSelectedWrong)
             borderClass = "ring-destructive/60 bg-destructive/5";
           else if (isSelected) borderClass = "ring-primary bg-primary/5";
 
@@ -51,20 +56,20 @@ export function McqOptions({
             >
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-5 h-5 rounded-full ring-1 flex items-center justify-center flex-shrink-0 ${
-                    submitted && isCorrectOption
+                  className={`w-5 h-5 rounded-full ring-1 flex items-center justify-center shrink-0 ${
+                    submitted && isSelectedCorrect
                       ? "ring-difficulty-easy bg-difficulty-easy/20"
-                      : submitted && isSelected
+                      : isSelectedWrong
                         ? "ring-destructive bg-destructive/20"
                         : isSelected
                           ? "ring-primary bg-primary/20"
                           : "ring-border"
                   }`}
                 >
-                  {submitted && isCorrectOption && (
+                  {submitted && isSelectedCorrect && (
                     <CheckCircle2 className="w-3.5 h-3.5 text-difficulty-easy" />
                   )}
-                  {submitted && isSelected && !isCorrectOption && (
+                  {isSelectedWrong && (
                     <XCircle className="w-3.5 h-3.5 text-destructive" />
                   )}
                   {!submitted && isSelected && (

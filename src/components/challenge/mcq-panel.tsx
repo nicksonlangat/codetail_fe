@@ -40,6 +40,7 @@ export function McqPanel({
           submitted={mcqSubmitted}
           correctOptionId={content.correctOptionId}
           explanation={content.explanation}
+          wasCorrect={mcqSubmitted ? mcqCorrect : undefined}
         />
       )}
       {!mcqSubmitted && (

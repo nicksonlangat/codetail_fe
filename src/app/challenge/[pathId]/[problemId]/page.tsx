@@ -125,7 +125,8 @@ export default function ChallengePage() {
   } = useChallenge({
     content,
     savedCode: progress?.code,
-    initialMcqSolved: progress ? progress.status === "solved" : undefined,
+    initialMcqStatus: progress ? progress.status : undefined,
+    initialMcqAnswer: progress?.mcq_selected_answer ?? null,
     onBadgesEarned: handleBadgesEarned,
   });
 

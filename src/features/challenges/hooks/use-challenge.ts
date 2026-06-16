@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import type { ChallengeContent, Feedback, FeedbackStatus } from "@/types";
 import { generateFeedback } from "../services/feedback";
 import { saveCode as apiSaveCode } from "@/lib/api/progress";
@@ -11,11 +12,12 @@ const STORAGE_PREFIX = "codetail-code-";
 interface UseChallengeParams {
   content: ChallengeContent | undefined;
   savedCode?: string | null;
-  initialMcqSolved?: boolean | undefined; // undefined = still loading, true/false = resolved
+  initialMcqStatus?: string | undefined; // undefined = still loading
+  initialMcqAnswer?: string | null;
   onBadgesEarned?: (badges: string[], xpEarned: number) => void;
 }
 
-export function useChallenge({ content, savedCode, initialMcqSolved, onBadgesEarned }: UseChallengeParams) {
+export function useChallenge({ content, savedCode, initialMcqStatus, initialMcqAnswer, onBadgesEarned }: UseChallengeParams) {
   const [code, setCode] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState<FeedbackStatus>("idle");
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -45,17 +47,19 @@ export function useChallenge({ content, savedCode, initialMcqSolved, onBadgesEar
     setInitialized(true);
   }, [content, savedCode, initialized, storageKey]);
 
-  // Restore MCQ solved state once progress has loaded (separate from code init
-  // because progress arrives async — can't share the initialized gate).
+  // Restore MCQ state once BOTH progress and content have loaded.
+  // progress often resolves before the heavier problem query, so we must wait
+  // for content.type too — otherwise the ref locks out the real restore.
   useEffect(() => {
     if (mcqRestoreRef.current) return;
-    if (initialMcqSolved === undefined) return; // still fetching
-    if (initialMcqSolved && content?.type === "mcq") {
+    if (initialMcqStatus === undefined || !content?.type) return; // wait for both
+    if (content.type === "mcq" && (initialMcqStatus === "solved" || initialMcqStatus === "attempted")) {
       setMcqSubmitted(true);
-      setMcqWasSolved(true);
+      if (initialMcqStatus === "solved") setMcqWasSolved(true);
+      if (initialMcqAnswer) setSelectedOption(initialMcqAnswer);
     }
     mcqRestoreRef.current = true;
-  }, [initialMcqSolved, content?.type]);
+  }, [initialMcqStatus, content?.type, initialMcqAnswer]);
 
   // Auto-save (debounced 1s)
   useEffect(() => {
@@ -84,8 +88,9 @@ export function useChallenge({ content, savedCode, initialMcqSolved, onBadgesEar
         setMcqExplanation(result.explanation ?? null);
         setMcqSubmitted(true);
         if (result.correct) onBadgesEarned?.(result.newly_earned_badges ?? [], result.xp_earned ?? 0);
-      } catch {
-        // Silently fail — user can retry
+      } catch (err: any) {
+        const detail = err?.response?.data?.detail ?? "Could not submit answer. Please try again.";
+        toast.error(detail);
       } finally {
         setMcqSubmitting(false);
       }

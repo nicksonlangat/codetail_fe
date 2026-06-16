@@ -26,6 +26,7 @@ export interface ProgressResponse {
   last_run_score: number | null;
   last_review: ReviewData | null;
   last_solution: string | null;
+  mcq_selected_answer: string | null;
 }
 
 export interface ReviewData {
