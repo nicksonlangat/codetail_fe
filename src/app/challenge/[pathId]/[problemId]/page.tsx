@@ -10,8 +10,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { ArrowLeft, ChevronRight, ChevronLeft, Code, ListChecks, Bug, Wrench, Loader2, Sun, Moon } from "lucide-react";
-import { useTheme } from "next-themes";
+import { ArrowLeft, ChevronRight, ChevronLeft, Code, ListChecks, Bug, Wrench, Loader2 } from "lucide-react";
 import { getProblem, getPathProblems, getPath, type ProblemDetail } from "@/lib/api/paths";
 import { useChallenge } from "@/features/challenges/hooks/use-challenge";
 import { LeftPanel } from "@/components/challenge/left-panel";
@@ -99,15 +98,23 @@ export default function ChallengePage() {
 
   const content = useMemo(() => problem ? apiToContent(problem) : undefined, [problem]);
 
-  const handleBadgesEarned = useCallback((badges: string[]) => {
+  const handleBadgesEarned = useCallback((badges: string[], xpEarned: number) => {
     queryClient.invalidateQueries({ queryKey: ["rank"] });
+    queryClient.invalidateQueries({ queryKey: ["progress", problemId] });
+    queryClient.invalidateQueries({ queryKey: ["path-problems", pathSlug] });
+    if (xpEarned > 0) {
+      toast.success(`+${xpEarned} XP earned`, {
+        description: "Keep going — you're building momentum.",
+        duration: 4000,
+      });
+    }
     badges.forEach((id) => {
       toast.success(`Badge unlocked: ${BADGE_LABELS[id] ?? id}`, {
         description: "Check your dashboard to see all your badges.",
         duration: 5000,
       });
     });
-  }, [queryClient]);
+  }, [queryClient, problemId, pathSlug]);
 
   const {
     code, setCode, feedbackStatus, feedback, showHints, toggleHints,
@@ -115,7 +122,12 @@ export default function ChallengePage() {
     mcqCorrectAnswer, mcqExplanation,
     challengeType, handleSubmit, handleReset, handleRetake, handleKeyDown,
     resetForNavigation,
-  } = useChallenge({ content, savedCode: progress?.code, onBadgesEarned: handleBadgesEarned });
+  } = useChallenge({
+    content,
+    savedCode: progress?.code,
+    initialMcqSolved: progress ? progress.status === "solved" : undefined,
+    onBadgesEarned: handleBadgesEarned,
+  });
 
   const [testResults, setTestResults] = useState<TestCaseResult[]>([]);
   const [resultsLoaded, setResultsLoaded] = useState(false);
@@ -142,7 +154,7 @@ export default function ChallengePage() {
         actual: tr.actual,
         passed: tr.passed,
       })));
-      if (res.passed) handleBadgesEarned(res.newly_earned_badges ?? []);
+      if (res.passed) handleBadgesEarned(res.newly_earned_badges ?? [], res.xp_earned ?? 0);
     } catch (err: any) {
       const detail = err.response?.data?.detail;
       setTestResults([{ input: "", expected: "", actual: detail || "Error running code", passed: false }]);
@@ -269,8 +281,6 @@ export default function ChallengePage() {
               Next <ChevronRight className="w-3.5 h-3.5" />
             </button>
           )}
-          <div className="w-px h-5 bg-border/40 mx-1" />
-          <ThemeToggle />
         </div>
       </div>
 
@@ -326,15 +336,3 @@ export default function ChallengePage() {
   );
 }
 
-function ThemeToggle() {
-  const { resolvedTheme, setTheme } = useTheme();
-  return (
-    <button
-      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-      className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer transition-all duration-500"
-    >
-      <Sun className="w-3.5 h-3.5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-      <Moon className="absolute w-3.5 h-3.5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-    </button>
-  );
-}

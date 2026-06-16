@@ -11,21 +11,24 @@ const STORAGE_PREFIX = "codetail-code-";
 interface UseChallengeParams {
   content: ChallengeContent | undefined;
   savedCode?: string | null;
-  onBadgesEarned?: (badges: string[]) => void;
+  initialMcqSolved?: boolean | undefined; // undefined = still loading, true/false = resolved
+  onBadgesEarned?: (badges: string[], xpEarned: number) => void;
 }
 
-export function useChallenge({ content, savedCode, onBadgesEarned }: UseChallengeParams) {
+export function useChallenge({ content, savedCode, initialMcqSolved, onBadgesEarned }: UseChallengeParams) {
   const [code, setCode] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState<FeedbackStatus>("idle");
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [showHints, setShowHints] = useState(false);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [mcqSubmitted, setMcqSubmitted] = useState(false);
+  const [mcqWasSolved, setMcqWasSolved] = useState(false);
   const [mcqCorrectAnswer, setMcqCorrectAnswer] = useState<string | null>(null);
   const [mcqExplanation, setMcqExplanation] = useState<string | null>(null);
   const [mcqSubmitting, setMcqSubmitting] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const mcqRestoreRef = useRef(false);
 
   const problemId = content?.problemId;
   const storageKey = problemId ? `${STORAGE_PREFIX}${problemId}` : null;
@@ -33,7 +36,6 @@ export function useChallenge({ content, savedCode, onBadgesEarned }: UseChalleng
   // Load code: savedCode from API > localStorage > starter code
   useEffect(() => {
     if (!content || initialized) return;
-
     if (savedCode) {
       setCode(savedCode);
     } else {
@@ -42,6 +44,18 @@ export function useChallenge({ content, savedCode, onBadgesEarned }: UseChalleng
     }
     setInitialized(true);
   }, [content, savedCode, initialized, storageKey]);
+
+  // Restore MCQ solved state once progress has loaded (separate from code init
+  // because progress arrives async — can't share the initialized gate).
+  useEffect(() => {
+    if (mcqRestoreRef.current) return;
+    if (initialMcqSolved === undefined) return; // still fetching
+    if (initialMcqSolved && content?.type === "mcq") {
+      setMcqSubmitted(true);
+      setMcqWasSolved(true);
+    }
+    mcqRestoreRef.current = true;
+  }, [initialMcqSolved, content?.type]);
 
   // Auto-save (debounced 1s)
   useEffect(() => {
@@ -69,7 +83,7 @@ export function useChallenge({ content, savedCode, onBadgesEarned }: UseChalleng
         setMcqCorrectAnswer(result.correct_answer);
         setMcqExplanation(result.explanation ?? null);
         setMcqSubmitted(true);
-        if (result.correct) onBadgesEarned?.(result.newly_earned_badges ?? []);
+        if (result.correct) onBadgesEarned?.(result.newly_earned_badges ?? [], result.xp_earned ?? 0);
       } catch {
         // Silently fail — user can retry
       } finally {
@@ -101,6 +115,7 @@ export function useChallenge({ content, savedCode, onBadgesEarned }: UseChalleng
     setFeedbackStatus("idle");
     setSelectedOption(null);
     setMcqSubmitted(false);
+    setMcqWasSolved(false);
     setMcqCorrectAnswer(null);
     setMcqExplanation(null);
   }, []);
@@ -111,17 +126,19 @@ export function useChallenge({ content, savedCode, onBadgesEarned }: UseChalleng
     setFeedbackStatus("idle");
     setSelectedOption(null);
     setMcqSubmitted(false);
+    setMcqWasSolved(false);
     setMcqCorrectAnswer(null);
     setMcqExplanation(null);
     setShowHints(false);
     setInitialized(false);
+    mcqRestoreRef.current = false;
   }, []);
 
   const toggleHints = useCallback(() => {
     setShowHints((prev) => !prev);
   }, []);
 
-  const mcqCorrect = mcqCorrectAnswer ? selectedOption === mcqCorrectAnswer : false;
+  const mcqCorrect = mcqWasSolved || (mcqCorrectAnswer ? selectedOption === mcqCorrectAnswer : false);
 
   return {
     code,
