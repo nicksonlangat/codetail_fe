@@ -125,7 +125,7 @@ export default function ChallengePage() {
   } = useChallenge({
     content,
     savedCode: progress?.code,
-    initialMcqSolved: progress?.status === "solved",
+    initialMcqSolved: progress ? progress.status === "solved" : undefined,
     onBadgesEarned: handleBadgesEarned,
   });
 

@@ -11,7 +11,7 @@ const STORAGE_PREFIX = "codetail-code-";
 interface UseChallengeParams {
   content: ChallengeContent | undefined;
   savedCode?: string | null;
-  initialMcqSolved?: boolean;
+  initialMcqSolved?: boolean | undefined; // undefined = still loading, true/false = resolved
   onBadgesEarned?: (badges: string[], xpEarned: number) => void;
 }
 
@@ -28,26 +28,34 @@ export function useChallenge({ content, savedCode, initialMcqSolved, onBadgesEar
   const [mcqSubmitting, setMcqSubmitting] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const mcqRestoreRef = useRef(false);
 
   const problemId = content?.problemId;
   const storageKey = problemId ? `${STORAGE_PREFIX}${problemId}` : null;
 
-  // Load code: savedCode from API > localStorage > starter code; restore MCQ solved state
+  // Load code: savedCode from API > localStorage > starter code
   useEffect(() => {
     if (!content || initialized) return;
-
     if (savedCode) {
       setCode(savedCode);
     } else {
       const local = storageKey ? localStorage.getItem(storageKey) : null;
       setCode(local ?? content.starterCode ?? "");
     }
-    if (initialMcqSolved && content.type === "mcq") {
+    setInitialized(true);
+  }, [content, savedCode, initialized, storageKey]);
+
+  // Restore MCQ solved state once progress has loaded (separate from code init
+  // because progress arrives async — can't share the initialized gate).
+  useEffect(() => {
+    if (mcqRestoreRef.current) return;
+    if (initialMcqSolved === undefined) return; // still fetching
+    if (initialMcqSolved && content?.type === "mcq") {
       setMcqSubmitted(true);
       setMcqWasSolved(true);
     }
-    setInitialized(true);
-  }, [content, savedCode, initialized, storageKey, initialMcqSolved]);
+    mcqRestoreRef.current = true;
+  }, [initialMcqSolved, content?.type]);
 
   // Auto-save (debounced 1s)
   useEffect(() => {
@@ -123,6 +131,7 @@ export function useChallenge({ content, savedCode, initialMcqSolved, onBadgesEar
     setMcqExplanation(null);
     setShowHints(false);
     setInitialized(false);
+    mcqRestoreRef.current = false;
   }, []);
 
   const toggleHints = useCallback(() => {
