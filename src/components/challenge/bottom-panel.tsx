@@ -39,9 +39,10 @@ interface BottomPanelProps {
   initialHints?: HintResponse[];
   initialReview?: ReviewData | null;
   initialSolution?: string | null;
+  onBadgesEarned?: (badges: string[], xpEarned: number) => void;
 }
 
-export function BottomPanel({ problemId, code, testCases, testResults, running, stack = "python", triggerReview = 0, initialHints = [], initialReview = null, initialSolution = null }: BottomPanelProps) {
+export function BottomPanel({ problemId, code, testCases, testResults, running, stack = "python", triggerReview = 0, initialHints = [], initialReview = null, initialSolution = null, onBadgesEarned }: BottomPanelProps) {
   const isDjango = stack === "django";
   const [active, setActive] = useState<Tab>(isDjango ? "review" : "tests");
   const [hints, setHints] = useState<HintResponse[]>([]);
@@ -114,6 +115,9 @@ export function BottomPanel({ problemId, code, testCases, testResults, running, 
     try {
       const result = await getReview(problemId, code);
       setReview(result);
+      if (result.xp_earned > 0 || result.newly_earned_badges?.length > 0) {
+        onBadgesEarned?.(result.newly_earned_badges ?? [], result.xp_earned ?? 0);
+      }
     } catch (err: any) {
       const detail = err.response?.data?.detail || "Failed to get review";
       if (err.response?.status === 429) {
@@ -131,6 +135,9 @@ export function BottomPanel({ problemId, code, testCases, testResults, running, 
     try {
       const result = await getReview(problemId, code);
       setReview(result);
+      if (result.xp_earned > 0 || result.newly_earned_badges?.length > 0) {
+        onBadgesEarned?.(result.newly_earned_badges ?? [], result.xp_earned ?? 0);
+      }
     } catch (err: any) {
       const detail = err.response?.data?.detail || "Failed to get review";
       if (err.response?.status === 429) {

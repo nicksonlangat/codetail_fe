@@ -129,6 +129,8 @@ export interface ReviewResponse {
   issues: string[];
   suggestions: string[];
   improved_code: string | null;
+  newly_earned_badges: string[];
+  xp_earned: number;
 }
 
 export async function getReview(problemId: string, code: string) {
