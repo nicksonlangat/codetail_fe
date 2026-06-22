@@ -18,6 +18,7 @@ export interface InterviewResponse {
   problem_count: number;
   time_limit_minutes: number;
   is_active: boolean;
+  is_template: boolean;
   created_at: string;
 }
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, Sparkles, Loader2, RefreshCw } from "lucide-react";
+import { Sparkles, Loader2, RefreshCw } from "lucide-react";
 import { TipTapRenderer } from "@/components/editors/tiptap-renderer";
 import { enrichProblem, regenerateProblem } from "@/lib/api/submissions";
 import type { ChallengeContent } from "@/types";
@@ -102,14 +102,6 @@ export function ProblemDescription({ content, meta, diffColor, typeLabel, isGene
 
         {/* Description */}
         <TipTapRenderer content={content.description ?? ""} />
-
-        {/* Issue description for fix-code */}
-        {content.type === "fix-code" && content.issueDescription && (
-          <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-destructive/10 ring-1 ring-destructive/20">
-            <AlertTriangle className="w-3.5 h-3.5 text-destructive flex-shrink-0 mt-0.5" />
-            <span className="text-[12px] text-foreground/80">{content.issueDescription}</span>
-          </div>
-        )}
 
         {/* Function Signature */}
         {content.functionSignature && (

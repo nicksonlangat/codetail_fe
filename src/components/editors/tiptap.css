@@ -135,3 +135,29 @@
   font-size: 0.75em;
   vertical-align: super;
 }
+
+/* Syntax highlighting — highlight.js / lowlight (GitHub Dark Dimmed) */
+.tiptap pre code .hljs-comment,
+.tiptap pre code .hljs-quote { color: #8b949e; font-style: italic; }
+
+.tiptap pre code .hljs-keyword,
+.tiptap pre code .hljs-selector-tag { color: #ff7b72; }
+
+.tiptap pre code .hljs-string,
+.tiptap pre code .hljs-addition { color: #a5d6ff; }
+
+.tiptap pre code .hljs-number,
+.tiptap pre code .hljs-literal { color: #79c0ff; }
+
+.tiptap pre code .hljs-built_in,
+.tiptap pre code .hljs-type,
+.tiptap pre code .hljs-attr { color: #ffa657; }
+
+.tiptap pre code .hljs-title,
+.tiptap pre code .hljs-title.function_,
+.tiptap pre code .hljs-title.class_ { color: #d2a8ff; }
+
+.tiptap pre code .hljs-params { color: #cdd9e5; }
+
+.tiptap pre code .hljs-variable,
+.tiptap pre code .hljs-template-variable { color: #ffa657; }
