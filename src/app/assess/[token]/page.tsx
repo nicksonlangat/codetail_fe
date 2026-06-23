@@ -8,6 +8,7 @@ import { Loader2, Clock, ChevronLeft, ChevronRight, Send, Play, Check, X, AlertT
 import {
   getAssessSession,
   startAssessSession,
+  resendAssessInvite,
   submitAssessProblem,
   finishAssessSession,
   type AssessSession,
@@ -18,6 +19,7 @@ import {
 } from "@/lib/api/interviews";
 import { MonacoCodeEditor } from "@/components/editors/monaco-code-editor";
 import { TipTapRenderer } from "@/components/editors/tiptap-renderer";
+import { CTLogo } from "@/components/brand/logo";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -74,92 +76,151 @@ function WelcomeScreen({
   session: AssessSession;
   onStarted: () => void;
 }) {
-  const [name, setName] = useState(session.interview_title ? "" : "");
+  const [otp, setOtp] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendSent, setResendSent] = useState(false);
 
   const startMutation = useMutation({
-    mutationFn: () => startAssessSession(token, name),
+    mutationFn: () => startAssessSession(token, otp.trim()),
     onSuccess: onStarted,
+    onError: () => setOtpError("Invalid code — check your invite email and try again."),
   });
 
+  const resendMutation = useMutation({
+    mutationFn: () => resendAssessInvite(token),
+    onSuccess: () => {
+      setResendSent(true);
+      setResendCooldown(30);
+      const tick = setInterval(() => {
+        setResendCooldown(c => {
+          if (c <= 1) { clearInterval(tick); return 0; }
+          return c - 1;
+        });
+      }, 1000);
+    },
+  });
+
+  function handleSubmit() {
+    setOtpError("");
+    startMutation.mutate();
+  }
+
+  const NOTES = [
+    "Timer starts when you click Start and cannot be paused.",
+    "Submit each problem individually — you can re-submit to improve your score.",
+    "Click Finish when done or when time runs out.",
+  ];
+
   return (
-    <div className="flex h-screen items-center justify-center bg-background px-6">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 py-12">
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-lg bg-card border border-border rounded-2xl overflow-hidden"
+        transition={{ type: "spring", stiffness: 260, damping: 28 }}
+        className="w-full max-w-[420px]"
       >
-        <div className="h-px bg-linear-to-r from-transparent via-primary/60 to-transparent" />
-        <div className="p-8 space-y-6">
+        {/* Brand */}
+        <div className="mb-10">
+          <CTLogo size={32} />
+          <p className="text-[15px] font-black tracking-tight select-none mt-3">
+            code<span className="text-primary">tail</span>
+          </p>
+        </div>
+
+        {/* Title block */}
+        <div className="mb-8">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-primary mb-3">
+            Technical Assessment
+          </p>
+          <h1 className="text-[30px] font-semibold tracking-tight leading-[1.15] text-foreground">
+            {session.interview_title}
+          </h1>
+          {session.role && (
+            <p className="text-[14px] text-muted-foreground mt-1">{session.role}</p>
+          )}
+        </div>
+
+        {/* Stats row */}
+        <div className="flex items-center gap-8 py-6 border-y border-border/50 mb-8">
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50 mb-1">Problems</p>
+            <p className="text-[22px] font-semibold tabular-nums leading-none">{session.problems.length}</p>
+          </div>
+          <div className="w-px h-8 bg-border/50" />
+          <div>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50 mb-1">Time limit</p>
+            <p className="text-[22px] font-semibold tabular-nums leading-none">{session.time_limit_minutes} min</p>
+          </div>
+        </div>
+
+        {/* Rules */}
+        <div className="mb-8 space-y-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50 mb-3">
+            Before you begin
+          </p>
+          {NOTES.map((note, i) => (
+            <div key={i} className="flex items-start gap-3">
+              <span className="text-[11px] font-mono text-muted-foreground/30 shrink-0 mt-px tabular-nums">{i + 1}.</span>
+              <p className="text-[12px] text-muted-foreground/80 leading-relaxed">{note}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* OTP */}
+        <div className="space-y-3">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-primary/10 text-primary">
-                Technical Assessment
-              </span>
-            </div>
-            <h1 className="text-[22px] font-semibold tracking-tight leading-tight">
-              {session.interview_title}
-            </h1>
-            {session.role && (
-              <p className="text-[13px] text-muted-foreground">{session.role}</p>
-            )}
-            {session.interview_description && (
-              <p className="text-[13px] text-muted-foreground leading-relaxed mt-2">
-                {session.interview_description}
-              </p>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: "Problems", value: session.problems.length },
-              { label: "Time limit", value: `${session.time_limit_minutes} min` },
-            ].map(({ label, value }) => (
-              <div key={label} className="px-4 py-3 rounded-xl bg-muted/50 space-y-0.5">
-                <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-                <p className="text-[16px] font-semibold tabular-nums">{value}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="space-y-2 p-4 rounded-xl border border-border/60 bg-muted/30">
-            <p className="text-[11px] font-semibold text-foreground">Before you begin</p>
-            <ul className="space-y-1">
-              {[
-                "Timer starts when you click Start — it cannot be paused.",
-                "Submit each problem individually. You can re-submit to improve your score.",
-                "Click Finish when done or when time runs out.",
-              ].map((note) => (
-                <li key={note} className="flex items-start gap-2 text-[11px] text-muted-foreground">
-                  <span className="text-primary mt-0.5 shrink-0">·</span>
-                  {note}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-medium text-muted-foreground">Your name</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your name"
-                className="w-full text-[13px] bg-background border border-border/60 rounded-lg px-3 py-2.5 placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all duration-500"
-              />
-            </div>
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => startMutation.mutate()}
-              disabled={startMutation.isPending}
-              className="w-full flex items-center justify-center gap-2 text-[13px] font-semibold py-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 cursor-pointer transition-all duration-500"
-            >
-              {startMutation.isPending ? (
-                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Starting…</>
-              ) : (
-                "Start Assessment →"
+            <label className="flex items-baseline gap-1.5 text-[11px] font-medium text-muted-foreground">
+              Access code
+              {session.masked_email && (
+                <span className="text-muted-foreground/40 font-normal">— sent to {session.masked_email}</span>
               )}
-            </motion.button>
+            </label>
+            <input
+              value={otp}
+              onChange={(e) => { setOtp(e.target.value.replace(/\D/g, "").slice(0, 6)); setOtpError(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter" && otp.length === 6) handleSubmit(); }}
+              placeholder="_ _ _ _ _ _"
+              inputMode="numeric"
+              maxLength={6}
+              autoFocus
+              className="w-full text-[22px] font-mono tracking-[0.35em] text-center bg-card border border-border/70 rounded-xl px-4 py-4 placeholder:text-muted-foreground/20 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all duration-300"
+            />
+            {otpError && (
+              <p className="text-[11px] text-destructive">{otpError}</p>
+            )}
           </div>
+          <motion.button
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            onClick={handleSubmit}
+            disabled={otp.length !== 6 || startMutation.isPending}
+            className="w-full flex items-center justify-center gap-2 text-[13px] font-semibold py-3.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 cursor-pointer transition-all duration-300"
+          >
+            {startMutation.isPending ? (
+              <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Verifying…</>
+            ) : (
+              "Start Assessment →"
+            )}
+          </motion.button>
+
+          <p className="text-center text-[11px] text-muted-foreground/40">
+            Didn't receive it?{" "}
+            <button
+              onClick={() => resendMutation.mutate()}
+              disabled={resendCooldown > 0 || resendMutation.isPending}
+              className="text-primary hover:text-primary/70 cursor-pointer transition-all duration-300 disabled:opacity-40 disabled:cursor-default"
+            >
+              {resendMutation.isPending
+                ? "Sending…"
+                : resendCooldown > 0
+                ? `Resend in ${resendCooldown}s`
+                : resendSent
+                ? "Sent!"
+                : "Resend email"}
+            </button>
+          </p>
         </div>
       </motion.div>
     </div>
@@ -263,9 +324,14 @@ function AssessmentScreen({
       {/* Top bar */}
       <div className="flex items-center justify-between h-12 px-5 border-b border-border/60 bg-card/50 shrink-0">
         <div className="flex items-center gap-3">
-          <span className="text-[14px] font-black tracking-tight text-foreground">Codetail</span>
+          <div className="flex items-center gap-2">
+            <CTLogo size={20} />
+            <span className="text-[13px] font-black tracking-tight text-foreground select-none">
+              code<span className="text-primary">tail</span>
+            </span>
+          </div>
           <span className="text-[10px] text-muted-foreground/40">·</span>
-          <span className="text-[11px] text-muted-foreground truncate max-w-[240px]">
+          <span className="text-[11px] text-muted-foreground truncate max-w-60">
             {session.interview_title}
           </span>
         </div>
