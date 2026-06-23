@@ -231,6 +231,7 @@ export function QuestionsTab({ problems }: { problems: Problem[] }) {
               type: drawerProblem.full.type,
               difficulty: drawerProblem.full.difficulty,
               stack: drawerProblem.full.stack,
+              unit: drawerProblem.full.unit ?? "",
               concept: drawerProblem.full.concept,
               description: drawerProblem.full.description,
               function_signature: drawerProblem.full.function_signature ?? null,

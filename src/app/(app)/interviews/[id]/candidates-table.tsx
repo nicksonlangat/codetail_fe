@@ -109,14 +109,12 @@ interface Props {
 }
 
 export function CandidatesTable({ sessions, totalProblems, onSelect, onInvite }: Props) {
-  const [search, setSearch]           = useState("");
+  const [search, setSearch]             = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [sortField, setSortField]     = useState<SortField>("invitedAt");
-  const [sortDir, setSortDir]         = useState<SortDir>("desc");
+  const [sortField, setSortField]       = useState<SortField>("invitedAt");
+  const [sortDir, setSortDir]           = useState<SortDir>("desc");
 
-  if (sessions.length === 0) return <EmptyState onInvite={onInvite} />;
-
-  const rows: Row[] = sessions.map(s => ({
+  const rows: Row[] = useMemo(() => sessions.map(s => ({
     session: s,
     id: s.id,
     name:  s.candidate_name || s.candidate_email,
@@ -129,7 +127,7 @@ export function CandidatesTable({ sessions, totalProblems, onSelect, onInvite }:
     invitedLabel: formatRelative(new Date(s.created_at)),
     invitedTs: new Date(s.created_at).getTime(),
     expiry: formatExpiry(s.expires_at ? new Date(s.expires_at) : null, s.status),
-  }));
+  })), [sessions, totalProblems]);
 
   const avgScore = useMemo(() => {
     const scored = rows.filter(r => r.score !== null);
@@ -157,6 +155,8 @@ export function CandidatesTable({ sessions, totalProblems, onSelect, onInvite }:
       return sortDir === "asc" ? cmp : -cmp;
     });
   }, [rows, search, statusFilter, sortField, sortDir]);
+
+  if (sessions.length === 0) return <EmptyState onInvite={onInvite} />;
 
   function toggleSort(f: SortField) {
     if (sortField === f) setSortDir(d => d === "asc" ? "desc" : "asc");

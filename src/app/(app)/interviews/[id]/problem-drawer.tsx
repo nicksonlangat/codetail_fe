@@ -41,6 +41,7 @@ interface FullProblem {
   type: string;
   difficulty: string;
   stack: string;
+  unit: string;
   concept: string;
   description: string;
   function_signature: string | null;
@@ -113,7 +114,7 @@ function HintsAccordion({ hints }: { hints: string[] }) {
               {hints.map((h, i) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <span className="text-[10px] font-mono text-amber-500/60 shrink-0 mt-0.5">{i + 1}.</span>
-                  <p className="text-[12px] text-muted-foreground leading-relaxed">{h}</p>
+                  <p className="text-[12px] text-foreground/85 leading-relaxed">{h}</p>
                 </div>
               ))}
             </div>
@@ -150,7 +151,7 @@ export function ProblemDrawer({ problem, index, total, onPrev, onNext, navigatin
       className="fixed inset-0 z-50 flex justify-end bg-black/50" onClick={onClose}>
       <motion.div initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
         transition={DRAWER} onClick={e => e.stopPropagation()}
-        className="w-full max-w-[600px] bg-card border-l border-border h-full flex flex-col shadow-2xl shadow-black/30">
+        className="w-full max-w-[600px] bg-background border-l border-foreground/15 h-full flex flex-col shadow-2xl shadow-black/40">
 
         {/* Header */}
         <div className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-border">
@@ -159,13 +160,20 @@ export function ProblemDrawer({ problem, index, total, onPrev, onNext, navigatin
               {String(index + 1).padStart(2, "0")}
             </span>
             <div className="min-w-0">
+              {(problem.stack || problem.unit) && (
+                <p className="text-[10px] text-muted-foreground/60 mb-0.5 truncate">
+                  {problem.stack && <span className="capitalize">{problem.stack}</span>}
+                  {problem.stack && problem.unit && <span className="mx-1">›</span>}
+                  {problem.unit && <span>{problem.unit}</span>}
+                </p>
+              )}
               <p className="text-[14px] font-semibold leading-tight truncate">{problem.title}</p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md capitalize ${diffColor[problem.difficulty] ?? "bg-muted text-muted-foreground"}`}>
                   {problem.difficulty}
                 </span>
                 {tc && <span className={`flex items-center gap-1 text-[10px] font-medium ${tc.color}`}>{tc.icon} {tc.label}</span>}
-                {problem.concept && <span className="text-[10px] text-muted-foreground/50">{problem.concept}</span>}
+                {problem.concept && <span className="text-[10px] text-muted-foreground/70">{problem.concept}</span>}
               </div>
             </div>
           </div>
@@ -176,7 +184,7 @@ export function ProblemDrawer({ problem, index, total, onPrev, onNext, navigatin
               className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-30 cursor-pointer transition-all duration-300">
               <ChevronLeft className="w-3.5 h-3.5" />
             </motion.button>
-            <span className="text-[10px] font-mono text-muted-foreground/40 tabular-nums w-8 text-center select-none">{index + 1}/{total}</span>
+            <span className="text-[10px] font-mono text-muted-foreground/60 tabular-nums w-8 text-center select-none">{index + 1}/{total}</span>
             <motion.button onClick={onNext} disabled={index === total - 1 || navigating}
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
               transition={{ type: "spring", stiffness: 400, damping: 25 }}
@@ -197,13 +205,13 @@ export function ProblemDrawer({ problem, index, total, onPrev, onNext, navigatin
         <div className="flex-1 overflow-y-auto">
           <div className="px-5 py-5 space-y-6">
 
-            <div className="text-[13px] text-muted-foreground/80 leading-relaxed">
+            <div className="text-[13px] text-foreground/90 leading-relaxed">
               <TipTapRenderer content={problem.description} />
             </div>
 
             {problem.function_signature && (
               <div className="space-y-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Function Signature</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Function Signature</p>
                 <div className="font-mono text-[12px] bg-muted border border-border/50 rounded-md p-3.5 overflow-x-auto">
                   <span className="text-primary">def</span>{" "}
                   <span className="text-foreground">{problem.function_signature.replace(/^(def|class)\s+/, "")}</span>
@@ -213,15 +221,15 @@ export function ProblemDrawer({ problem, index, total, onPrev, onNext, navigatin
 
             {problem.examples?.length > 0 && (
               <div className="space-y-2.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Examples</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Examples</p>
                 {problem.examples.map((ex, i) => (
                   <div key={i} className="rounded-md border border-border/50 bg-muted p-3.5 space-y-2">
-                    <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">Example {i + 1}</p>
+                    <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wider">Example {i + 1}</p>
                     <div className="font-mono text-[11px] space-y-0.5 leading-relaxed">
-                      <p><span className="text-muted-foreground select-none">Input: </span><span>{ex.input}</span></p>
-                      <p><span className="text-muted-foreground select-none">Output: </span><span className="text-primary font-medium">{ex.output}</span></p>
+                      <p><span className="text-muted-foreground/80 select-none">Input: </span><span className="text-foreground">{ex.input}</span></p>
+                      <p><span className="text-muted-foreground/80 select-none">Output: </span><span className="text-primary font-medium">{ex.output}</span></p>
                     </div>
-                    {ex.explanation && <p className="text-[11px] text-muted-foreground leading-relaxed">{ex.explanation}</p>}
+                    {ex.explanation && <p className="text-[11px] text-foreground/80 leading-relaxed">{ex.explanation}</p>}
                   </div>
                 ))}
               </div>
@@ -230,16 +238,16 @@ export function ProblemDrawer({ problem, index, total, onPrev, onNext, navigatin
             {/* MCQ choices */}
             {hasMcq && (
               <div className="space-y-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Choices</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Choices</p>
                 {problem.mcq_options.map(opt => (
                   <div key={opt.id} className="flex gap-3 rounded-md border border-border/50 p-3.5">
-                    <span className="shrink-0 w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold bg-muted text-muted-foreground/50 select-none mt-0.5">
+                    <span className="shrink-0 w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold bg-muted text-muted-foreground/80 select-none mt-0.5">
                       {opt.id.toUpperCase()}
                     </span>
                     <div className="flex-1 min-w-0 space-y-2">
-                      <p className="text-[12px] leading-relaxed">{opt.label}</p>
+                      <p className="text-[12px] text-foreground/90 leading-relaxed">{opt.label}</p>
                       {opt.code && (
-                        <pre className="font-mono text-[11px] bg-muted border border-border/50 rounded-md px-3 py-2 overflow-x-auto leading-relaxed text-muted-foreground whitespace-pre">
+                        <pre className="font-mono text-[11px] bg-muted border border-border/50 rounded-md px-3 py-2 overflow-x-auto leading-relaxed text-foreground/80 whitespace-pre">
                           {opt.code}
                         </pre>
                       )}
@@ -253,7 +261,7 @@ export function ProblemDrawer({ problem, index, total, onPrev, onNext, navigatin
             {hasFiles && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Files</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Files</p>
                   {currentFile && <CopyButton text={currentFile.starter_code} />}
                 </div>
                 <div className="rounded-md border border-border/50 overflow-hidden">
@@ -261,7 +269,7 @@ export function ProblemDrawer({ problem, index, total, onPrev, onNext, navigatin
                     {problem.files.map((f, i) => (
                       <button key={f.name} onClick={() => setActiveFile(i)}
                         className={`px-3.5 py-2 text-[11px] font-mono shrink-0 cursor-pointer transition-all duration-300 border-b-2 ${
-                          activeFile === i ? "text-foreground border-primary" : "text-muted-foreground/50 border-transparent hover:text-muted-foreground"
+                          activeFile === i ? "text-foreground border-primary" : "text-muted-foreground/70 border-transparent hover:text-foreground"
                         }`}>
                         {f.name}
                       </button>
@@ -276,7 +284,7 @@ export function ProblemDrawer({ problem, index, total, onPrev, onNext, navigatin
             {!hasFiles && problem.starter_code && (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">Starter Code</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Starter Code</p>
                   <CopyButton text={problem.starter_code} />
                 </div>
                 <CodeHighlight code={problem.starter_code} />

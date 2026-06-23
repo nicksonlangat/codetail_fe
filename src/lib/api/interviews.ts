@@ -122,6 +122,7 @@ export interface AssessSession {
   role: string;
   time_limit_minutes: number;
   status: "pending" | "in_progress" | "completed" | "expired";
+  masked_email: string;
   started_at: string | null;
   expires_at: string | null;
   seconds_remaining: number | null;
@@ -210,8 +211,13 @@ export async function getAssessSession(token: string) {
   return res.data;
 }
 
-export async function startAssessSession(token: string, candidateName: string) {
-  const res = await apiClient.post<AssessSession>(`/assess/${token}/start`, { candidate_name: candidateName });
+export async function startAssessSession(token: string, otp: string) {
+  const res = await apiClient.post<AssessSession>(`/assess/${token}/start`, { otp });
+  return res.data;
+}
+
+export async function resendAssessInvite(token: string) {
+  const res = await apiClient.post<{ sent: boolean }>(`/assess/${token}/resend`);
   return res.data;
 }
 

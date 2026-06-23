@@ -6,9 +6,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Users, Clock, Copy, Check, Send, Loader2,
-  ClipboardList, X, WandSparkles, LayoutDashboard,
+  ClipboardList, X, WandSparkles, LayoutDashboard, ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
+import { CTLogo } from "@/components/brand/logo";
 import {
   getInterview, getInterviewResults, inviteCandidate,
   type CandidateSession,
@@ -60,33 +61,38 @@ export default function InterviewDetailPage() {
     : null;
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
+    <div className="flex flex-col h-full">
 
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-3">
-          <Link href="/interviews" className="mt-1 text-muted-foreground hover:text-foreground transition-all duration-500 cursor-pointer">
-            <ArrowLeft className="w-4 h-4" />
+      {/* Page header */}
+      <div className="sticky top-0 z-10 flex items-center justify-between px-6 h-12 border-b border-border/50 bg-card/80 backdrop-blur-sm shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <CTLogo size={18} />
+          <Link href="/interviews" className="text-[12px] text-muted-foreground hover:text-foreground transition-all duration-500 cursor-pointer shrink-0">
+            Interviews
           </Link>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold tracking-tight">{interview.title}</h1>
-              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${interview.is_active ? "bg-green-500/10 text-green-500" : "bg-muted text-muted-foreground/50"}`}>
-                {interview.is_active ? "Active" : "Inactive"}
-              </span>
-            </div>
-            {interview.description && (
-              <p className="text-[12px] text-muted-foreground max-w-xl">{interview.description}</p>
-            )}
-          </div>
+          <ChevronRight className="w-3 h-3 text-muted-foreground/30 shrink-0" />
+          <span className="text-[12px] font-medium text-foreground truncate">{interview.title}</span>
+          <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${interview.is_active ? "bg-green-500/10 text-green-500" : "bg-muted text-muted-foreground/40"}`}>
+            {interview.is_active ? "Active" : "Inactive"}
+          </span>
         </div>
         <motion.button
           whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} transition={SP2}
           onClick={() => setShowInvite(true)}
-          className="flex items-center gap-1.5 text-[12px] font-semibold px-3.5 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer transition-all duration-500 shrink-0"
+          className="flex items-center gap-1.5 text-[12px] font-semibold px-3.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer transition-all duration-500 shrink-0"
         >
           <Send className="w-3.5 h-3.5" /> Invite Candidate
         </motion.button>
+      </div>
+
+      <div className="max-w-5xl mx-auto w-full px-6 py-8 space-y-6 flex-1">
+
+      {/* Title block */}
+      <div>
+        <h1 className="text-[22px] font-bold tracking-tight">{interview.title}</h1>
+        {interview.description && (
+          <p className="text-[13px] text-muted-foreground mt-1 max-w-xl">{interview.description}</p>
+        )}
       </div>
 
       {/* Tabs */}
@@ -136,7 +142,8 @@ export default function InterviewDetailPage() {
           <InviteModal
             interviewId={id}
             onClose={() => setShowInvite(false)}
-            onSuccess={() => { qc.invalidateQueries({ queryKey: ["interview-results", id] }); setShowInvite(false); }}
+            onInvited={() => qc.invalidateQueries({ queryKey: ["interview-results", id] })}
+            onSuccess={() => setShowInvite(false)}
           />
         )}
         {selectedSession && (
@@ -147,6 +154,7 @@ export default function InterviewDetailPage() {
           />
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }
@@ -167,12 +175,12 @@ function OverviewTab({ interview, sessions, avgScore }: {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
       {stats.map(({ label, value, icon: Icon }) => (
-        <div key={label} className="bg-muted rounded-xl p-4 space-y-2">
-          <div className="flex items-center gap-1.5 text-muted-foreground">
+        <div key={label} className="bg-card border border-border/50 rounded-xl p-4 space-y-2">
+          <div className="flex items-center gap-1.5 text-muted-foreground/60">
             <Icon className="w-3.5 h-3.5" />
             <span className="text-[10px] font-semibold uppercase tracking-wider">{label}</span>
           </div>
-          <p className="text-2xl font-bold tabular-nums">{value}</p>
+          <p className="text-[24px] font-bold tabular-nums leading-none">{value}</p>
         </div>
       ))}
     </div>
@@ -224,7 +232,7 @@ const EXPIRY_OPTIONS = [
   { label: "3 days",   value: 72 }, { label: "7 days",   value: 168 }, { label: "14 days", value: 336 },
 ];
 
-function InviteModal({ interviewId, onClose, onSuccess }: { interviewId: string; onClose: () => void; onSuccess: () => void }) {
+function InviteModal({ interviewId, onClose, onInvited, onSuccess }: { interviewId: string; onClose: () => void; onInvited: () => void; onSuccess: () => void }) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [expires, setExpires] = useState(168);
@@ -233,7 +241,7 @@ function InviteModal({ interviewId, onClose, onSuccess }: { interviewId: string;
 
   const invite = useMutation({
     mutationFn: () => inviteCandidate(interviewId, { candidate_email: email, candidate_name: name, expires_in_hours: expires }),
-    onSuccess: (res) => setResult({ url: res.assess_url, sentTo: email }),
+    onSuccess: (res) => { setResult({ url: res.assess_url, sentTo: email }); onInvited(); },
   });
 
   const copy = () => { if (!result) return; navigator.clipboard.writeText(result.url); setCopied(true); setTimeout(() => setCopied(false), 2000); };
