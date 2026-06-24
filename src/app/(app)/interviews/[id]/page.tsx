@@ -150,6 +150,7 @@ export default function InterviewDetailPage() {
           <CandidateDrawer
             session={selectedSession}
             problems={interview.problems}
+            interviewId={id}
             onClose={() => setSelectedSession(null)}
           />
         )}
