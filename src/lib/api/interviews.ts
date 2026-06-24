@@ -1,5 +1,10 @@
 import apiClient from "./client";
 
+export interface McqOptionBrief {
+  id: string;
+  label: string;
+}
+
 export interface ProblemBrief {
   id: string;
   title: string;
@@ -8,6 +13,8 @@ export interface ProblemBrief {
   stack: string;
   concept: string;
   path_title?: string;
+  mcq_options?: McqOptionBrief[];
+  correct_answer?: string | null;
 }
 
 export interface InterviewResponse {
@@ -137,7 +144,6 @@ export interface AssessSubmitResponse {
   score: number;
   test_results: CandidateTestResult[];
   ai_feedback: string | null;
-  correct_option: string | null;
   error: string | null;
 }
 
