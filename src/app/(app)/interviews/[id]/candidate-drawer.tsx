@@ -67,7 +67,11 @@ function barColor(s: number) {
   return "bg-destructive";
 }
 
-interface ProblemItem { id: string; title: string; stack: string; concept: string; difficulty: string; type: string; }
+interface ProblemItem {
+  id: string; title: string; stack: string; concept: string; difficulty: string; type: string;
+  mcq_options?: { id: string; label: string }[];
+  correct_answer?: string | null;
+}
 interface Props { session: CandidateSession; problems: ProblemItem[]; interviewId: string; onClose: () => void; }
 
 const TABS = ["Results", "AI Coach"] as const;
@@ -79,6 +83,11 @@ export function CandidateDrawer({ session, problems, interviewId, onClose }: Pro
   const [coach, setCoach]   = useState<CoachAssessment | null>(null);
   const [coachLoading, setCoachLoading] = useState(false);
   const [coachError, setCoachError]     = useState<string | null>(null);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
 
   const st = STATUS_STYLES[session.status] ?? STATUS_STYLES.pending;
   const displayName = session.candidate_name || session.candidate_email;
@@ -274,6 +283,8 @@ function SubmissionDetail({ submission, problem }: { submission: CandidateSubmis
   const isMcq = problem.type === "mcq";
   const isCorrect = submission.score === 100;
   const lang = STACK_LANG[problem.stack.toLowerCase()] ?? "python";
+  const selectedLabel = problem.mcq_options?.find(o => o.id === submission.selected_option)?.label;
+  const correctLabel = problem.mcq_options?.find(o => o.id === problem.correct_answer)?.label;
 
   return (
     <div className="space-y-3">
@@ -290,14 +301,21 @@ function SubmissionDetail({ submission, problem }: { submission: CandidateSubmis
         ))}
       </div>
       {isMcq && (
-        <div className={`flex items-center gap-2.5 px-3 py-2 rounded-md text-[12px] font-mono border ${isCorrect ? "border-green-500/30 bg-green-500/5" : "border-destructive/30 bg-destructive/5"}`}>
-          <span className={`font-bold ${isCorrect ? "text-green-500" : "text-destructive"}`}>{isCorrect ? "✓" : "✗"}</span>
-          <span className="text-foreground/70">
-            Selected: <strong className="text-foreground">{submission.selected_option?.toUpperCase() ?? "—"}</strong>
-          </span>
-          <span className={`ml-auto text-[10px] font-semibold uppercase tracking-wider ${isCorrect ? "text-green-600" : "text-destructive"}`}>
-            {isCorrect ? "Correct" : "Incorrect"}
-          </span>
+        <div className={`flex flex-col gap-1.5 px-3 py-2.5 rounded-md text-[12px] border ${isCorrect ? "border-green-500/30 bg-green-500/5" : "border-destructive/30 bg-destructive/5"}`}>
+          <div className="flex items-center gap-2.5">
+            <span className={`font-bold ${isCorrect ? "text-green-500" : "text-destructive"}`}>{isCorrect ? "✓" : "✗"}</span>
+            <span className="text-foreground/70 font-mono">
+              Selected: <strong className="text-foreground">{selectedLabel ?? submission.selected_option?.toUpperCase() ?? "—"}</strong>
+            </span>
+            <span className={`ml-auto text-[10px] font-semibold uppercase tracking-wider ${isCorrect ? "text-green-600" : "text-destructive"}`}>
+              {isCorrect ? "Correct" : "Incorrect"}
+            </span>
+          </div>
+          {!isCorrect && correctLabel && (
+            <p className="text-[11px] text-muted-foreground font-mono pl-[22px]">
+              Correct answer: <span className="font-medium text-foreground/80">{correctLabel}</span>
+            </p>
+          )}
         </div>
       )}
       {submission.ai_feedback && (

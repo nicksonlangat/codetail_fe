@@ -131,6 +131,11 @@ export function ProblemDrawer({ problem, index, total, onPrev, onNext, navigatin
 
   useEffect(() => { setActiveFile(0); }, [problem.id]);
 
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
   const handleKey = useCallback((e: KeyboardEvent) => {
     if (e.key === "ArrowLeft")  { e.preventDefault(); onPrev(); }
     if (e.key === "ArrowRight") { e.preventDefault(); onNext(); }

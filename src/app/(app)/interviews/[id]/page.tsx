@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { CTLogo } from "@/components/brand/logo";
+import { InviteSentIllustration } from "@/components/brand/illustrations";
 import {
   getInterview, getInterviewResults, inviteCandidate,
   type CandidateSession,
@@ -240,6 +241,11 @@ function InviteModal({ interviewId, onClose, onInvited, onSuccess }: { interview
   const [result, setResult] = useState<{ url: string; sentTo: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
   const invite = useMutation({
     mutationFn: () => inviteCandidate(interviewId, { candidate_email: email, candidate_name: name, expires_in_hours: expires }),
     onSuccess: (res) => { setResult({ url: res.assess_url, sentTo: email }); onInvited(); },
@@ -253,8 +259,7 @@ function InviteModal({ interviewId, onClose, onInvited, onSuccess }: { interview
       onClick={onClose}>
       <motion.div initial={{ scale: 0.96, opacity: 0, y: 8 }} animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.96, opacity: 0, y: 8 }} transition={SP} onClick={e => e.stopPropagation()}
-        className="bg-card border border-border rounded-2xl w-full max-w-md mx-4 overflow-hidden">
-        <div className="h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+        className="bg-card border border-border/60 rounded-md w-full max-w-md mx-4 overflow-hidden">
         <div className="p-6 space-y-5">
           <div className="flex items-center justify-between">
             <p className="text-[15px] font-semibold">Invite Candidate</p>
@@ -268,7 +273,7 @@ function InviteModal({ interviewId, onClose, onInvited, onSuccess }: { interview
                   <div key={f.label} className="space-y-1.5">
                     <label className="text-[11px] font-medium text-muted-foreground">{f.label}</label>
                     <input value={f.val} onChange={e => f.set(e.target.value)} placeholder={f.ph} type={f.type}
-                      className="w-full text-[13px] bg-background border border-border/60 rounded-lg px-3 py-2 placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all duration-500" />
+                      className="w-full text-[13px] bg-background border border-border/60 rounded-md px-3 py-2 placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/50 transition-all duration-500" />
                   </div>
                 ))}
                 <div className="space-y-1.5">
@@ -276,7 +281,7 @@ function InviteModal({ interviewId, onClose, onInvited, onSuccess }: { interview
                   <div className="flex gap-1.5 flex-wrap">
                     {EXPIRY_OPTIONS.map(o => (
                       <button key={o.value} onClick={() => setExpires(o.value)}
-                        className={`text-[11px] font-medium px-2.5 py-1 rounded-lg border cursor-pointer transition-all duration-500 ${
+                        className={`text-[11px] font-medium px-2.5 py-1 rounded-md border cursor-pointer transition-all duration-500 ${
                           expires === o.value ? "bg-primary/8 border-primary/30 text-primary" : "border-border/60 text-muted-foreground hover:border-border"}`}>
                         {o.label}
                       </button>
@@ -286,28 +291,27 @@ function InviteModal({ interviewId, onClose, onInvited, onSuccess }: { interview
               </div>
               <motion.button whileTap={{ scale: 0.97 }} transition={SP2} onClick={() => invite.mutate()}
                 disabled={!email.trim() || invite.isPending}
-                className="w-full flex items-center justify-center gap-2 text-[13px] font-semibold py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all duration-500">
+                className="w-full flex items-center justify-center gap-2 text-[13px] font-semibold py-2.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all duration-500">
                 {invite.isPending ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending…</> : <><Send className="w-3.5 h-3.5" /> Send Invite</>}
               </motion.button>
             </>
           ) : (
-            <div className="space-y-4">
-              <div className="flex items-start gap-3 p-3.5 rounded-xl bg-green-500/8 border border-green-500/20">
-                <Check className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
-                <p className="text-[12px]">Invite sent to <span className="font-semibold">{result.sentTo}</span>.</p>
+            <div className="space-y-4 text-center">
+              <div className="flex justify-center">
+                <InviteSentIllustration size={56} />
               </div>
-              <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-muted border border-border/60">
-                <span className="flex-1 text-[11px] font-mono truncate">{result.url}</span>
+              <p className="text-[12px] text-foreground/80">
+                Invite sent to <span className="font-semibold text-foreground">{result.sentTo}</span>
+              </p>
+              <div className="flex items-center gap-2 px-3 py-2.5 rounded-md bg-muted text-left">
+                <span className="flex-1 text-[11px] font-mono text-foreground/70 truncate">{result.url}</span>
                 <button onClick={copy} className="shrink-0 text-muted-foreground hover:text-foreground cursor-pointer transition-all duration-500">
-                  {copied ? <Check className="w-4 h-4 text-primary" /> : <Copy className="w-4 h-4" />}
+                  {copied ? <Check className="w-3.5 h-3.5 text-primary" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
-              <div className="flex gap-2">
-                <button onClick={copy} className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-medium py-2 rounded-lg ring-1 ring-border/60 hover:bg-secondary cursor-pointer transition-all duration-500">
-                  {copied ? <><Check className="w-3.5 h-3.5 text-primary" /> Copied!</> : <><Copy className="w-3.5 h-3.5" /> Copy link</>}
-                </button>
-                <button onClick={onSuccess} className="flex-1 flex items-center justify-center text-[12px] font-semibold py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer transition-all duration-500">Done</button>
-              </div>
+              <button onClick={onSuccess} className="w-full flex items-center justify-center text-[12px] font-semibold py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer transition-all duration-500">
+                Done
+              </button>
             </div>
           )}
         </div>
