@@ -63,6 +63,7 @@ export interface CandidateTestResult {
 export interface CandidateSubmission {
   problem_id: string;
   code: string;
+  selected_option: string | null;
   test_results: CandidateTestResult[];
   passed_count: number;
   total_count: number;
@@ -231,5 +232,20 @@ export async function submitAssessProblem(
 
 export async function finishAssessSession(token: string) {
   const res = await apiClient.post<AssessSession>(`/assess/${token}/finish`, {});
+  return res.data;
+}
+
+// ── AI Coach ──
+
+export interface CoachAssessment {
+  summary: string;
+  strengths: string[];
+  weaknesses: string[];
+  recommendation: "hire" | "consider" | "pass";
+  technical_depth: number;
+}
+
+export async function runCandidateCoach(interviewId: string, sessionId: string): Promise<CoachAssessment> {
+  const res = await apiClient.post<CoachAssessment>(`/interviews/${interviewId}/results/${sessionId}/coach`);
   return res.data;
 }
