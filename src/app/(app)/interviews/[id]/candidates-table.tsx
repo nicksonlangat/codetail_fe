@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Search, X, ChevronDown, ChevronUp, MoreHorizontal,
-  Trash2, UserPlus, Users, AlertTriangle,
-} from "lucide-react";
-import type { CandidateSession } from "@/lib/api/interviews";
+import { useState, useMemo } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { AnimatePresence } from "framer-motion";
+import { Search, X, ChevronDown, ChevronUp, UserPlus, Users, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+import { deleteCandidateResult, type CandidateSession } from "@/lib/api/interviews";
+import { SendResultsModal } from "./send-results-modal";
+import { RowMenu, formatRelative } from "./row-menu";
 
 const STATUS: Record<string, { pill: string; dot: string; label: string }> = {
   pending:     { pill: "bg-muted text-muted-foreground",     dot: "bg-muted-foreground/40", label: "Pending"     },
@@ -24,15 +25,6 @@ const AVATAR_COLORS = [
 type SortField = "name" | "score" | "invitedAt";
 type SortDir   = "asc" | "desc";
 
-function formatRelative(d: Date) {
-  const h = Math.floor((Date.now() - d.getTime()) / 3_600_000);
-  if (h < 1)  return "just now";
-  if (h < 24) return `${h}h ago`;
-  const days = Math.floor(h / 24);
-  if (days < 7) return `${days}d ago`;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
 function formatExpiry(d: Date | null, status: string): { label: string; urgent: boolean } | null {
   if (!d || status === "completed" || status === "expired") return null;
   const ms = d.getTime() - Date.now();
@@ -49,36 +41,6 @@ interface Row {
   score: number | null; submitted: number; total: number; timeMin: number;
   invitedLabel: string; invitedTs: number;
   expiry: { label: string; urgent: boolean } | null;
-}
-
-function RowMenu({ onRemove }: { onRemove: () => void }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    if (open) document.addEventListener("mousedown", h);
-    return () => document.removeEventListener("mousedown", h);
-  }, [open]);
-  return (
-    <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)}
-        className={`p-1 rounded cursor-pointer transition-all duration-200 ${open ? "bg-secondary text-foreground" : "text-muted-foreground/30 hover:bg-secondary hover:text-muted-foreground"}`}>
-        <MoreHorizontal className="size-4" />
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div initial={{ opacity: 0, scale: 0.95, y: -4 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -4 }} transition={{ duration: 0.12 }}
-            className="absolute right-0 top-7 z-50 w-36 rounded-md bg-card border border-border shadow-lg shadow-black/20 p-1">
-            <button onClick={() => { onRemove(); setOpen(false); }}
-              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-[12px] font-medium text-destructive hover:bg-destructive/10 cursor-pointer transition-colors duration-150">
-              <Trash2 className="size-3.5" /> Remove
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
 }
 
 function EmptyState({ onInvite }: { onInvite: () => void }) {
@@ -104,15 +66,24 @@ function EmptyState({ onInvite }: { onInvite: () => void }) {
 interface Props {
   sessions: CandidateSession[];
   totalProblems: number;
+  interviewId: string;
   onSelect: (s: CandidateSession) => void;
   onInvite: () => void;
+  onChanged: () => void;
 }
 
-export function CandidatesTable({ sessions, totalProblems, onSelect, onInvite }: Props) {
+export function CandidatesTable({ sessions, totalProblems, interviewId, onSelect, onInvite, onChanged }: Props) {
   const [search, setSearch]             = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [sortField, setSortField]       = useState<SortField>("invitedAt");
   const [sortDir, setSortDir]           = useState<SortDir>("desc");
+  const [sendResultsSession, setSendResultsSession] = useState<CandidateSession | null>(null);
+
+  const removeMutation = useMutation({
+    mutationFn: (sessionId: string) => deleteCandidateResult(interviewId, sessionId),
+    onSuccess: () => { onChanged(); toast.success("Candidate removed"); },
+    onError: () => toast.error("Failed to remove candidate"),
+  });
 
   const rows: Row[] = useMemo(() => sessions.map(s => ({
     session: s,
@@ -316,7 +287,13 @@ export function CandidatesTable({ sessions, totalProblems, onSelect, onInvite }:
                     )}
                   </td>
                   <td className="px-3 py-3" onClick={e => e.stopPropagation()}>
-                    <RowMenu onRemove={() => {}} />
+                    <RowMenu
+                      canSendResults={row.status === "completed"}
+                      sentAt={row.session.results_sent_at}
+                      removing={removeMutation.isPending && removeMutation.variables === row.id}
+                      onRemove={() => removeMutation.mutate(row.id)}
+                      onSendResults={() => setSendResultsSession(row.session)}
+                    />
                   </td>
                 </tr>
               );
@@ -324,6 +301,17 @@ export function CandidatesTable({ sessions, totalProblems, onSelect, onInvite }:
           </tbody>
         </table>
       </div>
+
+      <AnimatePresence>
+        {sendResultsSession && (
+          <SendResultsModal
+            session={sendResultsSession}
+            interviewId={interviewId}
+            onClose={() => setSendResultsSession(null)}
+            onSent={onChanged}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
