@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
-import { Play, Send, RotateCcw, Bug, FileCode } from "lucide-react";
+import { Play, Send, RotateCcw, Bug, FileCode, Loader2 } from "lucide-react";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -27,10 +27,27 @@ interface CodePanelProps {
   challengeType: ChallengeType;
   stack?: string;
   files?: ProblemFile[];
+  savedCode?: string | null;
+  progressLoaded?: boolean;
   initialHints?: { hint: string; hint_number: number; level: string }[];
   initialReview?: any;
   initialSolution?: string | null;
   onBadgesEarned?: (badges: string[], xpEarned: number) => void;
+}
+
+// Reverses the "# --- filename ---\ncontent" concatenation used when
+// sending multi-file code for AI review, so saved code can repopulate
+// each file's tab instead of resetting to starter code.
+function splitCombinedCode(combined: string, files: ProblemFile[]): string[] | null {
+  const matches = [...combined.matchAll(/^# --- (.+) ---$/gm)];
+  if (matches.length === 0) return null;
+  const byName = new Map<string, string>();
+  matches.forEach((m, i) => {
+    const start = m.index! + m[0].length + 1; // skip marker line + its newline
+    const end = i + 1 < matches.length ? matches[i + 1].index! - 2 : combined.length;
+    byName.set(m[1], combined.slice(start, Math.max(start, end)));
+  });
+  return files.map((f) => byName.get(f.name) ?? f.starter_code);
 }
 
 export function CodePanel({
@@ -46,6 +63,8 @@ export function CodePanel({
   challengeType,
   stack = "python",
   files = [],
+  savedCode = null,
+  progressLoaded = false,
   initialHints = [],
   initialReview = null,
   initialSolution = null,
@@ -54,18 +73,29 @@ export function CodePanel({
   const isDjango = stack === "django";
   const isMultiFile = files.length > 0;
   const [reviewTrigger, setReviewTrigger] = useState(0);
+  const [reviewLoading, setReviewLoading] = useState(false);
   const [activeFileIdx, setActiveFileIdx] = useState(0);
   const [fileCodes, setFileCodes] = useState<string[]>(() =>
     files.map((f) => f.starter_code)
   );
+  const restoredFor = useRef<string | null>(null);
 
-  // Sync fileCodes when files prop changes (e.g. navigation)
+  // Seed each file tab from starter code on navigation, then restore the
+  // previously-saved combined code once progress has loaded (it arrives
+  // async, after this component may have already mounted).
   useEffect(() => {
-    if (files.length > 0) {
-      setFileCodes(files.map((f) => f.starter_code));
-      setActiveFileIdx(0);
+    if (files.length === 0) return;
+    if (restoredFor.current === problemId) return;
+    setFileCodes(files.map((f) => f.starter_code));
+    setActiveFileIdx(0);
+    if (!progressLoaded) return; // try again once progress resolves
+    restoredFor.current = problemId;
+    const restored = savedCode ? splitCombinedCode(savedCode, files) : null;
+    if (restored) {
+      setFileCodes(restored);
+      onCodeChange(savedCode!);
     }
-  }, [problemId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [problemId, progressLoaded, savedCode, files, onCodeChange]);
 
   const handleFileCodeChange = useCallback((value: string) => {
     setFileCodes((prev) => {
@@ -167,10 +197,10 @@ export function CodePanel({
               )}
               <motion.button whileTap={{ scale: 0.97 }}
                 onClick={isDjango ? handleDjangoSubmit : onSubmit}
-                disabled={running}
+                disabled={running || reviewLoading}
                 className="flex items-center gap-1.5 text-[11px] font-medium text-primary-foreground px-2.5 py-1 rounded-md bg-primary hover:bg-primary/90 disabled:opacity-50 cursor-pointer transition-all duration-500">
-                <Send className="w-3 h-3" />
-                {isDjango ? "Submit for Review" : "Submit"}
+                {reviewLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                {isDjango ? (reviewLoading ? "Reviewing…" : "Submit for Review") : "Submit"}
               </motion.button>
             </div>
           </div>
@@ -189,6 +219,7 @@ export function CodePanel({
           initialHints={initialHints} initialReview={initialReview}
           initialSolution={initialSolution}
           onBadgesEarned={onBadgesEarned}
+          onReviewLoadingChange={setReviewLoading}
         />
       </ResizablePanel>
     </ResizablePanelGroup>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FlaskConical, Lightbulb, Bot, BookOpen, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { TestCasesPanel, type TestCaseResult } from "./test-cases-panel";
 import type { TestCaseItem } from "@/lib/api/paths";
 import { getHint, getReview, getSolution, type HintResponse, type ReviewResponse } from "@/lib/api/submissions";
@@ -40,9 +41,10 @@ interface BottomPanelProps {
   initialReview?: ReviewData | null;
   initialSolution?: string | null;
   onBadgesEarned?: (badges: string[], xpEarned: number) => void;
+  onReviewLoadingChange?: (loading: boolean) => void;
 }
 
-export function BottomPanel({ problemId, code, testCases, testResults, running, stack = "python", triggerReview = 0, initialHints = [], initialReview = null, initialSolution = null, onBadgesEarned }: BottomPanelProps) {
+export function BottomPanel({ problemId, code, testCases, testResults, running, stack = "python", triggerReview = 0, initialHints = [], initialReview = null, initialSolution = null, onBadgesEarned, onReviewLoadingChange }: BottomPanelProps) {
   const isDjango = stack === "django";
   const [active, setActive] = useState<Tab>(isDjango ? "review" : "tests");
   const [hints, setHints] = useState<HintResponse[]>([]);
@@ -104,37 +106,19 @@ export function BottomPanel({ problemId, code, testCases, testResults, running, 
   useEffect(() => {
     if (triggerReview > 0 && !loadingReview && code.trim()) {
       setActive("review");
-      handleGetReviewInner();
+      handleGetReview();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [triggerReview]);
 
-  const handleGetReviewInner = async () => {
-    if (loadingReview || !code.trim()) return;
-    setLoadingReview(true);
-    try {
-      const result = await getReview(problemId, code);
-      setReview(result);
-      if (result.xp_earned > 0 || result.newly_earned_badges?.length > 0) {
-        onBadgesEarned?.(result.newly_earned_badges ?? [], result.xp_earned ?? 0);
-      }
-    } catch (err: any) {
-      const detail = err.response?.data?.detail || "Failed to get review";
-      if (err.response?.status === 429) {
-        setUpgradeReason(detail);
-        setShowUpgrade(true);
-      }
-    } finally {
-      setLoadingReview(false);
-    }
-  };
-
   const handleGetReview = async () => {
     if (loadingReview || !code.trim()) return;
     setLoadingReview(true);
+    onReviewLoadingChange?.(true);
     try {
       const result = await getReview(problemId, code);
       setReview(result);
+      toast.success("AI review complete", { description: `Scored ${result.score}%` });
       if (result.xp_earned > 0 || result.newly_earned_badges?.length > 0) {
         onBadgesEarned?.(result.newly_earned_badges ?? [], result.xp_earned ?? 0);
       }
@@ -143,9 +127,12 @@ export function BottomPanel({ problemId, code, testCases, testResults, running, 
       if (err.response?.status === 429) {
         setUpgradeReason(detail);
         setShowUpgrade(true);
+      } else {
+        toast.error(detail);
       }
     } finally {
       setLoadingReview(false);
+      onReviewLoadingChange?.(false);
     }
   };
 

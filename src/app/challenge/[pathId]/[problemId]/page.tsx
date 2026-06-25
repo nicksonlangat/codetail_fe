@@ -320,6 +320,8 @@ export default function ChallengePage() {
               challengeType={challengeType}
               stack={problem.stack}
               files={problem.files ?? []}
+              savedCode={progress?.code ?? null}
+              progressLoaded={progress !== undefined}
               initialHints={progress?.saved_hints ?? []}
               initialReview={progress?.last_review ?? null}
               initialSolution={progress?.last_solution ?? null}
