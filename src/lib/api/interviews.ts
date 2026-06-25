@@ -89,6 +89,7 @@ export interface CandidateSession {
   started_at: string | null;
   expires_at: string | null;
   completed_at: string | null;
+  results_sent_at: string | null;
   submissions: CandidateSubmission[];
   created_at: string;
   overall_score: number;
@@ -180,6 +181,31 @@ export async function inviteCandidate(interviewId: string, data: InviteRequest) 
 
 export async function getInterviewResults(interviewId: string) {
   const res = await apiClient.get<InterviewResults>(`/interviews/${interviewId}/results`);
+  return res.data;
+}
+
+export async function deleteCandidateResult(interviewId: string, sessionId: string) {
+  await apiClient.delete(`/interviews/${interviewId}/results/${sessionId}`);
+}
+
+export interface ResultsEmailPreview {
+  subject: string;
+  html: string;
+}
+
+export async function previewResultsEmail(interviewId: string, sessionId: string, message: string) {
+  const res = await apiClient.post<ResultsEmailPreview>(
+    `/interviews/${interviewId}/results/${sessionId}/results-email-preview`,
+    { message: message.trim() || null }
+  );
+  return res.data;
+}
+
+export async function sendResultsEmail(interviewId: string, sessionId: string, message: string) {
+  const res = await apiClient.post<{ sent: boolean }>(
+    `/interviews/${interviewId}/results/${sessionId}/send-results`,
+    { message: message.trim() || null }
+  );
   return res.data;
 }
 

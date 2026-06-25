@@ -133,7 +133,16 @@ export default function InterviewDetailPage() {
         >
           {tab === "overview"   && <OverviewTab interview={interview} sessions={sessions} avgScore={avgScore} />}
           {tab === "questions"  && <QuestionsTab problems={interview.problems} />}
-          {tab === "candidates" && <CandidatesTab sessions={sessions} problems={interview.problems} onSelect={setSelectedSession} onInvite={() => setShowInvite(true)} />}
+          {tab === "candidates" && (
+            <CandidatesTab
+              sessions={sessions}
+              problems={interview.problems}
+              interviewId={id}
+              onSelect={setSelectedSession}
+              onInvite={() => setShowInvite(true)}
+              onChanged={() => qc.invalidateQueries({ queryKey: ["interview-results", id] })}
+            />
+          )}
           {tab === "assistant"  && <AssistantTab />}
         </motion.div>
       </AnimatePresence>
@@ -192,18 +201,22 @@ function OverviewTab({ interview, sessions, avgScore }: {
 
 // ── Candidates ────────────────────────────────────────────────────────────────
 
-function CandidatesTab({ sessions, problems, onSelect, onInvite }: {
+function CandidatesTab({ sessions, problems, interviewId, onSelect, onInvite, onChanged }: {
   sessions: CandidateSession[];
   problems: { id: string }[];
+  interviewId: string;
   onSelect: (s: CandidateSession) => void;
   onInvite: () => void;
+  onChanged: () => void;
 }) {
   return (
     <CandidatesTable
       sessions={sessions}
       totalProblems={problems.length}
+      interviewId={interviewId}
       onSelect={onSelect}
       onInvite={onInvite}
+      onChanged={onChanged}
     />
   );
 }
