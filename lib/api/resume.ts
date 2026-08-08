@@ -43,3 +43,27 @@ export async function uploadResume(file: File): Promise<ResumeData> {
   });
   return res.data;
 }
+
+export interface ResumeAnalysis {
+  score: number;
+  summary: string;
+  strengths: string[];
+  weaknesses: string[];
+  suggestions: string[];
+  keywords: string[];
+}
+
+export async function getResumeAnalysis(): Promise<ResumeAnalysis | null> {
+  try {
+    const res = await apiClient.get<ResumeAnalysis>("/resume/analysis");
+    return res.data;
+  } catch (e: unknown) {
+    if ((e as { response?: { status?: number } })?.response?.status === 404) return null;
+    throw e;
+  }
+}
+
+export async function runResumeAnalysis(): Promise<ResumeAnalysis> {
+  const res = await apiClient.post<ResumeAnalysis>("/resume/analysis");
+  return res.data;
+}

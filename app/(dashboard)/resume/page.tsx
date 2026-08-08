@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin, Mail, Briefcase, Download, Share2,
   Edit3, GitFork, Link2, CheckCircle2, Upload,
-  FileText, WandSparkles,
+  FileText, WandSparkles, AlertCircle, ArrowRight,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth-store";
-import { getResume, uploadResume, type ResumeData } from "@/lib/api/resume";
+import { getResume, uploadResume, getResumeAnalysis, runResumeAnalysis, type ResumeData, type ResumeAnalysis } from "@/lib/api/resume";
 import { toast } from "sonner";
 
 const SP = { type: "spring" as const, stiffness: 400, damping: 25 };
 
-const TABS = ["CV", "Activity", "Documents", "Skills", "Settings"];
+const TABS = ["CV", "Analysis", "Documents", "Skills", "Settings"];
 
 const PERSONAL_INFO = [
   { label: "Location", value: "Nairobi, Kenya", icon: MapPin },
@@ -114,9 +114,9 @@ function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`bg-gray-200 rounded animate-pulse ${className}`} />;
 }
 
-function ShimmerBar({ className = "", delay = 0 }: { className?: string; delay?: number }) {
+function ShimmerBar({ className = "", delay = 0, style }: { className?: string; delay?: number; style?: React.CSSProperties }) {
   return (
-    <div className={`rounded bg-gray-200 overflow-hidden relative ${className}`}>
+    <div className={`rounded bg-gray-200 overflow-hidden relative ${className}`} style={style}>
       <motion.div
         className="absolute inset-0"
         style={{ background: "linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.65) 50%, transparent 80%)" }}
@@ -466,6 +466,208 @@ function ParsingState() {
   );
 }
 
+function ScoreRing({ score }: { score: number }) {
+  const R = 52;
+  const CIRC = 2 * Math.PI * R;
+  const stroke = score >= 80 ? "#22c55e" : score >= 60 ? "#f59e0b" : "#ef4444";
+  const label = score >= 80 ? "Strong" : score >= 60 ? "Fair" : "Needs work";
+  const labelCls = score >= 80 ? "text-green-600" : score >= 60 ? "text-amber-600" : "text-red-500";
+
+  return (
+    <div className="relative size-36 flex items-center justify-center shrink-0">
+      <svg className="absolute inset-0 -rotate-90" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r={R} fill="none" stroke="#e5e7eb" strokeWidth="8" />
+        <motion.circle
+          cx="60" cy="60" r={R}
+          fill="none"
+          stroke={stroke}
+          strokeWidth="8"
+          strokeLinecap="round"
+          strokeDasharray={CIRC}
+          initial={{ strokeDashoffset: CIRC }}
+          animate={{ strokeDashoffset: CIRC * (1 - score / 100) }}
+          transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
+        />
+      </svg>
+      <div className="text-center z-10">
+        <p className="text-3xl font-bold text-brand-text leading-none">{score}</p>
+        <p className="text-[10px] text-brand-text-subtle mt-0.5">/100</p>
+        <p className={`text-[10px] font-semibold mt-1 ${labelCls}`}>{label}</p>
+      </div>
+    </div>
+  );
+}
+
+function AnalysisLoading() {
+  return (
+    <div className="space-y-5">
+      <div className="border border-brand-border rounded-xl p-6 flex items-center gap-8">
+        <div className="size-36 rounded-full bg-gray-200 animate-pulse shrink-0" />
+        <div className="flex-1 space-y-2">
+          <ShimmerBar className="h-2.5 w-16" delay={0} />
+          <ShimmerBar className="h-6 w-20" delay={0.05} />
+          <ShimmerBar className="h-3.5 w-full" delay={0.1} />
+          <ShimmerBar className="h-3.5 w-3/4" delay={0.15} />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        {([0.2, 0.4, 0.6] as number[]).map((d) => (
+          <div key={d} className="border border-brand-border rounded-xl p-5">
+            <ShimmerBar className="h-2.5 w-20 mb-4" delay={d} />
+            {[0, 1, 2, 3].map((j) => (
+              <div key={j} className="flex gap-2 items-center mb-3">
+                <ShimmerBar className="size-3.5 shrink-0" delay={d + j * 0.05} />
+                <ShimmerBar className={`h-3 ${j % 2 === 0 ? "w-full" : "w-4/5"}`} delay={d + j * 0.05 + 0.02} />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="border border-brand-border rounded-xl p-5">
+        <ShimmerBar className="h-2.5 w-48 mb-4" delay={0.8} />
+        <div className="flex flex-wrap gap-2">
+          {([20, 24, 16, 28, 20, 16, 24] as number[]).map((w, i) => (
+            <ShimmerBar key={i} className="h-6 rounded-md" style={{ width: w * 4 }} delay={0.85 + i * 0.04} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AnalysisResults({ data, onReanalyse, reanalysing }: { data: ResumeAnalysis; onReanalyse: () => void; reanalysing: boolean }) {
+  return (
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={SP} className="space-y-5">
+      {/* Score card */}
+      <div className="border border-brand-border rounded-xl p-6 flex items-center gap-8">
+        <ScoreRing score={data.score} />
+        <div className="flex-1">
+          <p className="text-[11px] font-semibold text-brand-text-subtle uppercase tracking-wide mb-1">ATS Compatibility Score</p>
+          <p className="text-sm text-brand-text-muted leading-relaxed max-w-md">{data.summary}</p>
+        </div>
+        <motion.button
+          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={SP}
+          onClick={onReanalyse}
+          disabled={reanalysing}
+          className="flex items-center gap-1.5 text-xs font-medium border border-brand-border rounded-lg px-3 py-1.5 cursor-pointer hover:bg-brand-surface transition-all duration-500 text-brand-text disabled:opacity-50 shrink-0"
+        >
+          <WandSparkles className={`size-3 ${reanalysing ? "animate-pulse" : ""}`} />
+          {reanalysing ? "Analysing..." : "Re-analyse"}
+        </motion.button>
+      </div>
+
+      {/* Strengths / Weaknesses / Suggestions */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="border border-brand-border rounded-xl p-5">
+          <p className="text-[11px] font-semibold text-green-600 uppercase tracking-wide mb-3">Strengths</p>
+          <ul className="space-y-2.5">
+            {data.strengths.map((s, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <CheckCircle2 className="size-3.5 text-green-500 shrink-0 mt-0.5" />
+                <p className="text-[12px] text-brand-text leading-relaxed">{s}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="border border-brand-border rounded-xl p-5">
+          <p className="text-[11px] font-semibold text-amber-600 uppercase tracking-wide mb-3">Weaknesses</p>
+          <ul className="space-y-2.5">
+            {data.weaknesses.map((w, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <AlertCircle className="size-3.5 text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-[12px] text-brand-text leading-relaxed">{w}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="border border-brand-border rounded-xl p-5">
+          <p className="text-[11px] font-semibold text-brand-primary uppercase tracking-wide mb-3">Suggestions</p>
+          <ul className="space-y-2.5">
+            {data.suggestions.map((s, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <ArrowRight className="size-3.5 text-brand-primary shrink-0 mt-0.5" />
+                <p className="text-[12px] text-brand-text leading-relaxed">{s}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Recommended keywords */}
+      <div className="border border-brand-border rounded-xl p-5">
+        <p className="text-[11px] font-semibold text-brand-text uppercase tracking-wide mb-3">Recommended Keywords to Add</p>
+        <div className="flex flex-wrap gap-2">
+          {data.keywords.map((k, i) => (
+            <span key={i} className="text-[11px] font-medium bg-brand-primary/8 text-brand-primary px-2.5 py-1 rounded-md border border-brand-primary/20">
+              {k}
+            </span>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function AnalysisTab({ resume }: { resume: ResumeData | undefined }) {
+  const queryClient = useQueryClient();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["resume-analysis"],
+    queryFn: getResumeAnalysis,
+    enabled: !!resume,
+    staleTime: Infinity,
+    retry: false,
+  });
+
+  const { mutate: analyse, isPending: analysing } = useMutation({
+    mutationFn: runResumeAnalysis,
+    onSuccess: (result) => {
+      queryClient.setQueryData(["resume-analysis"], result);
+      toast.success("Analysis complete.");
+    },
+    onError: () => toast.error("Analysis failed. Please try again."),
+  });
+
+  if (!resume) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="size-12 rounded-xl bg-brand-surface flex items-center justify-center mb-3">
+          <WandSparkles className="size-5 text-brand-text-subtle" />
+        </div>
+        <p className="font-semibold text-brand-text mb-1">No resume to analyse</p>
+        <p className="text-sm text-brand-text-muted">Upload your CV on the CV tab first.</p>
+      </div>
+    );
+  }
+
+  if (isLoading) return <AnalysisLoading />;
+
+  if (analysing) return <AnalysisLoading />;
+
+  if (!data) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="size-12 rounded-xl bg-brand-primary/10 flex items-center justify-center mb-3">
+          <WandSparkles className="size-5 text-brand-primary" />
+        </div>
+        <p className="font-semibold text-brand-text mb-1">Ready to analyse</p>
+        <p className="text-sm text-brand-text-muted mb-5">AI will score your resume and surface gaps against ATS requirements.</p>
+        <motion.button
+          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={SP}
+          onClick={() => analyse()}
+          className="flex items-center gap-2 bg-brand-primary text-white text-sm font-semibold px-5 py-2.5 rounded-lg cursor-pointer hover:bg-brand-primary-hover transition-all duration-500"
+        >
+          <WandSparkles className="size-4" /> Run Analysis
+        </motion.button>
+      </div>
+    );
+  }
+
+  return <AnalysisResults data={data} onReanalyse={() => analyse()} reanalysing={analysing} />;
+}
+
 export default function ResumePage() {
   const user = useAuthStore((s) => s.user);
   const [tab, setTab] = useState("CV");
@@ -486,6 +688,7 @@ export default function ResumePage() {
     mutationFn: uploadResume,
     onSuccess: (data) => {
       queryClient.setQueryData(["resume"], data);
+      queryClient.removeQueries({ queryKey: ["resume-analysis"] });
       toast.success("Resume parsed and ready.");
     },
     onError: () => toast.error("Failed to parse resume. Please try again."),
@@ -592,7 +795,18 @@ export default function ResumePage() {
                 )}
               </motion.div>
             )}
-            {tab !== "CV" && (
+            {tab === "Analysis" && (
+              <motion.div
+                key="analysis"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="flex-1"
+              >
+                {!isPremium && <PremiumGate />}
+                {isPremium && <AnalysisTab resume={resume} />}
+              </motion.div>
+            )}
+            {tab !== "CV" && tab !== "Analysis" && (
               <motion.div
                 key={tab}
                 initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
