@@ -244,7 +244,8 @@ function UploadPrompt({ onUpload }: { onUpload: (file: File) => void }) {
   );
 }
 
-function ParsedDocument({ resume }: { resume: ResumeData }) {
+function ParsedDocument({ resume, onUpload }: { resume: ResumeData; onUpload: (file: File) => void }) {
+  const replaceRef = useRef<HTMLInputElement>(null);
   const name = resume.file_name.replace(/\.pdf$/i, "").replace(/-/g, " ");
   return (
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={SP}>
@@ -261,12 +262,28 @@ function ParsedDocument({ resume }: { resume: ResumeData }) {
             </p>
           </div>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={SP}
-          className="flex items-center gap-1.5 text-xs font-medium border border-brand-border rounded-lg px-3 py-1.5 cursor-pointer hover:bg-brand-surface transition-all duration-500 text-brand-text"
-        >
-          <Download className="size-3" /> Download
-        </motion.button>
+        <div className="flex items-center gap-2">
+          <motion.button
+            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={SP}
+            onClick={() => replaceRef.current?.click()}
+            className="flex items-center gap-1.5 text-xs font-medium border border-brand-border rounded-lg px-3 py-1.5 cursor-pointer hover:bg-brand-surface transition-all duration-500 text-brand-text"
+          >
+            <Upload className="size-3" /> Replace
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={SP}
+            className="flex items-center gap-1.5 text-xs font-medium border border-brand-border rounded-lg px-3 py-1.5 cursor-pointer hover:bg-brand-surface transition-all duration-500 text-brand-text"
+          >
+            <Download className="size-3" /> Download
+          </motion.button>
+          <input
+            ref={replaceRef}
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }}
+          />
+        </div>
       </div>
 
       {/* CV document */}
@@ -534,14 +551,7 @@ export default function ResumePage() {
           {isPremium && resume && (
             <div className="border border-brand-border rounded-xl p-4">
               <p className="text-[11px] font-semibold text-brand-text uppercase tracking-wide mb-2">Resume</p>
-              <p className="text-[11px] text-brand-text-muted mb-3 truncate">{resume.file_name}</p>
-              <motion.button
-                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={SP}
-                onClick={() => document.getElementById("resume-upload-trigger")?.click()}
-                className="w-full flex items-center justify-center gap-1.5 text-[11px] font-medium border border-brand-border rounded-lg py-2 cursor-pointer hover:bg-brand-surface transition-all duration-500 text-brand-text"
-              >
-                <Upload className="size-3" /> Replace
-              </motion.button>
+              <p className="text-[11px] text-brand-text-muted truncate">{resume.file_name}</p>
             </div>
           )}
         </div>
@@ -578,7 +588,7 @@ export default function ResumePage() {
                   <UploadPrompt onUpload={(file) => upload(file)} />
                 )}
                 {isPremium && !uploading && resume && (
-                  <ParsedDocument resume={resume} />
+                  <ParsedDocument resume={resume} onUpload={(file) => upload(file)} />
                 )}
               </motion.div>
             )}
@@ -598,17 +608,6 @@ export default function ResumePage() {
             )}
           </AnimatePresence>
 
-          {/* Hidden file input for replace */}
-          <input
-            id="resume-upload-trigger"
-            type="file"
-            accept="application/pdf"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) upload(file);
-            }}
-          />
         </div>
       </div>
     </div>
