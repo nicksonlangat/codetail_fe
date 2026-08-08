@@ -10,7 +10,6 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth-store";
 import { getResume, uploadResume, type ResumeData } from "@/lib/api/resume";
-import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 
 const SP = { type: "spring" as const, stiffness: 400, damping: 25 };
@@ -113,6 +112,19 @@ function PremiumGate() {
 
 function Skeleton({ className = "" }: { className?: string }) {
   return <div className={`bg-gray-200 rounded animate-pulse ${className}`} />;
+}
+
+function ShimmerBar({ className = "", delay = 0 }: { className?: string; delay?: number }) {
+  return (
+    <div className={`rounded bg-gray-200 overflow-hidden relative ${className}`}>
+      <motion.div
+        className="absolute inset-0"
+        style={{ background: "linear-gradient(90deg, transparent 20%, rgba(255,255,255,0.65) 50%, transparent 80%)" }}
+        animate={{ x: ["-100%", "150%"] }}
+        transition={{ duration: 1.6, repeat: Infinity, ease: "linear", delay }}
+      />
+    </div>
+  );
 }
 
 function ResumeDocSkeleton() {
@@ -339,11 +351,101 @@ function ParsedDocument({ resume }: { resume: ResumeData }) {
 
 function ParsingState() {
   return (
-    <div className="flex flex-col items-center justify-center py-24 text-center">
-      <Spinner size="lg" className="text-brand-primary mb-4" />
-      <p className="font-semibold text-brand-text mb-1">Parsing your resume</p>
-      <p className="text-sm text-brand-text-muted">AI is reading and structuring your CV. This takes about 10 seconds.</p>
-    </div>
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={SP}>
+      {/* Header row */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <motion.div
+            className="size-8 rounded-lg bg-brand-primary/10 flex items-center justify-center"
+            animate={{ opacity: [0.6, 1, 0.6] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <WandSparkles className="size-4 text-brand-primary" />
+          </motion.div>
+          <div>
+            <p className="text-sm font-semibold text-brand-text">Parsing your resume</p>
+            <p className="text-[11px] text-brand-text-subtle">AI is reading and structuring your CV</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          {[0, 1, 2].map((i) => (
+            <motion.span
+              key={i}
+              className="size-1.5 rounded-full bg-brand-primary"
+              animate={{ opacity: [0.25, 1, 0.25], scale: [0.8, 1, 0.8] }}
+              transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.25 }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Animated card */}
+      <div className="border border-brand-border rounded-xl overflow-hidden">
+        <div className="bg-white p-10">
+          <ShimmerBar className="h-7 w-56 mb-2" delay={0} />
+          <ShimmerBar className="h-3.5 w-80 mb-8" delay={0.1} />
+
+          <div className="mb-7">
+            <ShimmerBar className="h-2.5 w-16 mb-3" delay={0.15} />
+            <div className="border-b border-gray-100 mb-3" />
+            <ShimmerBar className="h-3 w-full mb-1.5" delay={0.2} />
+            <ShimmerBar className="h-3 w-full mb-1.5" delay={0.3} />
+            <ShimmerBar className="h-3 w-3/4" delay={0.4} />
+          </div>
+
+          <div className="mb-7">
+            <ShimmerBar className="h-2.5 w-12 mb-3" delay={0.45} />
+            <div className="border-b border-gray-100 mb-3" />
+            <div className="space-y-2.5">
+              {([["w-20", "w-48", 0.5], ["w-24", "w-64", 0.6], ["w-16", "w-56", 0.7]] as [string, string, number][]).map(([l, r, d], i) => (
+                <div key={i} className="flex gap-4 items-center">
+                  <ShimmerBar className={`h-3 ${l} shrink-0`} delay={d} />
+                  <ShimmerBar className={`h-3 ${r}`} delay={d + 0.05} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-7">
+            <ShimmerBar className="h-2.5 w-20 mb-3" delay={0.75} />
+            <div className="border-b border-gray-100 mb-4" />
+            <div className="space-y-6">
+              {([4, 3] as number[]).map((lines, i) => (
+                <div key={i}>
+                  <div className="flex justify-between mb-2">
+                    <div>
+                      <ShimmerBar className="h-3.5 w-40 mb-1.5" delay={0.8 + i * 0.15} />
+                      <ShimmerBar className="h-3 w-28" delay={0.85 + i * 0.15} />
+                    </div>
+                    <div className="text-right">
+                      <ShimmerBar className="h-3 w-28 mb-1" delay={0.9 + i * 0.15} />
+                      <ShimmerBar className="h-3 w-16" delay={0.95 + i * 0.15} />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5 mt-2">
+                    {Array.from({ length: lines }).map((_, j) => (
+                      <ShimmerBar key={j} className={`h-3 ${j === lines - 1 ? "w-2/3" : "w-full"}`} delay={1.0 + i * 0.15 + j * 0.05} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <ShimmerBar className="h-2.5 w-16 mb-3" delay={1.35} />
+            <div className="border-b border-gray-100 mb-3" />
+            <div className="flex justify-between">
+              <div>
+                <ShimmerBar className="h-3.5 w-44 mb-1.5" delay={1.4} />
+                <ShimmerBar className="h-3 w-32" delay={1.45} />
+              </div>
+              <ShimmerBar className="h-3 w-20" delay={1.5} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
