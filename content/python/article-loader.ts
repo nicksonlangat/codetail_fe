@@ -1,0 +1,36 @@
+type TocItem = { id: string; title: string };
+
+type ArticleModule = {
+  default: React.ComponentType;
+  toc: TocItem[];
+};
+
+// Add an entry here as each article's content folder is written.
+// Slugs without an entry fall back to "coming soon" in the article page.
+const loaders: Record<string, () => Promise<ArticleModule>> = {
+  "variables-and-types": () => import("./variables-and-types") as Promise<ArticleModule>,
+  strings: () => import("./strings") as Promise<ArticleModule>,
+  "numbers-and-math": () => import("./numbers-and-math") as Promise<ArticleModule>,
+  "booleans-and-conditions": () => import("./booleans-and-conditions") as Promise<ArticleModule>,
+  lists: () => import("./lists") as Promise<ArticleModule>,
+  tuples: () => import("./tuples") as Promise<ArticleModule>,
+  dictionaries: () => import("./dictionaries") as Promise<ArticleModule>,
+  sets: () => import("./sets") as Promise<ArticleModule>,
+  loops: () => import("./loops") as Promise<ArticleModule>,
+  functions: () => import("./functions") as Promise<ArticleModule>,
+  "error-handling": () => import("./error-handling") as Promise<ArticleModule>,
+  "file-io": () => import("./file-io") as Promise<ArticleModule>,
+  "classes-and-oop": () => import("./classes-and-oop") as Promise<ArticleModule>,
+  "modules-and-imports": () => import("./modules-and-imports") as Promise<ArticleModule>,
+  "standard-library-gems": () => import("./standard-library-gems") as Promise<ArticleModule>,
+};
+
+export async function loadArticle(slug: string): Promise<ArticleModule | null> {
+  const loader = loaders[slug];
+  if (!loader) return null;
+  try {
+    return await loader();
+  } catch {
+    return null;
+  }
+}
