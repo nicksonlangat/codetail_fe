@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo, useState } from "react";
+import React from "react";
 import {
   Coins, Award, Trophy, BookOpen, FileText, ArrowRight,
   ClipboardCheck, Rocket, Info,
@@ -78,7 +79,7 @@ function RadialProgress({ value }: { value: number }) {
   );
 }
 
-function SidebarStat({ icon: Icon, value, label }: { icon: typeof Clock; value: number | string; label: string }) {
+function SidebarStat({ icon: Icon, value, label }: { icon: React.ElementType; value: number | string; label: string }) {
   return (
     <motion.div
       whileHover={{ y: -2 }}

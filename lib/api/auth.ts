@@ -12,7 +12,8 @@ export interface UserResponse {
   id: string;
   email: string;
   name: string;
-  tier: "free" | "pro";
+  tier: "free" | "pro" | "premium";
+  trial_ends_at: string | null;
   is_admin: boolean;
   is_verified: boolean;
   xp: number;
