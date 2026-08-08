@@ -46,6 +46,7 @@ export async function uploadResume(file: File): Promise<ResumeData> {
 
 export interface ResumeAnalysis {
   score: number;
+  dimensions: { keywords: number; experience: number; format: number; impact: number };
   summary: string;
   strengths: string[];
   weaknesses: string[];

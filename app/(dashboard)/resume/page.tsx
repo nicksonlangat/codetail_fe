@@ -466,68 +466,140 @@ function ParsingState() {
   );
 }
 
+function useCountUp(to: number, duration = 1.2, delay = 0.15) {
+  const [value, setValue] = React.useState(0);
+  React.useEffect(() => {
+    let start: number | null = null;
+    let raf: number;
+    const step = (ts: number) => {
+      if (!start) start = ts + delay * 1000;
+      const elapsed = Math.max(0, ts - start);
+      const progress = Math.min(elapsed / (duration * 1000), 1);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      setValue(Math.round(eased * to));
+      if (progress < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [to, duration, delay]);
+  return value;
+}
+
+function scoreTheme(score: number) {
+  if (score >= 80) return { stroke: "#22c55e", bar: "bg-green-500", badge: "bg-green-50 text-green-700 border-green-200", label: "Strong" };
+  if (score >= 65) return { stroke: "#f59e0b", bar: "bg-amber-500", badge: "bg-amber-50 text-amber-700 border-amber-200", label: "Fair" };
+  return { stroke: "#ef4444", bar: "bg-red-500", badge: "bg-red-50 text-red-600 border-red-200", label: "Needs work" };
+}
+
+function dimColor(v: number) {
+  if (v >= 80) return "bg-green-500";
+  if (v >= 65) return "bg-amber-400";
+  return "bg-red-400";
+}
+
 function ScoreRing({ score }: { score: number }) {
-  const R = 52;
+  const R = 68;
   const CIRC = 2 * Math.PI * R;
-  const stroke = score >= 80 ? "#22c55e" : score >= 60 ? "#f59e0b" : "#ef4444";
-  const label = score >= 80 ? "Strong" : score >= 60 ? "Fair" : "Needs work";
-  const labelCls = score >= 80 ? "text-green-600" : score >= 60 ? "text-amber-600" : "text-red-500";
+  const theme = scoreTheme(score);
+  const displayed = useCountUp(score);
 
   return (
-    <div className="relative size-36 flex items-center justify-center shrink-0">
-      <svg className="absolute inset-0 -rotate-90" viewBox="0 0 120 120">
-        <circle cx="60" cy="60" r={R} fill="none" stroke="#e5e7eb" strokeWidth="8" />
+    <div className="relative flex items-center justify-center shrink-0" style={{ width: 168, height: 168 }}>
+      <svg className="absolute inset-0 -rotate-90" viewBox="0 0 168 168">
+        <circle cx="84" cy="84" r={R} fill="none" stroke="#f3f4f6" strokeWidth="10" />
         <motion.circle
-          cx="60" cy="60" r={R}
+          cx="84" cy="84" r={R}
           fill="none"
-          stroke={stroke}
-          strokeWidth="8"
+          stroke={theme.stroke}
+          strokeWidth="10"
           strokeLinecap="round"
           strokeDasharray={CIRC}
           initial={{ strokeDashoffset: CIRC }}
           animate={{ strokeDashoffset: CIRC * (1 - score / 100) }}
-          transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
         />
       </svg>
       <div className="text-center z-10">
-        <p className="text-3xl font-bold text-brand-text leading-none">{score}</p>
-        <p className="text-[10px] text-brand-text-subtle mt-0.5">/100</p>
-        <p className={`text-[10px] font-semibold mt-1 ${labelCls}`}>{label}</p>
+        <p className="text-4xl font-bold text-brand-text leading-none tabular-nums">{displayed}</p>
+        <p className="text-[11px] text-brand-text-subtle mt-1 font-medium">/ 100</p>
+        <span className={`inline-block mt-2 text-[10px] font-semibold px-2 py-0.5 rounded-md border ${theme.badge}`}>
+          {theme.label}
+        </span>
       </div>
     </div>
   );
 }
 
+function DimensionBar({ label, value, delay }: { label: string; value: number; delay: number }) {
+  const displayed = useCountUp(value, 0.8, delay);
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-[11px] text-brand-text-muted w-20 shrink-0 capitalize">{label}</span>
+      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <motion.div
+          className={`h-full rounded-full ${dimColor(value)}`}
+          initial={{ width: 0 }}
+          animate={{ width: `${value}%` }}
+          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay }}
+        />
+      </div>
+      <span className="text-[11px] font-semibold text-brand-text w-6 text-right tabular-nums">{displayed}</span>
+    </div>
+  );
+}
+
+const DIMENSION_LABELS: Record<string, string> = {
+  keywords: "Keywords",
+  experience: "Experience",
+  format: "Format",
+  impact: "Impact",
+};
+
 function AnalysisLoading() {
   return (
-    <div className="space-y-5">
-      <div className="border border-brand-border rounded-xl p-6 flex items-center gap-8">
-        <div className="size-36 rounded-full bg-gray-200 animate-pulse shrink-0" />
-        <div className="flex-1 space-y-2">
-          <ShimmerBar className="h-2.5 w-16" delay={0} />
-          <ShimmerBar className="h-6 w-20" delay={0.05} />
-          <ShimmerBar className="h-3.5 w-full" delay={0.1} />
-          <ShimmerBar className="h-3.5 w-3/4" delay={0.15} />
+    <div className="space-y-4">
+      <div className="border border-brand-border rounded-2xl p-8 flex items-center gap-10">
+        <div className="size-[168px] rounded-full bg-gray-200 animate-pulse shrink-0" />
+        <div className="flex-1 space-y-3">
+          <ShimmerBar className="h-2.5 w-32 mb-5" delay={0} />
+          {[0.1, 0.2, 0.3, 0.4].map((d) => (
+            <div key={d} className="flex items-center gap-3">
+              <ShimmerBar className="h-2.5 w-20 shrink-0" delay={d} />
+              <ShimmerBar className="h-1.5 flex-1" delay={d + 0.05} />
+              <ShimmerBar className="h-2.5 w-6" delay={d + 0.08} />
+            </div>
+          ))}
+          <ShimmerBar className="h-3.5 w-full mt-4" delay={0.5} />
+          <ShimmerBar className="h-3.5 w-4/5" delay={0.55} />
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-4">
-        {([0.2, 0.4, 0.6] as number[]).map((d) => (
-          <div key={d} className="border border-brand-border rounded-xl p-5">
-            <ShimmerBar className="h-2.5 w-20 mb-4" delay={d} />
+      <div className="grid grid-cols-2 gap-4">
+        {[0.6, 0.75].map((d) => (
+          <div key={d} className="border border-brand-border rounded-xl p-6">
+            <ShimmerBar className="h-2.5 w-20 mb-5" delay={d} />
             {[0, 1, 2, 3].map((j) => (
-              <div key={j} className="flex gap-2 items-center mb-3">
-                <ShimmerBar className="size-3.5 shrink-0" delay={d + j * 0.05} />
-                <ShimmerBar className={`h-3 ${j % 2 === 0 ? "w-full" : "w-4/5"}`} delay={d + j * 0.05 + 0.02} />
+              <div key={j} className="flex gap-3 py-3.5 border-b border-brand-border last:border-0">
+                <ShimmerBar className="h-3 w-5 shrink-0" delay={d + j * 0.06} />
+                <ShimmerBar className={`h-3 ${j % 2 === 0 ? "w-full" : "w-4/5"}`} delay={d + j * 0.06 + 0.03} />
               </div>
             ))}
           </div>
         ))}
       </div>
-      <div className="border border-brand-border rounded-xl p-5">
-        <ShimmerBar className="h-2.5 w-48 mb-4" delay={0.8} />
+      <div className="border border-brand-border rounded-xl p-6">
+        <ShimmerBar className="h-2.5 w-28 mb-5" delay={0.9} />
+        {[0, 1, 2].map((j) => (
+          <div key={j} className="flex gap-4 py-3.5 border-b border-brand-border last:border-0">
+            <ShimmerBar className="size-5 rounded-full shrink-0" delay={0.95 + j * 0.06} />
+            <ShimmerBar className={`h-3 ${j % 2 === 0 ? "w-full" : "w-5/6"}`} delay={0.95 + j * 0.06 + 0.03} />
+          </div>
+        ))}
+      </div>
+      <div className="border border-brand-border rounded-xl p-6">
+        <ShimmerBar className="h-2.5 w-36 mb-4" delay={1.1} />
         <div className="flex flex-wrap gap-2">
-          {([20, 24, 16, 28, 20, 16, 24] as number[]).map((w, i) => (
-            <ShimmerBar key={i} className="h-6 rounded-md" style={{ width: w * 4 }} delay={0.85 + i * 0.04} />
+          {([72, 88, 64, 96, 80, 72, 88] as number[]).map((w, i) => (
+            <ShimmerBar key={i} className="h-7 rounded-lg" style={{ width: w }} delay={1.15 + i * 0.04} />
           ))}
         </div>
       </div>
@@ -536,73 +608,141 @@ function AnalysisLoading() {
 }
 
 function AnalysisResults({ data, onReanalyse, reanalysing }: { data: ResumeAnalysis; onReanalyse: () => void; reanalysing: boolean }) {
+  const [copiedKw, setCopiedKw] = React.useState<string | null>(null);
+
+  function copyKeyword(k: string) {
+    navigator.clipboard.writeText(k).catch(() => {});
+    setCopiedKw(k);
+    setTimeout(() => setCopiedKw(null), 1600);
+  }
+
+  const dimEntries = Object.entries(data.dimensions ?? {}) as [keyof typeof DIMENSION_LABELS, number][];
+
   return (
-    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={SP} className="space-y-5">
-      {/* Score card */}
-      <div className="border border-brand-border rounded-xl p-6 flex items-center gap-8">
-        <ScoreRing score={data.score} />
-        <div className="flex-1">
-          <p className="text-[11px] font-semibold text-brand-text-subtle uppercase tracking-wide mb-1">ATS Compatibility Score</p>
-          <p className="text-sm text-brand-text-muted leading-relaxed max-w-md">{data.summary}</p>
-        </div>
-        <motion.button
-          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={SP}
-          onClick={onReanalyse}
-          disabled={reanalysing}
-          className="flex items-center gap-1.5 text-xs font-medium border border-brand-border rounded-lg px-3 py-1.5 cursor-pointer hover:bg-brand-surface transition-all duration-500 text-brand-text disabled:opacity-50 shrink-0"
-        >
-          <WandSparkles className={`size-3 ${reanalysing ? "animate-pulse" : ""}`} />
-          {reanalysing ? "Analysing..." : "Re-analyse"}
-        </motion.button>
-      </div>
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+      transition={{ duration: 0.2 }}
+      className="space-y-4"
+    >
+      {/* Hero card */}
+      <div className="border border-brand-border rounded-2xl overflow-hidden">
+        <div className="flex items-stretch">
+          {/* Score column */}
+          <div className="flex flex-col items-center justify-center px-10 py-8 bg-brand-surface border-r border-brand-border shrink-0">
+            <ScoreRing score={data.score} />
+          </div>
 
-      {/* Strengths / Weaknesses / Suggestions */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="border border-brand-border rounded-xl p-5">
-          <p className="text-[11px] font-semibold text-green-600 uppercase tracking-wide mb-3">Strengths</p>
-          <ul className="space-y-2.5">
-            {data.strengths.map((s, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <CheckCircle2 className="size-3.5 text-green-500 shrink-0 mt-0.5" />
-                <p className="text-[12px] text-brand-text leading-relaxed">{s}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="border border-brand-border rounded-xl p-5">
-          <p className="text-[11px] font-semibold text-amber-600 uppercase tracking-wide mb-3">Weaknesses</p>
-          <ul className="space-y-2.5">
-            {data.weaknesses.map((w, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <AlertCircle className="size-3.5 text-amber-500 shrink-0 mt-0.5" />
-                <p className="text-[12px] text-brand-text leading-relaxed">{w}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="border border-brand-border rounded-xl p-5">
-          <p className="text-[11px] font-semibold text-brand-primary uppercase tracking-wide mb-3">Suggestions</p>
-          <ul className="space-y-2.5">
-            {data.suggestions.map((s, i) => (
-              <li key={i} className="flex items-start gap-2">
-                <ArrowRight className="size-3.5 text-brand-primary shrink-0 mt-0.5" />
-                <p className="text-[12px] text-brand-text leading-relaxed">{s}</p>
-              </li>
-            ))}
-          </ul>
+          {/* Dimensions + summary column */}
+          <div className="flex-1 px-8 py-7 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-5">
+                <p className="text-[11px] font-semibold text-brand-text-subtle uppercase tracking-widest">ATS Compatibility</p>
+                <motion.button
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={SP}
+                  onClick={onReanalyse}
+                  disabled={reanalysing}
+                  className="flex items-center gap-1.5 text-[11px] font-medium text-brand-text-muted border border-brand-border rounded-lg px-2.5 py-1 cursor-pointer hover:bg-white hover:text-brand-text transition-all duration-500 disabled:opacity-40"
+                >
+                  <WandSparkles className={`size-3 ${reanalysing ? "animate-pulse" : ""}`} />
+                  {reanalysing ? "Running..." : "Re-analyse"}
+                </motion.button>
+              </div>
+              <div className="space-y-3 mb-6">
+                {dimEntries.map(([key, val], i) => (
+                  <DimensionBar
+                    key={key}
+                    label={DIMENSION_LABELS[key] ?? key}
+                    value={val}
+                    delay={0.3 + i * 0.1}
+                  />
+                ))}
+              </div>
+            </div>
+            <p className="text-[12.5px] text-brand-text-muted leading-relaxed border-t border-brand-border pt-4">
+              {data.summary}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Recommended keywords */}
-      <div className="border border-brand-border rounded-xl p-5">
-        <p className="text-[11px] font-semibold text-brand-text uppercase tracking-wide mb-3">Recommended Keywords to Add</p>
+      {/* Strengths + Weaknesses */}
+      <div className="grid grid-cols-2 gap-4">
+        {([
+          { title: "Strengths", items: data.strengths, labelCls: "text-green-600", numCls: "text-green-400" },
+          { title: "Weaknesses", items: data.weaknesses, labelCls: "text-amber-600", numCls: "text-amber-400" },
+        ] as const).map(({ title, items, labelCls, numCls }) => (
+          <div key={title} className="border border-brand-border rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <p className={`text-[11px] font-semibold uppercase tracking-widest ${labelCls}`}>{title}</p>
+              <span className="text-[10px] text-brand-text-subtle">{items.length} items</span>
+            </div>
+            {items.map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ ...SP, delay: 0.45 + i * 0.07 }}
+                className="flex items-start gap-3 py-3 border-b border-brand-border last:border-0"
+              >
+                <span className={`text-[10px] font-bold font-mono w-4 shrink-0 mt-0.5 ${numCls}`}>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <p className="text-[12.5px] text-brand-text leading-relaxed">{item}</p>
+              </motion.div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* Action items */}
+      <div className="border border-brand-border rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-brand-primary">Action Items</p>
+          <span className="text-[10px] text-brand-text-subtle">{data.suggestions.length} steps</span>
+        </div>
+        {data.suggestions.map((item, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ...SP, delay: 0.5 + i * 0.08 }}
+            className="flex items-start gap-4 py-3.5 border-b border-brand-border last:border-0"
+          >
+            <div className="size-5 rounded-full bg-brand-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+              <span className="text-[9px] font-bold text-brand-primary">{i + 1}</span>
+            </div>
+            <p className="text-[12.5px] text-brand-text leading-relaxed">{item}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Keywords */}
+      <div className="border border-brand-border rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-brand-text">Missing Keywords</p>
+          <p className="text-[10px] text-brand-text-subtle">Click any to copy</p>
+        </div>
         <div className="flex flex-wrap gap-2">
           {data.keywords.map((k, i) => (
-            <span key={i} className="text-[11px] font-medium bg-brand-primary/8 text-brand-primary px-2.5 py-1 rounded-md border border-brand-primary/20">
+            <motion.button
+              key={i}
+              initial={{ opacity: 0, scale: 0.88 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ ...SP, delay: 0.55 + i * 0.05 }}
+              whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+              onClick={() => copyKeyword(k)}
+              className={`flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all duration-500 ${
+                copiedKw === k
+                  ? "bg-green-50 text-green-700 border-green-200"
+                  : "bg-brand-primary/5 text-brand-primary border-brand-primary/15 hover:bg-brand-primary/10 hover:border-brand-primary/30"
+              }`}
+            >
+              {copiedKw === k
+                ? <CheckCircle2 className="size-3" />
+                : <ArrowRight className="size-3 rotate-[-45deg]" />
+              }
               {k}
-            </span>
+            </motion.button>
           ))}
         </div>
       </div>
