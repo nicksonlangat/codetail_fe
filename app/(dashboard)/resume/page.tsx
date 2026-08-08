@@ -6,10 +6,15 @@ import {
   MapPin, Mail, Briefcase, Download, Share2,
   Edit3, GitFork, Link2, CheckCircle2, Upload,
   FileText, WandSparkles, AlertCircle, ArrowRight,
+  ChevronDown, Plus, Trash2, X, Check,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/stores/auth-store";
-import { getResume, uploadResume, getResumeAnalysis, runResumeAnalysis, type ResumeData, type ResumeAnalysis } from "@/lib/api/resume";
+import {
+  getResume, uploadResume, updateResume, getAIAssist,
+  getResumeAnalysis, runResumeAnalysis,
+  type ResumeData, type ResumeExperience, type ResumeEducation, type ResumeSkillGroup, type ResumeAnalysis,
+} from "@/lib/api/resume";
 import { toast } from "sonner";
 
 const SP = { type: "spring" as const, stiffness: 400, damping: 25 };
@@ -244,7 +249,7 @@ function UploadPrompt({ onUpload }: { onUpload: (file: File) => void }) {
   );
 }
 
-function ParsedDocument({ resume, onUpload }: { resume: ResumeData; onUpload: (file: File) => void }) {
+function ParsedDocument({ resume, onUpload, onEdit }: { resume: ResumeData; onUpload: (file: File) => void; onEdit: () => void }) {
   const replaceRef = useRef<HTMLInputElement>(null);
   const name = resume.file_name.replace(/\.pdf$/i, "").replace(/-/g, " ");
   return (
@@ -263,6 +268,13 @@ function ParsedDocument({ resume, onUpload }: { resume: ResumeData; onUpload: (f
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <motion.button
+            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={SP}
+            onClick={onEdit}
+            className="flex items-center gap-1.5 text-xs font-medium bg-brand-text text-white rounded-lg px-3 py-1.5 cursor-pointer hover:bg-brand-text/90 transition-all duration-500"
+          >
+            <Edit3 className="size-3" /> Edit
+          </motion.button>
           <motion.button
             whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={SP}
             onClick={() => replaceRef.current?.click()}
@@ -808,9 +820,393 @@ function AnalysisTab({ resume }: { resume: ResumeData | undefined }) {
   return <AnalysisResults data={data} onReanalyse={() => analyse()} reanalysing={analysing} />;
 }
 
+// ─── Edit modal primitives ────────────────────────────────────────────────────
+
+const INPUT = "w-full text-[12.5px] text-brand-text bg-brand-surface border border-brand-border rounded-lg px-3 py-2 outline-none focus:border-brand-primary/60 focus:bg-white transition-all duration-500 placeholder:text-brand-text-subtle";
+const TA = `${INPUT} resize-none leading-relaxed`;
+
+function useAIAssist() {
+  const [loading, setLoading] = React.useState(false);
+  const [suggestion, setSuggestion] = React.useState<string | null>(null);
+
+  async function run(fieldType: string, current: string, context = "") {
+    if (!current.trim()) return;
+    setLoading(true);
+    setSuggestion(null);
+    try {
+      const r = await getAIAssist(fieldType, current, context);
+      setSuggestion(r.suggestion);
+    } catch {
+      toast.error("AI assist failed.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return { loading, suggestion, run, dismiss: () => setSuggestion(null) };
+}
+
+function AISuggestionPanel({ suggestion, onAccept, onDismiss }: { suggestion: string; onAccept: () => void; onDismiss: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
+      transition={SP}
+      className="mt-2 p-3 bg-brand-primary/5 border border-brand-primary/20 rounded-lg"
+    >
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-brand-primary">AI Suggestion</p>
+        <button type="button" onClick={onDismiss} className="text-brand-text-subtle hover:text-brand-text cursor-pointer transition-all duration-500">
+          <X className="size-3" />
+        </button>
+      </div>
+      <p className="text-[12px] text-brand-text leading-relaxed mb-3">{suggestion}</p>
+      <div className="flex gap-2">
+        <motion.button type="button" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={SP}
+          onClick={onAccept}
+          className="flex items-center gap-1 text-[11px] font-semibold bg-brand-primary text-white px-2.5 py-1 rounded-md cursor-pointer hover:bg-brand-primary-hover transition-all duration-500"
+        >
+          <Check className="size-3" /> Accept
+        </motion.button>
+        <motion.button type="button" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={SP}
+          onClick={onDismiss}
+          className="text-[11px] font-medium text-brand-text-muted border border-brand-border px-2.5 py-1 rounded-md cursor-pointer hover:bg-brand-surface transition-all duration-500"
+        >
+          Discard
+        </motion.button>
+      </div>
+    </motion.div>
+  );
+}
+
+function AIBtn({ onClick, loading }: { onClick: () => void; loading: boolean }) {
+  return (
+    <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} transition={SP}
+      onClick={onClick} disabled={loading}
+      className="flex items-center gap-1 text-[10px] font-medium text-brand-primary border border-brand-primary/20 bg-brand-primary/5 rounded-md px-2 py-1 cursor-pointer hover:bg-brand-primary/10 transition-all duration-500 disabled:opacity-50 shrink-0"
+    >
+      <WandSparkles className={`size-3 ${loading ? "animate-pulse" : ""}`} />
+      {loading ? "..." : "AI"}
+    </motion.button>
+  );
+}
+
+function EditSection({ title, badge, defaultOpen = false, children }: {
+  title: string; badge?: number; defaultOpen?: boolean; children: React.ReactNode;
+}) {
+  const [open, setOpen] = React.useState(defaultOpen);
+  return (
+    <div className="border border-brand-border rounded-xl overflow-hidden">
+      <button type="button" onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-brand-surface transition-all duration-500 cursor-pointer"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] font-semibold text-brand-text">{title}</span>
+          {badge !== undefined && (
+            <span className="text-[10px] font-medium text-brand-text-subtle bg-brand-surface border border-brand-border rounded px-1.5 py-0.5">{badge}</span>
+          )}
+        </div>
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
+          <ChevronDown className="size-4 text-brand-text-subtle" />
+        </motion.span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }}
+            transition={{ duration: 0.22, ease: [0.04, 0.62, 0.23, 0.98] }}
+            style={{ overflow: "hidden" }}
+          >
+            <div className="border-t border-brand-border p-4">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function BulletEditor({ value, context, onChange, onRemove }: {
+  value: string; context: string; onChange: (v: string) => void; onRemove: () => void;
+}) {
+  const ai = useAIAssist();
+  return (
+    <div className="space-y-1">
+      <div className="flex gap-2 items-start">
+        <textarea rows={2} value={value} onChange={e => onChange(e.target.value)}
+          placeholder="Describe an achievement..." className={TA} />
+        <div className="flex flex-col gap-1 shrink-0">
+          <AIBtn onClick={() => ai.run("bullet", value, context)} loading={ai.loading} />
+          <button type="button" onClick={onRemove}
+            className="size-6 flex items-center justify-center rounded-md hover:bg-red-50 text-brand-text-subtle hover:text-red-500 cursor-pointer transition-all duration-500"
+          >
+            <Trash2 className="size-3" />
+          </button>
+        </div>
+      </div>
+      <AnimatePresence>
+        {ai.suggestion && (
+          <AISuggestionPanel
+            suggestion={ai.suggestion}
+            onAccept={() => { onChange(ai.suggestion!); ai.dismiss(); }}
+            onDismiss={ai.dismiss}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Edit resume modal ─────────────────────────────────────────────────────────
+
+function EditResumeModal({ resume, onClose, onSave, saving }: {
+  resume: ResumeData;
+  onClose: () => void;
+  onSave: (d: { profile: string; experience: ResumeExperience[]; education: ResumeEducation[]; skills: ResumeSkillGroup[] }) => void;
+  saving: boolean;
+}) {
+  const [profile, setProfile] = React.useState(resume.profile);
+  const [experience, setExperience] = React.useState<ResumeExperience[]>(
+    resume.experience.map(e => ({ ...e, bullets: [...e.bullets] }))
+  );
+  const [education, setEducation] = React.useState<ResumeEducation[]>(resume.education.map(e => ({ ...e })));
+  const [skills, setSkills] = React.useState<ResumeSkillGroup[]>(resume.skills.map(s => ({ ...s, items: [...s.items] })));
+  const [openExp, setOpenExp] = React.useState<Set<number>>(new Set([0]));
+  const [newSkill, setNewSkill] = React.useState<Record<number, string>>({});
+
+  const profileAI = useAIAssist();
+
+  // Experience helpers
+  const setExp = (i: number, patch: Partial<ResumeExperience>) =>
+    setExperience(prev => prev.map((e, j) => j === i ? { ...e, ...patch } : e));
+  const setBullet = (ei: number, bi: number, v: string) =>
+    setExperience(prev => prev.map((e, i) => i === ei ? { ...e, bullets: e.bullets.map((b, j) => j === bi ? v : b) } : e));
+  const removeBullet = (ei: number, bi: number) =>
+    setExperience(prev => prev.map((e, i) => i === ei ? { ...e, bullets: e.bullets.filter((_, j) => j !== bi) } : e));
+  const addBullet = (ei: number) =>
+    setExperience(prev => prev.map((e, i) => i === ei ? { ...e, bullets: [...e.bullets, ""] } : e));
+
+  // Education helpers
+  const setEdu = (i: number, patch: Partial<ResumeEducation>) =>
+    setEducation(prev => prev.map((e, j) => j === i ? { ...e, ...patch } : e));
+
+  // Skills helpers
+  const setSkillCat = (i: number, category: string) =>
+    setSkills(prev => prev.map((s, j) => j === i ? { ...s, category } : s));
+  const removeSkillItem = (gi: number, ii: number) =>
+    setSkills(prev => prev.map((s, j) => j === gi ? { ...s, items: s.items.filter((_, k) => k !== ii) } : s));
+  const addSkillItem = (gi: number) => {
+    const v = (newSkill[gi] ?? "").trim();
+    if (!v) return;
+    setSkills(prev => prev.map((s, j) => j === gi ? { ...s, items: [...s.items, v] } : s));
+    setNewSkill(p => ({ ...p, [gi]: "" }));
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto py-8 px-4">
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
+        className="fixed inset-0 bg-black/35 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.97, y: 12 }}
+        transition={SP}
+        className="relative w-full max-w-2xl bg-white rounded-2xl flex flex-col border border-brand-border shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-brand-border shrink-0">
+          <div className="flex items-center gap-2.5">
+            <Edit3 className="size-4 text-brand-text-subtle" />
+            <p className="font-semibold text-brand-text">Edit Resume</p>
+          </div>
+          <button type="button" onClick={onClose}
+            className="size-7 flex items-center justify-center rounded-lg hover:bg-brand-surface text-brand-text-subtle hover:text-brand-text cursor-pointer transition-all duration-500"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-5 space-y-3 overflow-y-auto max-h-[70vh]">
+
+          {/* Profile */}
+          <EditSection title="Profile" defaultOpen>
+            <div className="space-y-2">
+              <div className="flex items-start justify-between gap-3">
+                <textarea
+                  rows={4}
+                  value={profile}
+                  onChange={e => setProfile(e.target.value)}
+                  placeholder="Professional summary..."
+                  className={TA}
+                />
+                <AIBtn onClick={() => profileAI.run("profile", profile)} loading={profileAI.loading} />
+              </div>
+              <AnimatePresence>
+                {profileAI.suggestion && (
+                  <AISuggestionPanel
+                    suggestion={profileAI.suggestion}
+                    onAccept={() => { setProfile(profileAI.suggestion!); profileAI.dismiss(); }}
+                    onDismiss={profileAI.dismiss}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+          </EditSection>
+
+          {/* Experience */}
+          <EditSection title="Experience" badge={experience.length} defaultOpen>
+            <div className="space-y-2">
+              {experience.map((exp, ei) => {
+                const isOpen = openExp.has(ei);
+                return (
+                  <div key={ei} className="border border-brand-border rounded-lg overflow-hidden">
+                    <button type="button"
+                      onClick={() => setOpenExp(prev => { const n = new Set(prev); n.has(ei) ? n.delete(ei) : n.add(ei); return n; })}
+                      className="w-full flex items-center justify-between px-3.5 py-2.5 hover:bg-brand-surface transition-all duration-500 cursor-pointer text-left"
+                    >
+                      <div>
+                        <p className="text-[12.5px] font-semibold text-brand-text">{exp.title || "Untitled role"}</p>
+                        <p className="text-[11px] text-brand-text-subtle">{exp.company}{exp.period ? ` · ${exp.period}` : ""}</p>
+                      </div>
+                      <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                        <ChevronDown className="size-3.5 text-brand-text-subtle" />
+                      </motion.span>
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }}
+                          transition={{ duration: 0.2, ease: [0.04, 0.62, 0.23, 0.98] }}
+                          style={{ overflow: "hidden" }}
+                        >
+                          <div className="border-t border-brand-border p-3.5 space-y-3">
+                            <div className="grid grid-cols-2 gap-2">
+                              <input value={exp.title} onChange={e => setExp(ei, { title: e.target.value })} placeholder="Job title" className={INPUT} />
+                              <input value={exp.company} onChange={e => setExp(ei, { company: e.target.value })} placeholder="Company" className={INPUT} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <input value={exp.period} onChange={e => setExp(ei, { period: e.target.value })} placeholder="e.g. Jan 2023 – Present" className={INPUT} />
+                              <div className={`${INPUT} text-brand-text-subtle cursor-default`}>{exp.duration || "Duration auto-computed"}</div>
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-semibold text-brand-text-subtle uppercase tracking-widest mb-2">Bullets</p>
+                              <div className="space-y-2">
+                                {exp.bullets.map((bullet, bi) => (
+                                  <BulletEditor
+                                    key={bi}
+                                    value={bullet}
+                                    context={`${exp.title} at ${exp.company}`}
+                                    onChange={v => setBullet(ei, bi, v)}
+                                    onRemove={() => removeBullet(ei, bi)}
+                                  />
+                                ))}
+                              </div>
+                              <button type="button" onClick={() => addBullet(ei)}
+                                className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-brand-primary cursor-pointer hover:underline transition-all duration-500"
+                              >
+                                <Plus className="size-3" /> Add bullet
+                              </button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
+            </div>
+          </EditSection>
+
+          {/* Skills */}
+          <EditSection title="Skills" badge={skills.length}>
+            <div className="space-y-3">
+              {skills.map((group, gi) => (
+                <div key={gi} className="border border-brand-border rounded-lg p-3.5 space-y-2.5">
+                  <input
+                    value={group.category}
+                    onChange={e => setSkillCat(gi, e.target.value)}
+                    placeholder="Category name"
+                    className={`${INPUT} font-semibold`}
+                  />
+                  <div className="flex flex-wrap gap-1.5">
+                    {group.items.map((item, ii) => (
+                      <span key={ii} className="flex items-center gap-1 text-[11px] bg-brand-surface border border-brand-border rounded-md px-2 py-0.5">
+                        {item}
+                        <button type="button" onClick={() => removeSkillItem(gi, ii)}
+                          className="text-brand-text-subtle hover:text-red-500 cursor-pointer transition-all duration-500"
+                        >
+                          <X className="size-2.5" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      value={newSkill[gi] ?? ""}
+                      onChange={e => setNewSkill(p => ({ ...p, [gi]: e.target.value }))}
+                      onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addSkillItem(gi))}
+                      placeholder="Add skill..."
+                      className={INPUT}
+                    />
+                    <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} transition={SP}
+                      onClick={() => addSkillItem(gi)}
+                      className="flex items-center gap-1 text-[11px] font-medium text-brand-primary border border-brand-primary/20 bg-brand-primary/5 rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-brand-primary/10 transition-all duration-500 shrink-0"
+                    >
+                      <Plus className="size-3" /> Add
+                    </motion.button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </EditSection>
+
+          {/* Education */}
+          <EditSection title="Education" badge={education.length}>
+            <div className="space-y-2">
+              {education.map((edu, ei) => (
+                <div key={ei} className="border border-brand-border rounded-lg p-3.5 space-y-2">
+                  <input value={edu.degree} onChange={e => setEdu(ei, { degree: e.target.value })} placeholder="Degree / qualification" className={INPUT} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input value={edu.school} onChange={e => setEdu(ei, { school: e.target.value })} placeholder="Institution" className={INPUT} />
+                    <input value={edu.period} onChange={e => setEdu(ei, { period: e.target.value })} placeholder="e.g. 2012 – 2016" className={INPUT} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </EditSection>
+
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-brand-border shrink-0">
+          <motion.button type="button" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={SP}
+            onClick={onClose}
+            className="text-sm font-medium text-brand-text-muted border border-brand-border rounded-lg px-4 py-2 cursor-pointer hover:bg-brand-surface transition-all duration-500"
+          >
+            Cancel
+          </motion.button>
+          <motion.button type="button" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} transition={SP}
+            onClick={() => onSave({ profile, experience, education, skills })}
+            disabled={saving}
+            className="text-sm font-semibold bg-brand-primary text-white rounded-lg px-4 py-2 cursor-pointer hover:bg-brand-primary-hover transition-all duration-500 disabled:opacity-60 flex items-center gap-2"
+          >
+            {saving && <WandSparkles className="size-3.5 animate-pulse" />}
+            {saving ? "Saving..." : "Save Changes"}
+          </motion.button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function ResumePage() {
   const user = useAuthStore((s) => s.user);
   const [tab, setTab] = useState("CV");
+  const [editOpen, setEditOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const isPremium = user?.tier === "premium";
@@ -832,6 +1228,17 @@ export default function ResumePage() {
       toast.success("Resume parsed and ready.");
     },
     onError: () => toast.error("Failed to parse resume. Please try again."),
+  });
+
+  const { mutate: saveEdit, isPending: saving } = useMutation({
+    mutationFn: updateResume,
+    onSuccess: (data) => {
+      queryClient.setQueryData(["resume"], data);
+      queryClient.removeQueries({ queryKey: ["resume-analysis"] });
+      setEditOpen(false);
+      toast.success("Resume updated.");
+    },
+    onError: () => toast.error("Failed to save changes."),
   });
 
   return (
@@ -931,7 +1338,7 @@ export default function ResumePage() {
                   <UploadPrompt onUpload={(file) => upload(file)} />
                 )}
                 {isPremium && !uploading && resume && (
-                  <ParsedDocument resume={resume} onUpload={(file) => upload(file)} />
+                  <ParsedDocument resume={resume} onUpload={(file) => upload(file)} onEdit={() => setEditOpen(true)} />
                 )}
               </motion.div>
             )}
@@ -964,6 +1371,17 @@ export default function ResumePage() {
 
         </div>
       </div>
+
+      <AnimatePresence>
+        {editOpen && resume && (
+          <EditResumeModal
+            resume={resume}
+            onClose={() => setEditOpen(false)}
+            onSave={(d) => saveEdit(d)}
+            saving={saving}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

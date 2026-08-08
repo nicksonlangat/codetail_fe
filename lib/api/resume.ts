@@ -68,3 +68,24 @@ export async function runResumeAnalysis(): Promise<ResumeAnalysis> {
   const res = await apiClient.post<ResumeAnalysis>("/resume/analysis");
   return res.data;
 }
+
+export async function updateResume(data: {
+  profile: string;
+  experience: ResumeExperience[];
+  education: ResumeEducation[];
+  skills: ResumeSkillGroup[];
+}): Promise<ResumeData> {
+  const res = await apiClient.patch<ResumeData>("/resume", data);
+  return res.data;
+}
+
+export interface AIAssistResult { suggestion: string }
+
+export async function getAIAssist(
+  field_type: string,
+  current_content: string,
+  context = ""
+): Promise<AIAssistResult> {
+  const res = await apiClient.post<AIAssistResult>("/resume/ai-assist", { field_type, current_content, context });
+  return res.data;
+}
