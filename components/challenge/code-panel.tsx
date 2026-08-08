@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FlaskConical, Lightbulb, WandSparkles, BookOpen, RotateCcw, Play, Send, Loader2,
+  FlaskConical, Lightbulb, WandSparkles, BookOpen, RotateCcw, Play, Send,
 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { MonacoCodeEditor } from "@/components/editors/monaco-code-editor";
 import { runCode } from "@/lib/api/submissions";
@@ -115,7 +116,7 @@ export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
                 disabled={running}
                 className="inline-flex items-center gap-1 rounded-lg border border-brand-border-strong text-brand-text-muted text-[11px] font-medium px-2.5 py-1.5 cursor-pointer outline-none transition-all duration-500 hover:bg-brand-surface disabled:cursor-default disabled:opacity-60"
               >
-                {running ? <Loader2 className="size-3 animate-spin" /> : <Play className="size-3" />}
+                {running ? <Spinner size="xs" /> : <Play className="size-3" />}
                 Run
               </button>
               <button
@@ -124,7 +125,7 @@ export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
                 disabled={running}
                 className="inline-flex items-center gap-1 rounded-lg bg-brand-primary text-white text-[11px] font-medium px-2.5 py-1.5 cursor-pointer outline-none transition-all duration-500 hover:bg-brand-primary-hover disabled:cursor-default disabled:opacity-60"
               >
-                {running ? <Loader2 className="size-3 animate-spin" /> : <Send className="size-3" />}
+                {running ? <Spinner size="xs" /> : <Send className="size-3" />}
                 Submit
               </button>
             </div>

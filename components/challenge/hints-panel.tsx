@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import axios from "axios";
-import { Lightbulb, Loader2 } from "lucide-react";
+import { Lightbulb } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { getHint } from "@/lib/api/submissions";
 import { getErrorMessage } from "@/lib/api/client";
 import { UpgradeModal } from "@/components/paths/upgrade-modal";
@@ -74,7 +75,7 @@ export function HintsPanel({ problemId, code, initialHints }: HintsPanelProps) {
         disabled={loading}
         className="flex items-center gap-1.5 text-[12px] font-medium text-brand-primary cursor-pointer outline-none transition-all duration-500 hover:text-brand-primary-hover disabled:opacity-60 disabled:cursor-default"
       >
-        {loading ? <Loader2 className="size-3.5 animate-spin" /> : <Lightbulb className="size-3.5" />}
+        {loading ? <Spinner size="sm" /> : <Lightbulb className="size-3.5" />}
         {hints.length === 0 ? "Get a hint" : "Get another hint"}
       </button>
 

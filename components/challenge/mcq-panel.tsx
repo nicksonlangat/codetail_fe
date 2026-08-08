@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Loader2, RotateCcw, XCircle } from "lucide-react";
+import { CheckCircle2, RotateCcw, XCircle } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { submitMcq } from "@/lib/api/submissions";
 import { getErrorMessage } from "@/lib/api/client";
 import type { McqOption } from "@/lib/api/problems";
@@ -134,7 +135,7 @@ export function McqPanel({
           disabled={!selected || submitting}
           className="flex items-center gap-1.5 text-[13px] font-medium text-white bg-brand-primary px-4 py-2.5 rounded-lg cursor-pointer outline-none transition-all duration-500 hover:bg-brand-primary-hover disabled:opacity-50 disabled:cursor-default"
         >
-          {submitting && <Loader2 className="size-3.5 animate-spin" />}
+          {submitting && <Spinner size="sm" />}
           Submit
         </button>
       ) : (

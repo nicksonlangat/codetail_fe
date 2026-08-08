@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import axios from "axios";
-import { CheckCircle2, Loader2, WandSparkles, XCircle } from "lucide-react";
+import { CheckCircle2, WandSparkles, XCircle } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { getReview } from "@/lib/api/submissions";
 import { getErrorMessage } from "@/lib/api/client";
 import { UpgradeModal } from "@/components/paths/upgrade-modal";
@@ -142,7 +143,7 @@ export function ReviewPanel({ problemId, code, initialReview, onSolved }: Review
         disabled={loading}
         className="flex items-center gap-1.5 text-[12px] font-medium text-brand-primary cursor-pointer outline-none transition-all duration-500 hover:text-brand-primary-hover disabled:opacity-60 disabled:cursor-default"
       >
-        {loading ? <Loader2 className="size-3.5 animate-spin" /> : <WandSparkles className="size-3.5" />}
+        {loading ? <Spinner size="sm" /> : <WandSparkles className="size-3.5" />}
         {review ? "Review again" : "Get AI review"}
       </button>
 

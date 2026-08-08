@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Share2, ChevronLeft, ChevronRight, FileText, StickyNote,
   RotateCcw, Play, Send, FlaskConical, Lightbulb, WandSparkles, BookOpen,
-  CheckCircle2, XCircle, Lock, Loader2,
+  CheckCircle2, XCircle, Lock,
 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { MonacoCodeEditor } from "@/components/editors/monaco-code-editor";
 import { NotesEditor } from "@/components/editors/notes-editor";
@@ -262,7 +263,7 @@ export function ChallengePreview() {
                           className="inline-flex items-center gap-1 rounded-lg border border-brand-border text-brand-text-muted text-[11px] font-medium px-2.5 py-1.5 cursor-pointer transition-all duration-500 hover:bg-brand-surface disabled:cursor-default"
                         >
                           {running ? (
-                            <Loader2 className="size-3 animate-spin" />
+                            <Spinner size="xs" />
                           ) : (
                             <Play className="size-3" />
                           )}{" "}
@@ -275,7 +276,7 @@ export function ChallengePreview() {
                           className="inline-flex items-center gap-1 rounded-lg bg-brand-primary text-white text-[11px] font-medium px-2.5 py-1.5 cursor-pointer transition-all duration-500 hover:bg-brand-primary-hover disabled:cursor-default"
                         >
                           {running ? (
-                            <Loader2 className="size-3 animate-spin" />
+                            <Spinner size="xs" />
                           ) : (
                             <Send className="size-3" />
                           )}{" "}
