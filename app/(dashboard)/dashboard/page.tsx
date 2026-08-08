@@ -1,8 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useMemo, useState } from "react";
 import {
-  Coins, Award, Trophy, BookOpen, FileText, Clock, ArrowRight,
+  Coins, Award, Trophy, BookOpen, FileText, ArrowRight,
   ClipboardCheck, Rocket, Info,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -31,16 +32,26 @@ function getNextBadge(earned: string[]) {
   return BADGE_PRIORITY.find((b) => !earned.includes(b.id)) ?? null;
 }
 
-const IN_PROGRESS = [
-  { stack: "python", title: "Mastering Python: Data Structures Deep Dive", content: "5 Problems", completion: null as number | null, deadline: "1 Day", urgent: false, cta: "Start" },
-  { stack: "django", title: "Django ORM Advanced Query Patterns", content: "12 Problems", completion: 64, deadline: "12 hrs", urgent: true, cta: "Continue" },
+
+
+const COMING_SOON_PATHS = [
+  { stack: "fastapi", title: "FastAPI: Building Production APIs" },
+  { stack: "go", title: "Go: Systems Programming and Concurrency" },
+  { stack: "typescript", title: "TypeScript: Type-Safe Development" },
+  { stack: "sql", title: "SQL: Data Querying and Analytics" },
 ];
 
-const ENROLLMENTS = [
-  { stack: "python", materials: "10 Problems", title: "Deliberate Practice: Advanced Python Patterns", tags: ["Python", "Not Urgent"] },
-  { stack: "sql", materials: "5 Problems", title: "SQL Window Functions for Data Analysts", tags: ["SQL", "Not Urgent"] },
-  { stack: "django", materials: "12 Problems", title: "Mastering Django for Scalable APIs", tags: ["Django", "Not Urgent"] },
-];
+async function getDashboardPaths() {
+  const { getPaths, getPathUnits } = await import("@/lib/api/paths");
+  const paths = await getPaths();
+  const unitsPerPath = await Promise.all(paths.map((p) => getPathUnits(p.slug)));
+  return paths.map((path, i) => {
+    const units = unitsPerPath[i];
+    const totalSolved = units.reduce((sum, u) => sum + u.solved, 0);
+    const completion = path.problem_count > 0 ? Math.round((totalSolved / path.problem_count) * 100) : null;
+    return { path, units, unitCount: units.length, totalSolved, completion };
+  });
+}
 
 function RadialProgress({ value }: { value: number }) {
   const r = 8;
@@ -87,12 +98,39 @@ function SidebarStat({ icon: Icon, value, label }: { icon: typeof Clock; value: 
   );
 }
 
-function SectionHeader({ title, showViewAll = true }: { title: string; showViewAll?: boolean }) {
+function InfoTooltip({ text }: { text: string }) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <span
+      className="relative inline-flex items-center"
+      onMouseEnter={() => setVisible(true)}
+      onMouseLeave={() => setVisible(false)}
+    >
+      <Info className="size-3.5 text-brand-text-subtle cursor-default" />
+      <AnimatePresence>
+        {visible && (
+          <motion.span
+            initial={{ opacity: 0, y: 4, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.95 }}
+            transition={SP}
+            className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-30 w-52 px-3 py-2 rounded-lg bg-brand-text text-white text-[11px] leading-snug pointer-events-none shadow-lg"
+          >
+            {text}
+            <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-brand-text" />
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </span>
+  );
+}
+
+function SectionHeader({ title, tooltip, showViewAll = true }: { title: string; tooltip?: string; showViewAll?: boolean }) {
   return (
     <div className="flex items-center justify-between mb-3">
       <div className="flex items-center gap-1.5">
         <h2 className="font-semibold text-[15px] text-brand-text">{title}</h2>
-        <Info className="size-3.5 text-brand-text-subtle" />
+        {tooltip && <InfoTooltip text={tooltip} />}
       </div>
       {showViewAll && (
         <a
@@ -143,6 +181,20 @@ export default function DashboardPage() {
     queryFn: getWeeklyLeaderboard,
     staleTime: 60_000,
   });
+
+  const { data: dashboardPaths = [] } = useQuery({
+    queryKey: ["dashboard-paths"],
+    queryFn: getDashboardPaths,
+    staleTime: 60_000,
+  });
+
+  const featuredUnits = useMemo(() => {
+    const all: { path: (typeof dashboardPaths)[0]["path"]; unit: (typeof dashboardPaths)[0]["units"][0] }[] = [];
+    for (const { path, units } of dashboardPaths) {
+      for (const unit of units) all.push({ path, unit });
+    }
+    return [...all].sort(() => Math.random() - 0.5).slice(0, 3);
+  }, [dashboardPaths]);
 
   return (
     <div className="w-full max-w-6xl px-6 py-8">
@@ -213,100 +265,134 @@ export default function DashboardPage() {
       <div className="grid grid-cols-4 gap-6">
         <div className="col-span-4 lg:col-span-3 space-y-8">
           <section>
-            <SectionHeader title="In progress learning content" />
+            <SectionHeader title="Your learning paths" tooltip="Structured paths covering Python, Django, and more. Each path is made up of units you work through at your own pace." />
             <div className="border border-brand-border rounded-xl divide-y divide-brand-border">
-              {IN_PROGRESS.map((row) => (
-                <div key={row.title} className="flex items-center gap-4 px-4 py-3 flex-wrap sm:flex-nowrap">
+              {dashboardPaths.length === 0 && (
+                <div className="px-4 py-6 text-sm text-brand-text-muted text-center">No learning paths available yet.</div>
+              )}
+              {dashboardPaths.map(({ path, unitCount, completion }) => {
+                const cta = completion === null || completion === 0 ? "Start" : "Continue";
+                return (
+                  <div key={path.slug} className="flex items-center gap-4 px-4 py-3 flex-wrap sm:flex-nowrap">
+                    <div className="size-11 rounded-lg bg-brand-surface flex items-center justify-center shrink-0">
+                      <StackTile stack={path.stack} className="size-8 text-[11px]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-brand-text-muted mb-0.5">
+                        <BookOpen className="size-3" /> Path
+                      </span>
+                      <p className="font-semibold text-sm truncate text-brand-text">{path.title}</p>
+                    </div>
+                    <div className="w-24 text-xs shrink-0">
+                      <p className="text-[10px] text-brand-text-subtle mb-1">Units</p>
+                      <p className="flex items-center gap-1 text-brand-text">
+                        <FileText className="size-3" /> {unitCount} {unitCount === 1 ? "unit" : "units"}
+                      </p>
+                    </div>
+                    <div className="w-20 text-xs shrink-0">
+                      <p className="text-[10px] text-brand-text-subtle mb-1">Completion</p>
+                      {completion === null || completion === 0 ? (
+                        <p className="text-brand-text-subtle">-</p>
+                      ) : (
+                        <RadialProgress value={completion} />
+                      )}
+                    </div>
+                    <div className="w-20 text-xs shrink-0">
+                      <p className="text-[10px] text-brand-text-subtle mb-1">Problems</p>
+                      <p className="flex items-center gap-1 text-brand-text">
+                        <ClipboardCheck className="size-3" /> {path.problem_count}
+                      </p>
+                    </div>
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      transition={SP}
+                      className={`text-xs font-medium px-4 py-2 rounded-lg cursor-pointer transition-all duration-500 shrink-0 ${
+                        cta === "Continue"
+                          ? "bg-brand-text text-white hover:bg-brand-text/90"
+                          : "border border-brand-border hover:bg-brand-surface text-brand-text"
+                      }`}
+                    >
+                      {cta}
+                    </motion.button>
+                  </div>
+                );
+              })}
+              {COMING_SOON_PATHS.map((stub) => (
+                <div key={stub.stack} className="flex items-center gap-4 px-4 py-3 flex-wrap sm:flex-nowrap opacity-50">
                   <div className="size-11 rounded-lg bg-brand-surface flex items-center justify-center shrink-0">
-                    <StackTile stack={row.stack} className="size-8 text-[11px]" />
+                    <StackTile stack={stub.stack} className="size-8 text-[11px]" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <span className="inline-flex items-center gap-1 text-[11px] text-brand-text-muted mb-0.5">
                       <BookOpen className="size-3" /> Path
                     </span>
-                    <p className="font-semibold text-sm truncate text-brand-text">{row.title}</p>
+                    <p className="font-semibold text-sm truncate text-brand-text">{stub.title}</p>
                   </div>
                   <div className="w-24 text-xs shrink-0">
-                    <p className="text-[10px] text-brand-text-subtle mb-1">Content</p>
-                    <p className="flex items-center gap-1 text-brand-text">
-                      <FileText className="size-3" /> {row.content}
-                    </p>
+                    <p className="text-[10px] text-brand-text-subtle mb-1">Units</p>
+                    <p className="text-brand-text-subtle">-</p>
                   </div>
                   <div className="w-20 text-xs shrink-0">
                     <p className="text-[10px] text-brand-text-subtle mb-1">Completion</p>
-                    {row.completion === null ? (
-                      <p className="text-brand-text-subtle">-</p>
-                    ) : (
-                      <RadialProgress value={row.completion} />
-                    )}
+                    <p className="text-brand-text-subtle">-</p>
                   </div>
                   <div className="w-20 text-xs shrink-0">
-                    <p className="text-[10px] text-brand-text-subtle mb-1">Deadline</p>
-                    <p
-                      className={`flex items-center gap-1 ${
-                        row.urgent ? "text-brand-destructive font-medium" : "text-brand-text"
-                      }`}
-                    >
-                      <Clock className="size-3" /> {row.deadline}
-                    </p>
+                    <p className="text-[10px] text-brand-text-subtle mb-1">Problems</p>
+                    <p className="text-brand-text-subtle">-</p>
                   </div>
-                  <motion.button
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.97 }}
-                    transition={SP}
-                    className={`text-xs font-medium px-4 py-2 rounded-lg cursor-pointer transition-all duration-500 shrink-0 ${
-                      row.cta === "Continue"
-                        ? "bg-brand-text text-white hover:bg-brand-text/90"
-                        : "border border-brand-border hover:bg-brand-surface text-brand-text"
-                    }`}
-                  >
-                    {row.cta}
-                  </motion.button>
+                  <span className="text-[10px] font-medium px-3 py-1.5 rounded-lg border border-brand-border text-brand-text-muted shrink-0">
+                    Coming soon
+                  </span>
                 </div>
               ))}
             </div>
           </section>
 
           <section>
-            <SectionHeader title="New enrollment" />
+            <SectionHeader title="Featured units" tooltip="A selection of units picked from across your learning paths. Jump in anywhere to keep momentum going." />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {ENROLLMENTS.map((c) => (
-                <motion.div
-                  key={c.title}
-                  whileHover={{ y: -2 }}
-                  transition={SP}
-                  className="border border-brand-border rounded-xl overflow-hidden cursor-pointer transition-all duration-500"
-                >
-                  <div className="h-28 relative bg-brand-surface flex items-center justify-center">
-                    <StackTile stack={c.stack} className="size-10 text-sm" />
-                    <span className="absolute top-2 left-2 bg-brand-text/70 text-white text-[10px] px-2 py-0.5 rounded-md">
-                      {c.materials}
-                    </span>
-                  </div>
-                  <div className="p-4">
-                    <span className="inline-flex items-center gap-1 text-[11px] text-brand-text-muted mb-1">
-                      <BookOpen className="size-3" /> Path
-                    </span>
-                    <p className="font-semibold text-sm leading-snug mb-2 h-10 text-brand-text">
-                      {c.title}
-                    </p>
-                    <div className="flex gap-1.5 mb-2">
-                      {c.tags.map((t) => (
-                        <span
-                          key={t}
-                          className="text-[10px] bg-brand-surface text-brand-text-muted px-2 py-0.5 rounded-md"
-                        >
-                          {t}
-                        </span>
-                      ))}
+              {featuredUnits.map(({ path, unit }) => {
+                const completion = unit.total > 0 ? Math.round((unit.solved / unit.total) * 100) : 0;
+                const status = unit.solved === 0 ? "Not started" : completion === 100 ? "Completed" : "In progress";
+                return (
+                  <motion.div
+                    key={`${path.slug}-${unit.unit}`}
+                    whileHover={{ y: -2 }}
+                    transition={SP}
+                    className="border border-brand-border rounded-xl overflow-hidden cursor-pointer transition-all duration-500"
+                  >
+                    <div className="h-28 relative bg-brand-surface flex items-center justify-center">
+                      <StackTile stack={path.stack} className="size-10 text-sm" iconSize={40} />
+                      <span className="absolute top-2 left-2 bg-brand-text/70 text-white text-[10px] px-2 py-0.5 rounded-md">
+                        {unit.total} {unit.total === 1 ? "problem" : "problems"}
+                      </span>
                     </div>
-                    <p className="text-xs text-brand-text-subtle">Not Started</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-            <div className="h-1 bg-brand-surface rounded-full mt-4 w-full">
-              <div className="h-1 bg-brand-text-subtle rounded-full w-1/4" />
+                    <div className="p-4">
+                      <span className="inline-flex items-center gap-1 text-[11px] text-brand-text-muted mb-1">
+                        <BookOpen className="size-3" /> {path.title}
+                      </span>
+                      <p className="font-semibold text-sm leading-snug mb-1 text-brand-text">
+                        {unit.label}
+                      </p>
+                      {unit.description && (
+                        <p className="text-[11px] text-brand-text-muted leading-snug mb-2 line-clamp-2">
+                          {unit.description}
+                        </p>
+                      )}
+                      <div className="flex gap-1.5 mb-2">
+                        <span className="text-[10px] bg-brand-surface text-brand-text-muted px-2 py-0.5 rounded-md capitalize">
+                          {path.stack}
+                        </span>
+                        <span className="text-[10px] bg-brand-surface text-brand-text-muted px-2 py-0.5 rounded-md capitalize">
+                          {path.difficulty}
+                        </span>
+                      </div>
+                      <p className="text-xs text-brand-text-subtle">{status}</p>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           </section>
         </div>
@@ -343,7 +429,7 @@ export default function DashboardPage() {
           <div className="border border-brand-border rounded-xl p-4">
             <div className="flex items-center gap-1.5 mb-3">
               <h3 className="font-semibold text-sm text-brand-text">Goals</h3>
-              <Info className="size-3.5 text-brand-text-subtle" />
+              <InfoTooltip text="Your daily problem-solving target. Consistent practice is the fastest way to level up." />
             </div>
             <div className="flex justify-center mb-3">
               <div className="relative size-20">
