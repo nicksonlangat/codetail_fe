@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Info, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { getActivity } from "@/lib/api/auth";
 
 const SP = { type: "spring" as const, stiffness: 400, damping: 25 };
 
@@ -14,9 +16,6 @@ const LEVEL_BG = [
   "bg-brand-primary",
 ];
 const CALENDAR_DAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
-const MOCK_ACTIVITY_PATTERN = [
-  0, 1, 3, 2, 0, 4, 1, 2, 0, 3, 1, 0, 2, 4, 1, 0, 3, 2, 1, 0, 4, 2, 0, 1, 3, 0, 2, 1, 4, 0, 2,
-];
 
 export function HeatmapCard() {
   const now = useMemo(() => new Date(), []);
@@ -25,6 +24,12 @@ export function HeatmapCard() {
 
   const isCurrentMonth =
     cursor.getFullYear() === now.getFullYear() && cursor.getMonth() === now.getMonth();
+
+  const { data: activityData = {} } = useQuery({
+    queryKey: ["activity", cursor.getFullYear(), cursor.getMonth() + 1],
+    queryFn: () => getActivity(cursor.getFullYear(), cursor.getMonth() + 1),
+    staleTime: 60_000,
+  });
 
   function prevMonth() {
     setCursor((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
@@ -44,8 +49,8 @@ export function HeatmapCard() {
     const cells: ({ day: number; level: number; count: number } | null)[] = Array(startOffset).fill(null);
     for (let d = 1; d <= daysInMonth; d++) {
       const isFuture = isCurrentMonth && d > now.getDate();
-      const count = isFuture ? 0 : MOCK_ACTIVITY_PATTERN[(d - 1) % MOCK_ACTIVITY_PATTERN.length];
-      const level = count === 0 ? 0 : count <= 1 ? 1 : count <= 2 ? 2 : count <= 3 ? 3 : 4;
+      const count = isFuture ? 0 : (activityData[d] ?? 0);
+      const level = count === 0 ? 0 : count === 1 ? 1 : count === 2 ? 2 : count <= 4 ? 3 : 4;
       total += count;
       cells.push({ day: d, level, count });
     }
@@ -54,17 +59,14 @@ export function HeatmapCard() {
     const w: (typeof cells)[] = [];
     for (let i = 0; i < cells.length; i += 7) w.push(cells.slice(i, i + 7));
     return { weeks: w, monthTotal: total };
-  }, [cursor, isCurrentMonth, now]);
+  }, [cursor, isCurrentMonth, now, activityData]);
 
   const monthLabel = cursor.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 
   return (
     <div className="border border-brand-border rounded-xl p-4">
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-1.5">
-          <h3 className="font-semibold text-sm text-brand-text">Activity</h3>
-          <Info className="size-3.5 text-brand-text-subtle" />
-        </div>
+        <h3 className="font-semibold text-sm text-brand-text">Activity</h3>
         <div className="flex items-center gap-0.5">
           <motion.button
             whileTap={{ scale: 0.9 }}

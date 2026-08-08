@@ -3,11 +3,13 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { SignupSteps } from "@/components/auth/signup-steps";
 import { OtpInput } from "@/components/auth/otp-input";
 import { verifyOtp, resendOtp, getMe, getErrorMessage } from "@/lib/api/auth";
 import { useAuthStore } from "@/stores/auth-store";
+import { toast } from "sonner";
 
 const SPRING = { type: "spring" as const, stiffness: 400, damping: 25 };
 const RESEND_SECONDS = 30;
@@ -19,6 +21,7 @@ function VerifyForm() {
 
   const [code, setCode] = useState<string[]>(Array(6).fill(""));
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(RESEND_SECONDS);
 
@@ -49,12 +52,16 @@ function VerifyForm() {
   }
 
   async function handleResend() {
-    if (cooldown > 0) return;
-    setCooldown(RESEND_SECONDS);
+    if (cooldown > 0 || resending) return;
+    setResending(true);
     try {
       await resendOtp(email);
-    } catch {
-      // resend failures aren't shown inline; the cooldown reset is enough feedback
+      setCooldown(RESEND_SECONDS);
+      toast.success("Code sent. Check your inbox.");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Failed to resend code. Try again."));
+    } finally {
+      setResending(false);
     }
   }
 
@@ -99,7 +106,7 @@ function VerifyForm() {
         transition={SPRING}
         className="w-full h-10 mt-6 rounded-lg border border-transparent bg-brand-primary text-white text-[13px] font-medium cursor-pointer outline-none transition-all duration-500 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-default hover:bg-brand-primary-hover focus-visible:border-white/50 shadow-sm hover:shadow-lg hover:shadow-brand-primary/20"
       >
-        {loading ? <Loader2 className="size-4 animate-spin" /> : "Verify email"}
+        {loading ? <Spinner /> : "Verify email"}
       </motion.button>
 
       <p className="text-[12px] text-brand-text-muted mt-8 text-center">
@@ -107,10 +114,11 @@ function VerifyForm() {
         <button
           type="button"
           onClick={handleResend}
-          disabled={cooldown > 0}
-          className="text-brand-text font-medium cursor-pointer outline-none transition-all duration-500 hover:text-brand-primary focus-visible:text-brand-primary disabled:text-brand-text-subtle disabled:cursor-default"
+          disabled={cooldown > 0 || resending}
+          className="inline-flex items-center gap-1.5 text-brand-text font-medium cursor-pointer outline-none transition-all duration-500 hover:text-brand-primary focus-visible:text-brand-primary disabled:text-brand-text-subtle disabled:cursor-default"
         >
-          {cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
+          {resending && <Spinner size="xs" className="text-brand-text-subtle" />}
+          {resending ? "Sending..." : cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
         </button>
       </p>
     </div>

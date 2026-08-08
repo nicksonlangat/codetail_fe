@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import axios from "axios";
-import { BookOpen, Loader2 } from "lucide-react";
+import { BookOpen } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { getSolution } from "@/lib/api/submissions";
 import { getErrorMessage } from "@/lib/api/client";
 import { UpgradeModal } from "@/components/paths/upgrade-modal";
@@ -59,7 +60,7 @@ export function SolutionPanel({ problemId, initialSolution }: SolutionPanelProps
         disabled={loading}
         className="flex items-center gap-1.5 text-[12px] font-medium text-white bg-brand-primary px-3.5 py-2 rounded-lg cursor-pointer outline-none transition-all duration-500 hover:bg-brand-primary-hover disabled:opacity-60 disabled:cursor-default"
       >
-        {loading && <Loader2 className="size-3.5 animate-spin" />}
+        {loading && <Spinner size="sm" />}
         View solution
       </button>
 

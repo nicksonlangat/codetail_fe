@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { SocialButtons } from "@/components/auth/social-buttons";
 import { Input } from "@/components/ui/input";
 import { login as apiLogin, getMe, getErrorMessage } from "@/lib/api/auth";
@@ -132,7 +133,7 @@ export default function SignInPage() {
           transition={SPRING}
           className="w-full h-10 rounded-lg border border-transparent bg-brand-primary text-white text-[13px] font-medium cursor-pointer outline-none transition-all duration-500 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-default hover:bg-brand-primary-hover focus-visible:border-white/50 shadow-sm hover:shadow-lg hover:shadow-brand-primary/20"
         >
-          {loading ? <Loader2 className="size-4 animate-spin" /> : "Continue"}
+          {loading ? <Spinner /> : "Continue"}
         </motion.button>
       </form>
 

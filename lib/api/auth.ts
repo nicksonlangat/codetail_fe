@@ -61,9 +61,17 @@ export interface RankResponse {
   badges: string[];
   streak_days: number;
   problems_solved: number;
+  active_days: number[];
 }
 
 export async function getRank() {
   const res = await apiClient.get<RankResponse>("/auth/me/rank");
   return res.data;
+}
+
+export async function getActivity(year: number, month: number): Promise<Record<number, number>> {
+  const res = await apiClient.get<{ activity: Record<number, number> }>("/auth/me/activity", {
+    params: { year, month },
+  });
+  return res.data.activity;
 }

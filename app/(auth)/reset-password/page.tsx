@@ -4,7 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader2, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Check } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { Input } from "@/components/ui/input";
 import { OtpInput } from "@/components/auth/otp-input";
 import { PasswordStrength, passwordScore } from "@/components/auth/password-strength";
@@ -211,7 +212,7 @@ function ResetPasswordForm() {
                 transition={SPRING}
                 className="w-full h-10 rounded-lg border border-transparent bg-brand-primary text-white text-[13px] font-medium cursor-pointer outline-none transition-all duration-500 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-default hover:bg-brand-primary-hover focus-visible:border-white/50 shadow-sm hover:shadow-lg hover:shadow-brand-primary/20"
               >
-                {loading ? <Loader2 className="size-4 animate-spin" /> : "Reset password"}
+                {loading ? <Spinner /> : "Reset password"}
               </motion.button>
             </form>
           </motion.div>

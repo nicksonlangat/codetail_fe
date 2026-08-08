@@ -2,21 +2,34 @@
 
 import { motion } from "framer-motion";
 import {
-  Coins, Award, GraduationCap, BookOpen, FileText, Clock, ArrowRight,
+  Coins, Award, Trophy, BookOpen, FileText, Clock, ArrowRight,
   ClipboardCheck, Rocket, Info,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { StreakCard } from "@/components/dashboard/streak-card";
 import { HeatmapCard } from "@/components/dashboard/heatmap-card";
 import { StackTile } from "@/components/dashboard/stack-tile";
 import { useAuthStore } from "@/stores/auth-store";
+import { getRank } from "@/lib/api/auth";
+import { getWeeklyLeaderboard } from "@/lib/api/leaderboard";
 
 const SP = { type: "spring" as const, stiffness: 400, damping: 25 };
 
-const STATS = [
-  { icon: Coins, value: 100, label: "Points" },
-  { icon: Award, value: 32, label: "Badges" },
-  { icon: GraduationCap, value: 12, label: "Certificates" },
+const BADGE_PRIORITY = [
+  { id: "first-blood",  name: "First Blood",   hint: "Solve your first problem" },
+  { id: "unit-clear",   name: "Unit Clear",     hint: "Complete all problems in a unit" },
+  { id: "debugger",     name: "Debugger",       hint: "Solve 5 fix-the-bug problems" },
+  { id: "hard-mode",    name: "Hard Mode",      hint: "Solve 5 hard problems" },
+  { id: "week-warrior", name: "Week Warrior",   hint: "Maintain a 7-day streak" },
+  { id: "the-50",       name: "The 50",         hint: "Solve 50 problems total" },
+  { id: "path-blazer",  name: "Path Blazer",    hint: "Complete a full learning path" },
+  { id: "pythonista",   name: "Pythonista",     hint: "Complete the Python path" },
+  { id: "django-dev",   name: "Django Dev",     hint: "Complete the Django path" },
 ];
+
+function getNextBadge(earned: string[]) {
+  return BADGE_PRIORITY.find((b) => !earned.includes(b.id)) ?? null;
+}
 
 const IN_PROGRESS = [
   { stack: "python", title: "Mastering Python: Data Structures Deep Dive", content: "5 Problems", completion: null as number | null, deadline: "1 Day", urgent: false, cta: "Start" },
@@ -53,7 +66,7 @@ function RadialProgress({ value }: { value: number }) {
   );
 }
 
-function SidebarStat({ icon: Icon, value, label }: { icon: typeof Clock; value: number; label: string }) {
+function SidebarStat({ icon: Icon, value, label }: { icon: typeof Clock; value: number | string; label: string }) {
   return (
     <motion.div
       whileHover={{ y: -2 }}
@@ -93,36 +106,88 @@ function SectionHeader({ title, showViewAll = true }: { title: string; showViewA
   );
 }
 
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+function getSubtitle() {
+  const h = new Date().getHours();
+  if (h < 12) return "Start strong today.";
+  if (h < 18) return "Pick up where you left off.";
+  return "One more before you call it a day.";
+}
+
+function getFormattedDate() {
+  return new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
+
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const firstName = user?.name?.split(" ")[0] ?? "there";
+  const greeting = getGreeting();
+  const subtitle = getSubtitle();
+  const date = getFormattedDate();
+  const nextBadge = getNextBadge(user?.badges ?? []);
+
+  const { data: rank } = useQuery({
+    queryKey: ["rank"],
+    queryFn: getRank,
+    staleTime: 60_000,
+  });
+
+  const { data: leaderboard } = useQuery({
+    queryKey: ["leaderboard-weekly"],
+    queryFn: getWeeklyLeaderboard,
+    staleTime: 60_000,
+  });
 
   return (
     <div className="w-full max-w-6xl px-6 py-8">
       <div className="flex items-start justify-between mb-8 gap-6">
         <div>
+          <p className="text-[11px] text-brand-text-subtle font-mono mb-1.5">{date}</p>
           <h1 className="text-[28px] font-bold flex items-center gap-2 text-brand-text">
-            Good morning, {firstName} <span>👋</span>
+            {greeting}, {firstName} <span>👋</span>
           </h1>
-          <p className="text-brand-text-muted mt-1 text-sm">
-            Welcome to Codetail, check your priority learning.
-          </p>
+          <p className="text-brand-text-muted mt-1 text-sm">{subtitle}</p>
         </div>
         <div className="flex gap-3 shrink-0">
-          {STATS.map((s) => (
-            <div
-              key={s.label}
-              className="flex items-center gap-3 border border-brand-border rounded-xl px-5 py-3"
-            >
-              <div className="size-9 rounded-lg bg-brand-warning/10 flex items-center justify-center shrink-0">
-                <s.icon className="size-4 text-brand-warning" />
-              </div>
-              <div>
-                <p className="text-lg font-bold leading-none text-brand-text">{s.value}</p>
-                <p className="text-xs text-brand-text-muted whitespace-nowrap">{s.label}</p>
-              </div>
+          <div className="flex items-center gap-3 border border-brand-border rounded-xl px-5 py-3">
+            <div className="size-9 rounded-lg bg-brand-warning/10 flex items-center justify-center shrink-0">
+              <Coins className="size-4 text-brand-warning" />
             </div>
-          ))}
+            <div>
+              <p className="text-lg font-bold leading-none text-brand-text">{user?.xp ?? 0}</p>
+              <p className="text-xs text-brand-text-muted whitespace-nowrap">XP Points</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 border border-brand-border rounded-xl px-5 py-3">
+            <div className="size-9 rounded-lg bg-brand-warning/10 flex items-center justify-center shrink-0">
+              <Award className="size-4 text-brand-warning" />
+            </div>
+            <div>
+              <p className="text-lg font-bold leading-none text-brand-text">{user?.badges.length ?? 0}</p>
+              <p className="text-xs text-brand-text-muted whitespace-nowrap">Badges</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 border border-brand-border rounded-xl px-5 py-3">
+            <div className="size-9 rounded-lg bg-brand-warning/10 flex items-center justify-center shrink-0">
+              <Trophy className="size-4 text-brand-warning" />
+            </div>
+            <div>
+              <p className="text-lg font-bold leading-none text-brand-text">
+                {nextBadge ? nextBadge.name : "All earned!"}
+              </p>
+              <p className="text-xs text-brand-text-muted whitespace-nowrap">
+                {nextBadge ? nextBadge.hint : "You got them all"}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -247,9 +312,32 @@ export default function DashboardPage() {
         </div>
 
         <div className="col-span-4 lg:col-span-1 space-y-4">
-          <SidebarStat icon={ClipboardCheck} value={120} label="Problems solved" />
-          <SidebarStat icon={Clock} value={44} label="Learning hours" />
-          <StreakCard />
+          <SidebarStat icon={ClipboardCheck} value={rank?.problems_solved ?? 0} label="Problems solved" />
+
+          <div className="border border-brand-border rounded-xl p-4">
+            <p className="font-semibold text-sm text-brand-text mb-3">Leaderboard</p>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-brand-text-subtle w-5 shrink-0">
+                {leaderboard?.your_rank ? `#${leaderboard.your_rank}` : "—"}
+              </span>
+              <div className="size-8 rounded-full bg-brand-primary text-white flex items-center justify-center text-[11px] font-semibold shrink-0">
+                {user?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate text-brand-text">{user?.name}</p>
+                <p className="text-[11px] text-brand-text-subtle capitalize">{user?.tier} · this week</p>
+              </div>
+              <span className="flex items-center gap-1 text-[11px] font-semibold text-brand-warning bg-brand-warning/10 px-2 py-0.5 rounded-full shrink-0">
+                <span className="size-1.5 rounded-full bg-brand-warning" />
+                {leaderboard?.your_xp_week ?? 0} XP
+              </span>
+            </div>
+            {!leaderboard?.your_rank && (
+              <p className="text-[11px] text-brand-text-subtle mt-3">Solve a problem today to get ranked.</p>
+            )}
+          </div>
+
+          <StreakCard streakDays={user?.streak_days ?? 0} activeDays={rank?.active_days ?? []} />
           <HeatmapCard />
 
           <div className="border border-brand-border rounded-xl p-4">
@@ -283,9 +371,8 @@ export default function DashboardPage() {
             </p>
             <div className="border-t border-brand-border pt-3 text-center">
               <p className="text-xs text-brand-text-muted">
-                Your Longest streak: <span className="font-semibold text-brand-text">1 Day</span>
+                Current streak: <span className="font-semibold text-brand-text">{user?.streak_days ?? 0} {(user?.streak_days ?? 0) === 1 ? "day" : "days"}</span>
               </p>
-              <p className="text-[11px] text-brand-text-subtle">(28 Sep 23 - 4 Oct 23)</p>
               <a
                 href="#"
                 className="text-xs font-medium text-brand-primary underline mt-1 inline-block cursor-pointer transition-all duration-500 hover:text-brand-primary-hover"
@@ -295,25 +382,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="border border-brand-border rounded-xl p-4">
-            <div className="flex items-center gap-1.5 mb-3">
-              <h3 className="font-semibold text-sm text-brand-text">Leaderboard</h3>
-              <Info className="size-3.5 text-brand-text-subtle" />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-brand-text-subtle w-4">#1</span>
-              <div className="size-8 rounded-full bg-brand-primary text-white flex items-center justify-center text-[11px] font-semibold shrink-0">
-                MS
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate text-brand-text">Maria Silva</p>
-                <p className="text-[11px] text-brand-text-subtle truncate">Software Engineer</p>
-              </div>
-              <span className="flex items-center gap-1 text-[11px] font-semibold text-brand-warning bg-brand-warning/10 px-2 py-0.5 rounded-full shrink-0">
-                <span className="size-1.5 rounded-full bg-brand-warning" /> 100 XP
-              </span>
-            </div>
-          </div>
         </div>
       </div>
     </div>
