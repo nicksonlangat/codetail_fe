@@ -7,6 +7,7 @@ import {
   ClipboardCheck, Rocket, Info,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { StreakCard } from "@/components/dashboard/streak-card";
 import { HeatmapCard } from "@/components/dashboard/heatmap-card";
 import { StackTile } from "@/components/dashboard/stack-tile";
@@ -144,6 +145,72 @@ function SectionHeader({ title, tooltip, showViewAll = true }: { title: string; 
   );
 }
 
+interface Nudge {
+  tag: string;
+  tagColor: string;
+  title: string;
+  message: string;
+  cta: string;
+  href: string;
+}
+
+function getNudge(
+  problemsSolved: number,
+  streak: number,
+  activeToday: boolean,
+  xpToday: number,
+  nextBadge: { name: string; hint: string } | null,
+): Nudge {
+  if (problemsSolved === 0) {
+    return {
+      tag: "Get started",
+      tagColor: "bg-brand-primary text-white",
+      title: "Your first problem is waiting.",
+      message: "Solve it, get AI feedback like a senior dev would give, and earn your first badge. Takes 5 minutes.",
+      cta: "Solve your first problem",
+      href: "/paths",
+    };
+  }
+  if (streak > 0 && !activeToday) {
+    return {
+      tag: "Streak at risk",
+      tagColor: "bg-brand-warning text-white",
+      title: `Your ${streak}-day streak is on the line.`,
+      message: "You haven't solved anything today. One problem is all it takes to keep it alive.",
+      cta: "Solve now",
+      href: "/paths",
+    };
+  }
+  if (xpToday > 0 && nextBadge) {
+    return {
+      tag: "On a roll",
+      tagColor: "bg-brand-success text-white",
+      title: `${xpToday} XP earned today.`,
+      message: `Next milestone: ${nextBadge.name}. ${nextBadge.hint}.`,
+      cta: "Keep going",
+      href: "/paths",
+    };
+  }
+  if (nextBadge) {
+    return {
+      tag: "Next milestone",
+      tagColor: "bg-brand-primary text-white",
+      title: `Earn the ${nextBadge.name} badge.`,
+      message: nextBadge.hint + ". Jump into a path and make progress toward it today.",
+      cta: "Start now",
+      href: "/paths",
+    };
+  }
+  return {
+    tag: "All badges earned",
+    tagColor: "bg-brand-warning text-white",
+    title: "You've earned every badge.",
+    message: "You're at the top. Keep solving to hold your place on the leaderboard.",
+    cta: "View leaderboard",
+    href: "/paths",
+  };
+}
+
 function getGreeting() {
   const h = new Date().getHours();
   if (h < 12) return "Good morning";
@@ -187,6 +254,18 @@ export default function DashboardPage() {
     queryFn: getDashboardPaths,
     staleTime: 60_000,
   });
+
+  const nudge = useMemo(() => {
+    const todayWeekday = (new Date().getDay() + 6) % 7;
+    const activeToday = rank?.active_days?.includes(todayWeekday) ?? false;
+    return getNudge(
+      rank?.problems_solved ?? 0,
+      user?.streak_days ?? 0,
+      activeToday,
+      rank?.xp_today ?? 0,
+      nextBadge,
+    );
+  }, [rank, user, nextBadge]);
 
   const featuredUnits = useMemo(() => {
     const all: { path: (typeof dashboardPaths)[0]["path"]; unit: (typeof dashboardPaths)[0]["units"][0] }[] = [];
@@ -243,23 +322,26 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="bg-brand-primary-tint rounded-2xl px-6 py-5 mb-8">
-        <div className="flex items-center gap-2 mb-1.5">
-          <span className="bg-brand-primary text-white text-[11px] font-semibold px-2.5 py-0.5 rounded-full">
-            New
-          </span>
-          <p className="font-bold text-[15px] text-brand-text">Feature Discussion</p>
+      <div className="bg-brand-primary-tint border border-brand-primary/40 rounded-2xl px-6 py-5 mb-8 flex items-center justify-between gap-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${nudge.tagColor}`}>
+              {nudge.tag}
+            </span>
+            <p className="font-bold text-[15px] text-brand-text">{nudge.title}</p>
+          </div>
+          <p className="text-sm text-brand-text-muted">{nudge.message}</p>
         </div>
-        <p className="text-sm text-brand-text">
-          The learning content area now includes an AI chat that can explain any problem in real
-          time.{" "}
-          <a
-            href="#"
-            className="underline font-medium text-brand-primary cursor-pointer transition-all duration-500 hover:text-brand-primary-hover"
+        <Link href={nudge.href} className="shrink-0">
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            transition={SP}
+            className="text-sm font-medium px-4 py-2 rounded-lg bg-brand-text text-white cursor-pointer transition-all duration-500 hover:bg-brand-text/90 whitespace-nowrap"
           >
-            Go to detail →
-          </a>
-        </p>
+            {nudge.cta}
+          </motion.button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-4 gap-6">
@@ -303,18 +385,20 @@ export default function DashboardPage() {
                         <ClipboardCheck className="size-3" /> {path.problem_count}
                       </p>
                     </div>
-                    <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      transition={SP}
-                      className={`text-xs font-medium px-4 py-2 rounded-lg cursor-pointer transition-all duration-500 shrink-0 ${
-                        cta === "Continue"
-                          ? "bg-brand-text text-white hover:bg-brand-text/90"
-                          : "border border-brand-border hover:bg-brand-surface text-brand-text"
-                      }`}
-                    >
-                      {cta}
-                    </motion.button>
+                    <Link href={`/paths/${path.slug}`}>
+                      <motion.button
+                        whileHover={{ scale: 1.03 }}
+                        whileTap={{ scale: 0.97 }}
+                        transition={SP}
+                        className={`text-xs font-medium px-4 py-2 rounded-lg cursor-pointer transition-all duration-500 shrink-0 ${
+                          cta === "Continue"
+                            ? "bg-brand-text text-white hover:bg-brand-text/90"
+                            : "border border-brand-border hover:bg-brand-surface text-brand-text"
+                        }`}
+                      >
+                        {cta}
+                      </motion.button>
+                    </Link>
                   </div>
                 );
               })}
@@ -356,8 +440,8 @@ export default function DashboardPage() {
                 const completion = unit.total > 0 ? Math.round((unit.solved / unit.total) * 100) : 0;
                 const status = unit.solved === 0 ? "Not started" : completion === 100 ? "Completed" : "In progress";
                 return (
+                  <Link key={`${path.slug}-${unit.unit}`} href={`/paths/${path.slug}/${unit.unit}`} className="block">
                   <motion.div
-                    key={`${path.slug}-${unit.unit}`}
                     whileHover={{ y: -2 }}
                     transition={SP}
                     className="border border-brand-border rounded-xl overflow-hidden cursor-pointer transition-all duration-500"
@@ -391,6 +475,7 @@ export default function DashboardPage() {
                       <p className="text-xs text-brand-text-subtle">{status}</p>
                     </div>
                   </motion.div>
+                  </Link>
                 );
               })}
             </div>
