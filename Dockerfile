@@ -11,6 +11,8 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ARG BUILD_DATE=0
+ENV BUILD_DATE=$BUILD_DATE
 ARG NEXT_PUBLIC_API_URL=https://api.codetail.cc
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN npm run build
