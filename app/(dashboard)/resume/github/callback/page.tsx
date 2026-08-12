@@ -1,12 +1,20 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { connectGitHub } from "@/lib/api/github";
 
 type State = "connecting" | "success" | "error";
 
 export default function GitHubCallbackPage() {
+  return (
+    <Suspense>
+      <GitHubCallback />
+    </Suspense>
+  );
+}
+
+function GitHubCallback() {
   const router = useRouter();
   const params = useSearchParams();
   const ran = useRef(false);

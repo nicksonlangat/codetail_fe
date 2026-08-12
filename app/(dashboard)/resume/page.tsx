@@ -2865,6 +2865,12 @@ export default function ResumePage() {
               if (current) {
                 appendProjects({
                   profile: current.profile,
+                  email: current.email,
+                  phone: current.phone,
+                  location: current.location,
+                  website: current.website,
+                  linkedin: current.linkedin,
+                  github: current.github,
                   experience: current.experience,
                   education: current.education,
                   skills: current.skills,
