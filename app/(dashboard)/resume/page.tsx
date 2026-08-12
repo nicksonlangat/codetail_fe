@@ -1913,7 +1913,7 @@ const T_SAMPLE = {
     Frontend:  ["TypeScript", "React", "Next.js", "Vue"],
     DevOps:    ["AWS", "Docker", "CI/CD", "NGINX", "Git"],
     Databases: ["PostgreSQL", "MySQL", "Redis"],
-  },
+  } as Record<string, string[]>,
   education: [
     { degree: "BSc Computer Science", institution: "Moi University", dates: "2012-2016", details: "2nd Class Upper" },
   ],
