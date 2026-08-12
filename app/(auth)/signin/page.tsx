@@ -45,11 +45,11 @@ export default function SignInPage() {
       router.push("/dashboard");
     } catch (err) {
       const status = axios.isAxiosError(err) ? err.response?.status : undefined;
-      setError(
-        status === 403
-          ? getErrorMessage(err, "Please verify your email first")
-          : getErrorMessage(err, "Invalid email or password")
-      );
+      if (status === 403) {
+        router.push(`/verify?email=${encodeURIComponent(email)}`);
+        return;
+      }
+      setError(getErrorMessage(err, "Invalid email or password"));
       triggerShake();
     } finally {
       setLoading(false);
