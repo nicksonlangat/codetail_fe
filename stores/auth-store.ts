@@ -12,6 +12,7 @@ export interface User {
   xp: number;
   badges: string[];
   streak_days: number;
+  github_installation_id: string | null;
 }
 
 interface AuthState {

@@ -19,6 +19,7 @@ export interface UserResponse {
   xp: number;
   badges: string[];
   streak_days: number;
+  github_installation_id: string | null;
   created_at: string;
 }
 

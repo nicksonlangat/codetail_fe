@@ -20,6 +20,7 @@ Colors live in `app/globals.css` as Tailwind v4 `@theme` tokens, prefixed `brand
 - No visible scrollbars — hidden globally via `scrollbar-width: none` + `::-webkit-scrollbar { display: none; }` in `globals.css`. Content stays scrollable, just no scrollbar chrome.
 - No em dashes in copy (headlines, body text, labels, toasts). Use a period or comma instead; use `·` for inline meta separators. A "—" as a placeholder glyph for an empty value (e.g. a null table cell) is fine, that's not prose.
 - **Form inputs: always use `components/ui/input.tsx`, never hand-roll input classNames.** `bg-brand-surface` at rest (transparent border), `bg-white` + `border-brand-primary/60` on focus. No focus rings, border-color change only, `outline-none` to suppress the native browser outline. Buttons/links follow the same border-or-color-only rule for focus-visible states, no `ring-*` utilities.
+- **Buttons that call an API must show a `<Spinner>` while in-flight.** Replace the button's icon with `<Spinner size="sm" />` during the loading state. Import from `@/components/ui/spinner`. The button must also be `disabled` while loading.
 
 ## Chart palette
 
@@ -60,6 +61,10 @@ Not a tutorial-site voice, not an AI-assistant voice. Calibration reference:
   surprising part after is punchier. Lead with the gotcha, not the setup.
 
 Before shipping any new article, grep it for `—`, `–`, and the banned-phrase list above.
+
+## Engineering Rules — STRICTLY ENFORCED
+
+- **Never write hacks to paper over symptoms. Always fix the root cause.** If a crash is caused by stale data, write a migration. If a type mismatch causes a bug, fix the mismatch. Defensive fallbacks that silently hide broken state are not acceptable fixes.
 
 ## Notes
 

@@ -19,13 +19,29 @@ export interface ResumeSkillGroup {
   items: string[];
 }
 
+export interface ResumeProject {
+  name: string;
+  description: string;
+  tech: string;
+  github_url?: string;
+  live_url?: string;
+}
+
 export interface ResumeData {
   id: string;
   file_name: string;
+  template_id: string;
   profile: string;
+  email: string;
+  phone: string;
+  location: string;
+  website: string;
+  linkedin: string;
+  github: string;
   experience: ResumeExperience[];
   education: ResumeEducation[];
   skills: ResumeSkillGroup[];
+  projects: ResumeProject[];
   created_at: string;
   updated_at: string;
 }
@@ -70,10 +86,18 @@ export async function runResumeAnalysis(): Promise<ResumeAnalysis> {
 }
 
 export async function updateResume(data: {
+  template_id?: string;
   profile: string;
+  email: string;
+  phone: string;
+  location: string;
+  website: string;
+  linkedin: string;
+  github: string;
   experience: ResumeExperience[];
   education: ResumeEducation[];
   skills: ResumeSkillGroup[];
+  projects: ResumeProject[];
 }): Promise<ResumeData> {
   const res = await apiClient.patch<ResumeData>("/resume", data);
   return res.data;
