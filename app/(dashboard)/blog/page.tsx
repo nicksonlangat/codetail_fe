@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, BookOpen, Brain, Clock, Compass, LibraryBig, Network, Search, ShieldAlert, WandSparkles } from "lucide-react";
+import { ArrowRight, BookOpen, Boxes, Brain, Clock, Compass, LibraryBig, Network, Search, ShieldAlert, Sparkles, WandSparkles } from "lucide-react";
 import { RingProgress } from "@/components/ui/ring-progress";
 import { Input } from "@/components/ui/input";
 import { PythonLogo } from "@/components/brand/stack-logos";
@@ -12,6 +12,8 @@ import { systemDesignArticles } from "@/content/system-design/registry";
 import { llmsFromScratchArticles } from "@/content/llms-from-scratch/registry";
 import { webSecurityArticles } from "@/content/web-security/registry";
 import { aiEngineeringArticles } from "@/content/ai-engineering/registry";
+import { oopRemasterArticles } from "@/content/oop-remaster/registry";
+import { modernPythonArticles } from "@/content/modern-python/registry";
 import type { ArticleMeta } from "@/content/python/registry";
 
 const ENTRANCE = { type: "spring" as const, stiffness: 300, damping: 30 };
@@ -76,6 +78,26 @@ const SERIES: Series[] = [
     basePath: "/blog/ai-engineering",
     icon: WandSparkles,
     articles: aiEngineeringArticles,
+  },
+  {
+    slug: "oop-remaster",
+    title: "OOP Remaster",
+    subtitle: "Object-Oriented Python Rebuilt",
+    blurb:
+      "Eight articles rebuilding OOP from first principles. Objects, the four pillars, magic methods, and modern patterns. No prior OOP knowledge assumed.",
+    basePath: "/blog/oop-remaster",
+    icon: Boxes,
+    articles: oopRemasterArticles,
+  },
+  {
+    slug: "modern-python",
+    title: "Modern Python",
+    subtitle: "Write It the Way It Was Meant",
+    blurb:
+      "Every article is a before/after: the pattern you wrote in 3.5-3.8, and the cleaner version available now. Type hints, pattern matching, dataclasses, and the stdlib you are not using yet.",
+    basePath: "/blog/modern-python",
+    icon: Sparkles,
+    articles: modernPythonArticles,
   },
 ];
 

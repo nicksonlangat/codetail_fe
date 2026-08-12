@@ -9,6 +9,7 @@ import { CommandPalette } from "./command-palette";
 import { UserMenu } from "./user-menu";
 import { NotificationsMenu } from "./notifications-menu";
 import { useAuthStore } from "@/stores/auth-store";
+import { getMe } from "@/lib/api/auth";
 
 const SP = { type: "spring" as const, stiffness: 400, damping: 25 };
 const TAB_SPRING = { type: "spring" as const, stiffness: 400, damping: 25 };
@@ -25,7 +26,12 @@ const NAV_TABS = [
 export function AppTopbar() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
   const pathname = usePathname();
+
+  useEffect(() => {
+    getMe().then(setUser).catch(() => {});
+  }, []);
 
   // The challenge page (/paths/[slug]/[unit]/[problemId]) is a full-height
   // editor with its own focused header (back-nav, prev/next) — no room or

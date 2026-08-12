@@ -5,12 +5,14 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  tier: "free" | "pro";
+  tier: "free" | "pro" | "premium";
+  trial_ends_at: string | null;
   is_admin: boolean;
   is_verified: boolean;
   xp: number;
   badges: string[];
   streak_days: number;
+  github_installation_id: string | null;
 }
 
 interface AuthState {
