@@ -9,8 +9,7 @@ const SP = { type: "spring" as const, stiffness: 400, damping: 25 };
 
 const NAV_ITEMS = [
   { label: "Paths", href: "/paths" },
-  { label: "Playground", href: "/playground" },
-  { label: "Pricing", href: "/pricing" },
+  { label: "Pricing", href: "/#pricing" },
   { label: "Blog", href: "/blog" },
 ];
 
