@@ -48,7 +48,7 @@ export function Topbar() {
             <Link
               key={item.href}
               href={item.href}
-              className="text-sm font-medium text-brand-text-muted cursor-pointer transition-all duration-500 hover:text-brand-text"
+              className="text-sm font-medium text-brand-text-muted cursor-pointer transition-all duration-500 hover:text-brand-text hover:bg-brand-surface px-3 py-1.5 rounded-lg"
             >
               {item.label}
             </Link>
@@ -96,7 +96,7 @@ export function Topbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="text-sm font-medium text-brand-text-muted cursor-pointer transition-all duration-500 hover:text-brand-text py-2"
+                  className="text-sm font-medium text-brand-text-muted cursor-pointer transition-all duration-500 hover:text-brand-text hover:bg-brand-surface px-3 py-2 rounded-lg"
                 >
                   {item.label}
                 </Link>
