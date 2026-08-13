@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Sparkles, Building2, Briefcase, Download, Trash2,
+  WandWandSparkles, Building2, Briefcase, Download, Trash2,
   ArrowRight, TrendingUp, CheckCircle2, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -216,7 +216,7 @@ export function TailorTab() {
       <div className="lg:col-span-3 flex flex-col gap-4">
         <div className="flex items-start gap-3">
           <div className="size-9 rounded-xl bg-brand-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-            <Sparkles className="size-4 text-brand-primary" />
+            <WandSparkles className="size-4 text-brand-primary" />
           </div>
           <div>
             <h3 className="text-[15px] font-semibold text-brand-text">Tailor to a job</h3>
@@ -252,7 +252,7 @@ export function TailorTab() {
             </>
           ) : (
             <>
-              <Sparkles className="size-3.5" />
+              <WandSparkles className="size-3.5" />
               Tailor my resume
               <TrendingUp className="size-3.5 opacity-70" />
             </>
