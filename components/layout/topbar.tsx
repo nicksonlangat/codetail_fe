@@ -8,7 +8,9 @@ import { Menu, X } from "lucide-react";
 const SP = { type: "spring" as const, stiffness: 400, damping: 25 };
 
 const NAV_ITEMS = [
+  { label: "Dashboard", href: "/dashboard" },
   { label: "Paths", href: "/paths" },
+  { label: "Resume", href: "/resume" },
   { label: "Pricing", href: "/#pricing" },
   { label: "Blog", href: "/blog" },
 ];
