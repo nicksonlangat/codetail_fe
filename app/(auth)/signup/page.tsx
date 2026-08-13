@@ -48,7 +48,9 @@ export default function SignUpPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-brand-text">
           Create your account
         </h1>
-        <p className="text-[13px] text-brand-text-muted mt-1">Start mastering the craft</p>
+        <p className="text-[13px] text-brand-text-muted mt-1">
+          14-day Premium trial, free. No credit card required.
+        </p>
       </div>
 
       <SocialButtons action="Sign up" />

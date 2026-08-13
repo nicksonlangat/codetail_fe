@@ -8,9 +8,10 @@ import { Menu, X } from "lucide-react";
 const SP = { type: "spring" as const, stiffness: 400, damping: 25 };
 
 const NAV_ITEMS = [
+  { label: "Dashboard", href: "/dashboard" },
   { label: "Paths", href: "/paths" },
-  { label: "Playground", href: "/playground" },
-  { label: "Pricing", href: "/pricing" },
+  { label: "Resume", href: "/resume" },
+  { label: "Pricing", href: "/#pricing" },
   { label: "Blog", href: "/blog" },
 ];
 
@@ -47,7 +48,7 @@ export function Topbar() {
             <Link
               key={item.href}
               href={item.href}
-              className="text-sm font-medium text-brand-text-muted cursor-pointer transition-all duration-500 hover:text-brand-text"
+              className="text-sm font-medium text-brand-text-muted cursor-pointer transition-all duration-500 hover:text-brand-text hover:bg-brand-surface px-3 py-1.5 rounded-lg"
             >
               {item.label}
             </Link>
@@ -95,7 +96,7 @@ export function Topbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="text-sm font-medium text-brand-text-muted cursor-pointer transition-all duration-500 hover:text-brand-text py-2"
+                  className="text-sm font-medium text-brand-text-muted cursor-pointer transition-all duration-500 hover:text-brand-text hover:bg-brand-surface px-3 py-2 rounded-lg"
                 >
                   {item.label}
                 </Link>
