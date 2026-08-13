@@ -15,6 +15,7 @@ import {
   getResumeAnalysis, runResumeAnalysis,
   type ResumeData, type ResumeExperience, type ResumeEducation, type ResumeSkillGroup, type ResumeAnalysis, type ResumeProject,
 } from "@/lib/api/resume";
+import { TailorTab } from "@/components/resume/tailor-tab";
 import {
   getGitHubRepos, importGitHubRepos, disconnectGitHub,
   type GitHubRepo, type ImportedProject,
@@ -39,7 +40,7 @@ function ensureHttps(value: string): string {
 
 const SP = { type: "spring" as const, stiffness: 400, damping: 25 };
 
-const TABS = ["CV", "Editor", "Analysis", "Templates", "Skills", "Settings"];
+const TABS = ["CV", "Editor", "Analysis", "Templates", "Tailor", "Skills", "Settings"];
 
 const PERSONAL_INFO = [
   { label: "Location", value: "Nairobi, Kenya", icon: MapPin },
@@ -2832,7 +2833,21 @@ export default function ResumePage() {
                 />
               </motion.div>
             )}
-            {tab !== "CV" && tab !== "Editor" && tab !== "Analysis" && tab !== "Templates" && (
+            {tab === "Tailor" && (
+              <motion.div
+                key="tailor"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="flex-1"
+              >
+                {isPremium ? (
+                  <TailorTab />
+                ) : (
+                  <PremiumGate />
+                )}
+              </motion.div>
+            )}
+            {tab !== "CV" && tab !== "Editor" && tab !== "Analysis" && tab !== "Templates" && tab !== "Tailor" && (
               <motion.div
                 key={tab}
                 initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}

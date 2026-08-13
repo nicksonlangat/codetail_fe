@@ -113,3 +113,45 @@ export async function getAIAssist(
   const res = await apiClient.post<AIAssistResult>("/resume/ai-assist", { field_type, current_content, context });
   return res.data;
 }
+
+export interface TailoredResume {
+  id: string;
+  source_resume_id: string;
+  job_title: string;
+  company: string;
+  job_description: string;
+  template_id: string;
+  profile: string;
+  email: string;
+  phone: string;
+  location: string;
+  website: string;
+  linkedin: string;
+  github: string;
+  experience: ResumeExperience[];
+  education: ResumeEducation[];
+  skills: ResumeSkillGroup[];
+  projects: ResumeProject[];
+  ats_score_before: number;
+  ats_score_after: number;
+  changes: string[];
+  created_at: string;
+}
+
+export async function tailorResume(job_description: string): Promise<TailoredResume> {
+  const res = await apiClient.post<TailoredResume>("/resume/tailor", { job_description });
+  return res.data;
+}
+
+export async function listTailoredResumes(): Promise<TailoredResume[]> {
+  const res = await apiClient.get<TailoredResume[]>("/resume/tailored");
+  return res.data;
+}
+
+export async function deleteTailoredResume(id: string): Promise<void> {
+  await apiClient.delete(`/resume/tailored/${id}`);
+}
+
+export function getTailoredDownloadUrl(id: string): string {
+  return `/resume/tailored/${id}/download`;
+}
