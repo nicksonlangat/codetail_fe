@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  WandWandSparkles, Building2, Briefcase, Download, Trash2,
+  WandSparkles, Building2, Briefcase, Download, Trash2,
   ArrowRight, TrendingUp, CheckCircle2, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
