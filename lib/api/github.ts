@@ -15,6 +15,7 @@ export interface GitHubReposResponse {
   repos: GitHubRepo[];
   installation_id: string;
   repository_selection: "all" | "selected";
+  avatar_url: string;
 }
 
 export interface ImportedProject {
