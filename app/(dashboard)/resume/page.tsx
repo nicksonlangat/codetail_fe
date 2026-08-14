@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  MapPin, Mail, Briefcase, Download, Share2,
-  Edit3, GitFork, Link2, CheckCircle2, Upload,
+  MapPin, Mail, Download,
+  Edit3, Link2, CheckCircle2, Upload,
   FileText, WandSparkles, AlertCircle, ArrowRight,
   ChevronDown, ChevronRight, Plus, Trash2, X, Check,
 } from "lucide-react";
@@ -42,29 +42,77 @@ const SP = { type: "spring" as const, stiffness: 400, damping: 25 };
 
 const TABS = ["CV", "Editor", "Analysis", "Templates", "Tailor", "Skills", "Settings"];
 
-const PERSONAL_INFO = [
-  { label: "Location", value: "Nairobi, Kenya", icon: MapPin },
-  { label: "Email", value: "nick@impactafrica.network", icon: Mail },
-  { label: "GitHub", value: "github.com/nicksonlangat", icon: GitFork },
-  { label: "LinkedIn", value: "linkedin.com/in/nickson", icon: Link2 },
-  { label: "Experience", value: "3 Years", icon: Briefcase },
-];
+function EditableInfoRow({
+  label,
+  value,
+  icon: Icon,
+  onSave,
+}: {
+  label: string;
+  value: string;
+  icon?: React.ElementType;
+  onSave?: (val: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-const PREFERENCES = [
-  { label: "Preferred Roles", value: "Backend Engineer · Python Dev" },
-  { label: "Work Type", value: "Remote · On-site" },
-  { label: "Status", value: "Open to opportunities" },
-];
+  useEffect(() => { setDraft(value); }, [value]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
 
-function InfoRow({ label, value, icon: Icon }: { label: string; value: string; icon: React.ElementType }) {
+  function commit() {
+    setEditing(false);
+    const v = draft.trim();
+    if (v !== value && onSave) onSave(v);
+  }
+
+  const editable = !!onSave;
+
   return (
-    <div className="flex items-start gap-2.5 py-2">
-      <Icon className="size-3.5 text-brand-text-subtle mt-0.5 shrink-0" />
-      <div className="min-w-0">
+    <div className="flex items-start gap-2.5 py-2 group">
+      {Icon && <Icon className="size-3.5 text-brand-text-subtle mt-0.5 shrink-0" />}
+      <div className="min-w-0 flex-1">
         <p className="text-[10px] text-brand-text-subtle uppercase tracking-wide mb-0.5">{label}</p>
-        <p className="text-[12px] text-brand-text font-medium truncate">{value}</p>
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commit();
+              if (e.key === "Escape") { setDraft(value); setEditing(false); }
+            }}
+            onBlur={commit}
+            className="text-[12px] text-brand-text font-medium bg-brand-surface border border-brand-primary/60 rounded px-1.5 py-0.5 outline-none w-full"
+          />
+        ) : editable ? (
+          <button onClick={() => setEditing(true)} className="text-left cursor-pointer w-full">
+            {value
+              ? <p className="text-[12px] text-brand-text font-medium truncate hover:text-brand-primary transition-all duration-500">{value}</p>
+              : <p className="text-[12px] text-brand-text-subtle italic">Add {label.toLowerCase()}...</p>
+            }
+          </button>
+        ) : (
+          <p className="text-[12px] text-brand-text font-medium truncate">{value || "—"}</p>
+        )}
       </div>
+      {editable && !editing && (
+        <button
+          onClick={() => setEditing(true)}
+          className="opacity-0 group-hover:opacity-100 transition-all duration-500 cursor-pointer text-brand-text-subtle hover:text-brand-primary mt-0.5 shrink-0"
+        >
+          <Edit3 className="size-3" />
+        </button>
+      )}
     </div>
+  );
+}
+
+function GitHubIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+    </svg>
   );
 }
 
@@ -1744,7 +1792,7 @@ function RepoPickerModal({
               className="flex items-center gap-2 bg-brand-primary text-white text-sm font-semibold px-4 py-2 rounded-lg cursor-pointer hover:bg-brand-primary-hover transition-all duration-500 disabled:opacity-40 shrink-0"
             >
               {importing ? (
-                <><WandSparkles className="size-3.5 animate-pulse" /> Formatting...</>
+                <><Spinner size="sm" /> Formatting with AI...</>
               ) : (
                 <><WandSparkles className="size-3.5" /> Import with AI</>
               )}
@@ -1799,12 +1847,12 @@ function GitHubSection({
     <div className="border border-brand-border rounded-xl p-4">
       <div className="flex items-center gap-2 mb-3">
         <div className="size-6 rounded-md bg-gray-900 flex items-center justify-center shrink-0">
-          <GitFork className="size-3.5 text-white" />
+          <GitHubIcon className="size-3.5 text-white" />
         </div>
         <p className="text-[11px] font-semibold text-brand-text uppercase tracking-wide flex-1">GitHub</p>
         {connected && (
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-green-700 bg-green-50 px-1.5 py-0.5 rounded-md">
-            <span className="size-1.5 rounded-full bg-green-500" />
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-brand-success bg-brand-success/10 border border-brand-success/30 px-1.5 py-0.5 rounded-md">
+            <span className="size-1.5 rounded-full bg-brand-success" />
             Connected
           </span>
         )}
@@ -1846,7 +1894,7 @@ function GitHubSection({
             href={GITHUB_APP_INSTALL_URL}
             className="flex items-center justify-center gap-1.5 text-[11px] font-semibold border border-brand-border text-brand-text rounded-lg py-2 cursor-pointer hover:bg-brand-surface transition-all duration-500"
           >
-            <GitFork className="size-3" /> Connect GitHub
+            <GitHubIcon className="size-3" /> Connect GitHub
           </a>
         </div>
       )}
@@ -1919,8 +1967,8 @@ const T_SAMPLE = {
     { degree: "BSc Computer Science", institution: "Moi University", dates: "2012-2016", details: "2nd Class Upper" },
   ],
   projects: [
-    { name: "Codetail",  description: "AI-powered coding question platform with real-time feedback",    tech: "Django, PostgreSQL, Next.js, AWS", url: "codetail.co" },
-    { name: "Invoisce",  description: "Invoicing tool with bulk invoicing and email automation",         tech: "Django, Next.js, Celery, AWS",    url: "invoisce.co" },
+    { name: "Codetail",  description: "AI-powered coding question platform with real-time feedback",    tech: "Django, PostgreSQL, Next.js, AWS", github_url: "github.com/nicklangat/codetail", live_url: "codetail.co" },
+    { name: "Invoisce",  description: "Invoicing tool with bulk invoicing and email automation",         tech: "Django, Next.js, Celery, AWS",    github_url: "github.com/nicklangat/invoisce", live_url: "invoisce.co" },
   ],
 };
 
@@ -1942,7 +1990,7 @@ function toTemplateData(resume: ResumeData): TemplateData {
     }),
     skills: Object.fromEntries(resume.skills.map(s => [s.category, s.items])) as Record<string, string[]>,
     education: resume.education.map(e => ({ degree: e.degree, institution: e.school, dates: e.period, details: "" })),
-    projects: resume.projects.map(p => ({ name: p.name, description: p.description, tech: p.tech, url: p.live_url || p.github_url || "" })),
+    projects: resume.projects.map(p => ({ name: p.name, description: p.description, tech: p.tech, github_url: p.github_url || "", live_url: p.live_url || "" })),
   };
 }
 
@@ -1992,9 +2040,10 @@ function TProjBlock({ proj }: { proj: typeof T_SAMPLE.projects[0] }) {
       <div className="flex items-baseline gap-2">
         <span className="text-[9px] font-bold text-gray-900">{proj.name}</span>
         <span className="text-[8px] text-gray-400">{proj.tech}</span>
+        {proj.github_url && <a href={proj.github_url} target="_blank" rel="noreferrer" className="text-[8px] text-blue-500 hover:underline">GitHub</a>}
+        {proj.live_url && <a href={proj.live_url} target="_blank" rel="noreferrer" className="text-[8px] text-blue-500 hover:underline">Live</a>}
       </div>
       <p className="text-[8.5px] text-gray-600">{proj.description}</p>
-      {proj.url && <p className="text-[8px] text-blue-600">{proj.url}</p>}
     </div>
   );
 }
@@ -2325,8 +2374,13 @@ function MonospaceTemplate({ data }: { data: TemplateData }) {
         <div key={i} className="mb-1.5">
           <span className="text-[8.5px] font-bold text-gray-900">{p.name}</span>
           <span className="text-[8px] text-gray-400 ml-2">[{p.tech}]</span>
+          {(p.github_url || p.live_url) && (
+            <span className="ml-2">
+              {p.github_url && <a href={p.github_url} target="_blank" rel="noreferrer" className="text-[8px] text-blue-500 hover:underline mr-2">GitHub</a>}
+              {p.live_url && <a href={p.live_url} target="_blank" rel="noreferrer" className="text-[8px] text-blue-500 hover:underline">Live</a>}
+            </span>
+          )}
           <p className="text-[8px] text-gray-600">{`  ${p.description}`}</p>
-          {p.url && <p className="text-[8px] text-blue-600">{`  ${p.url}`}</p>}
         </div>
       ))}
     </div>
@@ -2452,7 +2506,9 @@ function ATSUltraTemplate({ data }: { data: TemplateData }) {
         <div key={i} className={i > 0 ? "mt-1" : ""}>
           <span className="text-[10px] font-bold text-black">{p.name}</span>
           <span className="text-[10px] text-black"> - {p.tech}</span>
-          <p className="text-[10px] text-black">{p.description}{p.url && ` (${p.url})`}</p>
+          {p.github_url && <a href={p.github_url} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 ml-2">GitHub</a>}
+          {p.live_url && <a href={p.live_url} target="_blank" rel="noreferrer" className="text-[10px] text-blue-600 ml-2">Live</a>}
+          <p className="text-[10px] text-black">{p.description}</p>
         </div>
       ))}
     </div>
@@ -2462,13 +2518,9 @@ function ATSUltraTemplate({ data }: { data: TemplateData }) {
 function TemplatesTab({
   resume,
   activeTemplateId,
-  onUseTemplate,
-  saving,
 }: {
   resume?: ResumeData;
   activeTemplateId?: string;
-  onUseTemplate: (id: TemplateId) => void;
-  saving: boolean;
 }) {
   const [selected, setSelected] = React.useState<TemplateId>((activeTemplateId as TemplateId) ?? "classic");
   const current = TEMPLATE_DEFS.find((t) => t.id === selected)!;
@@ -2483,7 +2535,7 @@ function TemplatesTab({
       const { useAuthStore } = await import("@/stores/auth-store");
       const token = useAuthStore.getState().accessToken;
       const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8082";
-      const res = await fetch(`${base}/resume/download`, {
+      const res = await fetch(`${base}/resume/download?template_id=${selected}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error("Download failed");
@@ -2499,7 +2551,7 @@ function TemplatesTab({
     } finally {
       setDownloading(false);
     }
-  }, [resume]);
+  }, [resume, selected]);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
@@ -2509,23 +2561,13 @@ function TemplatesTab({
           <p className="text-sm font-semibold text-brand-text mb-0.5">Resume Templates</p>
           <p className="text-[12px] text-brand-text-muted">{current.name} — {current.desc}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <motion.button
-            onClick={() => onUseTemplate(selected)}
-            disabled={saving || selected === activeTemplateId}
-            className="flex items-center gap-1.5 text-xs font-medium border border-brand-border text-brand-text px-4 py-2 rounded-lg cursor-pointer hover:bg-brand-surface transition-all duration-500 shrink-0 disabled:opacity-50"
-          >
-            {saving ? <Spinner size="sm" /> : <Check className="size-3.5" />}
-            {selected === activeTemplateId ? "Active" : "Use Template"}
-          </motion.button>
-          <motion.button
-            onClick={handleDownload}
-            disabled={downloading || !resume}
-            className="flex items-center gap-1.5 text-xs font-semibold bg-brand-primary text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-brand-primary-hover transition-all duration-500 shrink-0 disabled:opacity-50"
-          >
-            {downloading ? <Spinner size="sm" /> : <Download className="size-3.5" />} {downloading ? "Generating…" : "Download PDF"}
-          </motion.button>
-        </div>
+        <motion.button
+          onClick={handleDownload}
+          disabled={downloading || !resume}
+          className="flex items-center gap-1.5 text-xs font-semibold bg-brand-primary text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-brand-primary-hover transition-all duration-500 shrink-0 disabled:opacity-50"
+        >
+          {downloading ? <Spinner size="sm" /> : <Download className="size-3.5" />} {downloading ? "Generating…" : "Download PDF"}
+        </motion.button>
       </div>
 
       {/* Selector strip */}
@@ -2549,9 +2591,6 @@ function TemplatesTab({
             )}
             <span className="relative z-10 text-[12px] font-medium block">{t.name}</span>
             <span className={`relative z-10 text-[10px] block ${selected === t.id ? "text-white/60" : "text-brand-text-subtle"}`}>{t.desc}</span>
-            {t.id === activeTemplateId && selected !== t.id && (
-              <span className="relative z-10 text-[9px] text-brand-primary font-semibold">Active</span>
-            )}
           </motion.button>
         ))}
       </div>
@@ -2620,31 +2659,6 @@ export default function ResumePage() {
     onError: () => toast.error("Failed to parse resume. Please try again."),
   });
 
-  const { mutate: saveTemplate, isPending: savingTemplate } = useMutation({
-    mutationFn: (template_id: string) => {
-      const current = queryClient.getQueryData<ResumeData>(["resume"]);
-      if (!current) throw new Error("No resume");
-      return updateResume({
-        template_id,
-        profile: current.profile,
-        email: current.email,
-        phone: current.phone,
-        location: current.location,
-        website: current.website,
-        linkedin: current.linkedin,
-        github: current.github,
-        experience: current.experience,
-        education: current.education,
-        skills: current.skills,
-        projects: current.projects,
-      });
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(["resume"], data);
-      toast.success("Template saved.");
-    },
-    onError: () => toast.error("Failed to save template."),
-  });
 
   const { mutate: saveEdit, isPending: saving } = useMutation({
     mutationFn: updateResume,
@@ -2684,67 +2698,90 @@ export default function ResumePage() {
     onError: () => toast.error("Failed to disconnect."),
   });
 
+  const { mutate: saveContact } = useMutation({
+    mutationFn: updateResume,
+    onSuccess: (data) => {
+      queryClient.setQueryData(["resume"], data);
+      toast.success("Saved.");
+    },
+    onError: () => toast.error("Failed to save."),
+  });
+
+  function quickSave(field: "location" | "email" | "github" | "linkedin" | "website", value: string) {
+    if (!resume) return;
+    saveContact({
+      template_id: resume.template_id,
+      profile: resume.profile,
+      email: resume.email,
+      phone: resume.phone,
+      location: resume.location,
+      website: resume.website,
+      linkedin: resume.linkedin,
+      github: resume.github,
+      experience: resume.experience,
+      education: resume.education,
+      skills: resume.skills,
+      projects: resume.projects,
+      [field]: value,
+    });
+  }
+
   return (
     <div className="w-full max-w-6xl px-6 py-8">
       <div className="flex gap-6 items-start">
 
         {/* Left panel */}
         <div className="w-64 shrink-0 space-y-4">
-          <div className="border border-brand-border rounded-xl p-4 text-center relative">
-            <button className="absolute top-3 right-3 text-brand-text-subtle hover:text-brand-text transition-all duration-500 cursor-pointer">
-              <Edit3 className="size-3.5" />
-            </button>
-            <div className="size-16 rounded-full bg-brand-primary text-white flex items-center justify-center text-xl font-bold mx-auto mb-3">
-              {initials}
-            </div>
+          <div className="border border-brand-border rounded-xl p-4 text-center">
+            {reposData?.avatar_url ? (
+              <img src={reposData.avatar_url} alt={name} className="size-16 rounded-full mx-auto mb-3 object-cover" />
+            ) : (
+              <div className="size-16 rounded-full bg-brand-primary text-white flex items-center justify-center text-xl font-bold mx-auto mb-3">
+                {initials}
+              </div>
+            )}
             <p className="font-bold text-sm text-brand-text">{name}</p>
-            <p className="text-[11px] text-brand-text-muted mt-0.5">Backend Engineer · Python</p>
-            <span className="inline-flex items-center gap-1 mt-2 text-[10px] font-medium text-brand-success bg-brand-success/10 px-2 py-0.5 rounded-full">
-              <span className="size-1.5 rounded-full bg-brand-success" />
-              Open to work
-            </span>
+            {resume?.experience?.[0]?.title && (
+              <p className="text-[11px] text-brand-text-muted mt-0.5">{resume.experience[0].title}</p>
+            )}
           </div>
 
-          <div className="flex gap-2">
-            <motion.button
-                           className="flex-1 flex items-center justify-center gap-1.5 text-[11px] font-medium border border-brand-border rounded-lg py-2 cursor-pointer hover:bg-brand-surface transition-all duration-500 text-brand-text"
-            >
-              <Share2 className="size-3" /> Share
-            </motion.button>
-            <motion.button
-                           className="flex-1 flex items-center justify-center gap-1.5 text-[11px] font-medium bg-brand-text text-white rounded-lg py-2 cursor-pointer hover:bg-brand-text/90 transition-all duration-500"
-            >
-              <Download className="size-3" /> Download
-            </motion.button>
-          </div>
 
           <div className="border border-brand-border rounded-xl p-4">
             <p className="text-[11px] font-semibold text-brand-text uppercase tracking-wide mb-2">Personal Information</p>
             <div className="divide-y divide-brand-border">
-              {PERSONAL_INFO.map((item) => (
-                <InfoRow key={item.label} {...item} />
-              ))}
+              <EditableInfoRow
+                label="Location"
+                value={resume?.location ?? ""}
+                icon={MapPin}
+                onSave={resume ? (v) => quickSave("location", v) : undefined}
+              />
+              <EditableInfoRow
+                label="Email"
+                value={resume?.email ?? ""}
+                icon={Mail}
+                onSave={resume ? (v) => quickSave("email", v) : undefined}
+              />
+              <EditableInfoRow
+                label="GitHub"
+                value={resume?.github ?? ""}
+                icon={GitHubIcon}
+                onSave={resume ? (v) => quickSave("github", v) : undefined}
+              />
+              <EditableInfoRow
+                label="LinkedIn"
+                value={resume?.linkedin ?? ""}
+                icon={Link2}
+                onSave={resume ? (v) => quickSave("linkedin", v) : undefined}
+              />
+              <EditableInfoRow
+                label="Website"
+                value={resume?.website ?? ""}
+                icon={Link2}
+                onSave={resume ? (v) => quickSave("website", v) : undefined}
+              />
             </div>
           </div>
-
-          <div className="border border-brand-border rounded-xl p-4">
-            <p className="text-[11px] font-semibold text-brand-text uppercase tracking-wide mb-3">Preferences</p>
-            <div className="space-y-3">
-              {PREFERENCES.map((p) => (
-                <div key={p.label}>
-                  <p className="text-[10px] text-brand-text-subtle uppercase tracking-wide mb-0.5">{p.label}</p>
-                  <p className="text-[12px] text-brand-text font-medium">{p.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {isPremium && resume && (
-            <div className="border border-brand-border rounded-xl p-4">
-              <p className="text-[11px] font-semibold text-brand-text uppercase tracking-wide mb-2">Resume</p>
-              <p className="text-[11px] text-brand-text-muted truncate">{resume.file_name}</p>
-            </div>
-          )}
 
           <GitHubSection
             connected={isGitHubConnected}
@@ -2828,8 +2865,6 @@ export default function ResumePage() {
                 <TemplatesTab
                   resume={resume}
                   activeTemplateId={resume?.template_id ?? "classic"}
-                  onUseTemplate={(id) => saveTemplate(id)}
-                  saving={savingTemplate}
                 />
               </motion.div>
             )}
