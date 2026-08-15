@@ -15,7 +15,7 @@ import {
   getResumeAnalysis, runResumeAnalysis,
   type ResumeData, type ResumeExperience, type ResumeEducation, type ResumeSkillGroup, type ResumeAnalysis, type ResumeProject,
 } from "@/lib/api/resume";
-import { TailorTab } from "@/components/resume/tailor-tab";
+import { TailorTab, SavedVersionsTab } from "@/components/resume/tailor-tab";
 import {
   getGitHubRepos, importGitHubRepos, disconnectGitHub,
   type GitHubRepo, type ImportedProject,
@@ -40,7 +40,7 @@ function ensureHttps(value: string): string {
 
 const SP = { type: "spring" as const, stiffness: 400, damping: 25 };
 
-const TABS = ["CV", "Editor", "Analysis", "Templates", "Tailor", "Skills", "Settings"];
+const TABS = ["CV", "Editor", "Analysis", "Templates", "Tailor", "Saved"];
 
 function EditableInfoRow({
   label,
@@ -1974,9 +1974,9 @@ const T_SAMPLE = {
 
 type TemplateData = typeof T_SAMPLE;
 
-function toTemplateData(resume: ResumeData): TemplateData {
+function toTemplateData(resume: ResumeData, fallbackName = ""): TemplateData {
   return {
-    name: resume.file_name.replace(/\.pdf$/i, "").replace(/[-_]/g, " "),
+    name: resume.name || fallbackName,
     email: resume.email,
     phone: resume.phone,
     location: resume.location,
@@ -2113,8 +2113,12 @@ function CompactTemplate({ data }: { data: TemplateData }) {
       <h2 className="text-[8px] font-bold text-gray-950 uppercase tracking-[0.15em] border-b border-gray-200 pb-0.5 mb-1.5 mt-2">Projects</h2>
       {d.projects.map((p, i) => (
         <div key={i} className="mb-1">
-          <span className="text-[8px] font-bold text-gray-900">{p.name}</span>
-          <span className="text-[7.5px] text-gray-400 ml-1.5">{p.tech}</span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-[8px] font-bold text-gray-900">{p.name}</span>
+            <span className="text-[7.5px] text-gray-400">{p.tech}</span>
+            {p.github_url && <a href={p.github_url} target="_blank" rel="noreferrer" className="text-[7.5px] text-blue-500 hover:underline">GitHub</a>}
+            {p.live_url && <a href={p.live_url} target="_blank" rel="noreferrer" className="text-[7.5px] text-blue-500 hover:underline">Live</a>}
+          </div>
           <p className="text-[7.5px] text-gray-600">{p.description}</p>
         </div>
       ))}
@@ -2250,8 +2254,12 @@ function MinimalTemplate({ data }: { data: TemplateData }) {
       <h2 className="text-[8px] text-gray-400 uppercase tracking-[0.2em] mt-8 mb-3">Projects</h2>
       {d.projects.map((p, i) => (
         <div key={i} className={i > 0 ? "mt-2" : ""}>
-          <span className="text-[9px] font-medium text-gray-900">{p.name}</span>
-          <span className="text-[8px] text-gray-400 ml-2">{p.tech}</span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-[9px] font-medium text-gray-900">{p.name}</span>
+            <span className="text-[8px] text-gray-400">{p.tech}</span>
+            {p.github_url && <a href={p.github_url} target="_blank" rel="noreferrer" className="text-[8px] text-blue-500 hover:underline">GitHub</a>}
+            {p.live_url && <a href={p.live_url} target="_blank" rel="noreferrer" className="text-[8px] text-blue-500 hover:underline">Live</a>}
+          </div>
           <p className="text-[8.5px] text-gray-500 mt-0.5">{p.description}</p>
         </div>
       ))}
@@ -2448,6 +2456,8 @@ function SwissTemplate({ data }: { data: TemplateData }) {
                   <div className="flex items-baseline gap-2">
                     <span className="text-[9px] font-bold text-gray-900">{p.name}</span>
                     <span className="text-[7.5px] text-gray-400">{p.tech}</span>
+                    {p.github_url && <a href={p.github_url} target="_blank" rel="noreferrer" className="text-[7.5px] text-blue-500 hover:underline">GitHub</a>}
+                    {p.live_url && <a href={p.live_url} target="_blank" rel="noreferrer" className="text-[7.5px] text-blue-500 hover:underline">Live</a>}
                   </div>
                   <p className="text-[8px] text-gray-600">{p.description}</p>
                 </div>
@@ -2518,13 +2528,15 @@ function ATSUltraTemplate({ data }: { data: TemplateData }) {
 function TemplatesTab({
   resume,
   activeTemplateId,
+  fallbackName = "",
 }: {
   resume?: ResumeData;
   activeTemplateId?: string;
+  fallbackName?: string;
 }) {
   const [selected, setSelected] = React.useState<TemplateId>((activeTemplateId as TemplateId) ?? "classic");
   const current = TEMPLATE_DEFS.find((t) => t.id === selected)!;
-  const data: TemplateData = resume ? toTemplateData(resume) : T_SAMPLE;
+  const data: TemplateData = resume ? toTemplateData(resume, fallbackName) : T_SAMPLE;
 
   const [downloading, setDownloading] = React.useState(false);
 
@@ -2865,6 +2877,7 @@ export default function ResumePage() {
                 <TemplatesTab
                   resume={resume}
                   activeTemplateId={resume?.template_id ?? "classic"}
+                  fallbackName={name}
                 />
               </motion.div>
             )}
@@ -2876,13 +2889,27 @@ export default function ResumePage() {
                 className="flex-1"
               >
                 {isPremium ? (
-                  <TailorTab />
+                  <TailorTab onViewSaved={() => setTab("Saved")} />
                 ) : (
                   <PremiumGate />
                 )}
               </motion.div>
             )}
-            {tab !== "CV" && tab !== "Editor" && tab !== "Analysis" && tab !== "Templates" && tab !== "Tailor" && (
+            {tab === "Saved" && (
+              <motion.div
+                key="saved"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="flex-1"
+              >
+                {isPremium ? (
+                  <SavedVersionsTab onTailor={() => setTab("Tailor")} />
+                ) : (
+                  <PremiumGate />
+                )}
+              </motion.div>
+            )}
+            {tab !== "CV" && tab !== "Editor" && tab !== "Analysis" && tab !== "Templates" && tab !== "Tailor" && tab !== "Saved" && (
               <motion.div
                 key={tab}
                 initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}

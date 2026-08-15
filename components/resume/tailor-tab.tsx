@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   WandSparkles, Building2, Briefcase, Download, Trash2,
-  ArrowRight, TrendingUp, CheckCircle2, ChevronDown, ChevronUp,
+  ArrowRight, CheckCircle2, ChevronDown, ChevronUp, History, FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
@@ -179,25 +179,130 @@ function TailoredCard({
   );
 }
 
-export function TailorTab() {
+export function TailorTab({ onViewSaved }: { onViewSaved?: () => void }) {
   const [jd, setJd] = useState("");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const queryClient = useQueryClient();
-
-  const { data: tailored = [], isLoading: listLoading } = useQuery({
-    queryKey: ["tailored-resumes"],
-    queryFn: listTailoredResumes,
-  });
 
   const tailorMutation = useMutation({
     mutationFn: () => tailorResume(jd),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["tailored-resumes"] });
       setJd("");
-      setExpandedId(result.id);
-      toast.success(`Tailored for ${result.company} — ATS score up ${result.ats_score_after - result.ats_score_before} points`);
+      toast.success(`Tailored for ${result.company}. ATS score up ${result.ats_score_after - result.ats_score_before} points.`);
+      onViewSaved?.();
     },
     onError: () => toast.error("Tailoring failed. Please try again."),
+  });
+
+  const canSubmit = jd.trim().length >= 50 && !tailorMutation.isPending;
+
+  return (
+    <div className="max-w-2xl mx-auto w-full flex flex-col gap-5">
+      <div className="flex items-start gap-3">
+        <div className="size-9 rounded-xl bg-brand-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+          <FileText className="size-4 text-brand-primary" />
+        </div>
+        <div>
+          <h3 className="text-[15px] font-semibold text-brand-text">Tailor to a job</h3>
+          <p className="text-[12px] text-brand-text-muted mt-0.5">
+            Paste any job description. AI rewrites your resume to match the role and beat ATS filters.
+          </p>
+        </div>
+      </div>
+
+      <div className="relative">
+        <textarea
+          value={jd}
+          onChange={(e) => setJd(e.target.value)}
+          disabled={tailorMutation.isPending}
+          placeholder={`Paste the full job description here…\n\nExample:\n  We're looking for a Senior Backend Engineer with 5+ years in Python, strong knowledge of distributed systems, experience with Kubernetes…`}
+          className="w-full h-[480px] resize-none rounded-xl border border-brand-border bg-brand-surface px-4 py-3.5 text-[13px] text-brand-text placeholder:text-brand-text-subtle leading-relaxed outline-none transition-all duration-300 focus:bg-white focus:border-brand-primary/60 disabled:opacity-100"
+        />
+        {!tailorMutation.isPending && (
+          <div className="absolute bottom-3 right-3 text-[10px] text-brand-text-subtle font-mono">
+            {jd.length} chars
+          </div>
+        )}
+
+        {/* Scanner overlay */}
+        {tailorMutation.isPending && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 rounded-xl overflow-hidden pointer-events-none"
+          >
+            {/* Dim base */}
+            <div className="absolute inset-0 bg-white/50" />
+
+            {/* Horizontal scan lines texture */}
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.045) 3px, rgba(0,0,0,0.045) 4px)",
+              }}
+            />
+
+            {/* Sweeping beam */}
+            <motion.div
+              className="absolute left-0 right-0"
+              animate={{ top: ["2%", "98%"] }}
+              transition={{
+                duration: 1.8,
+                repeat: Infinity,
+                ease: "easeInOut",
+                repeatType: "reverse",
+              }}
+              style={{ transform: "translateY(-50%)" }}
+            >
+              <div className="h-16 bg-gradient-to-b from-transparent to-brand-primary/25" />
+              <div className="h-[2px] bg-brand-primary/75" />
+              <div className="h-16 bg-gradient-to-t from-transparent to-brand-primary/25" />
+            </motion.div>
+          </motion.div>
+        )}
+      </div>
+
+      <motion.button
+        whileHover={canSubmit ? { y: -1 } : {}}
+        whileTap={canSubmit ? { scale: 0.985 } : {}}
+        transition={SPRING}
+        onClick={() => tailorMutation.mutate()}
+        disabled={!canSubmit}
+        className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-brand-primary text-white text-[13px] font-semibold cursor-pointer transition-all duration-300 hover:bg-brand-primary-hover disabled:opacity-40 disabled:cursor-default shadow-sm hover:shadow-lg hover:shadow-brand-primary/20"
+      >
+        {tailorMutation.isPending ? (
+          <>
+            <Spinner size="sm" /> Tailoring your resume…
+          </>
+        ) : (
+          <>
+            <WandSparkles className="size-3.5" />
+            Tailor my resume
+          </>
+        )}
+      </motion.button>
+
+      {tailorMutation.isPending && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-[11px] text-brand-text-subtle text-center"
+        >
+          Reading the job description and rewriting your bullets. This takes ~15 seconds.
+        </motion.p>
+      )}
+    </div>
+  );
+}
+
+export function SavedVersionsTab({ onTailor }: { onTailor?: () => void }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: tailored = [], isLoading } = useQuery({
+    queryKey: ["tailored-resumes"],
+    queryFn: listTailoredResumes,
   });
 
   const deleteMutation = useMutation({
@@ -208,116 +313,63 @@ export function TailorTab() {
     },
   });
 
-  const canSubmit = jd.trim().length >= 50 && !tailorMutation.isPending;
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-full">
-      {/* Left — JD input */}
-      <div className="lg:col-span-3 flex flex-col gap-4">
-        <div className="flex items-start gap-3">
-          <div className="size-9 rounded-xl bg-brand-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-            <WandSparkles className="size-4 text-brand-primary" />
-          </div>
-          <div>
-            <h3 className="text-[15px] font-semibold text-brand-text">Tailor to a job</h3>
-            <p className="text-[12px] text-brand-text-muted mt-0.5">
-              Paste any job description. AI rewrites your resume to match the role and beat ATS filters.
-            </p>
-          </div>
+    <div className="max-w-3xl mx-auto w-full flex flex-col gap-4">
+      <div className="flex items-center gap-2.5">
+        <div className="size-7 rounded-lg bg-brand-primary/10 flex items-center justify-center">
+          <History className="size-3.5 text-brand-primary" />
         </div>
+        <h3 className="text-[14px] font-semibold text-brand-text">Saved versions</h3>
+        {tailored.length > 0 && (
+          <span className="text-[11px] text-brand-text-subtle bg-brand-surface px-2 py-0.5 rounded-full border border-brand-border">
+            {tailored.length}
+          </span>
+        )}
+      </div>
 
-        <div className="relative flex-1">
-          <textarea
-            value={jd}
-            onChange={(e) => setJd(e.target.value)}
-            placeholder={`Paste the full job description here…\n\nExample:\n  We're looking for a Senior Backend Engineer with 5+ years in Python, strong knowledge of distributed systems, experience with Kubernetes…`}
-            className="w-full h-72 lg:h-full min-h-60 resize-none rounded-xl border border-brand-border bg-brand-surface px-4 py-3.5 text-[13px] text-brand-text placeholder:text-brand-text-subtle leading-relaxed outline-none transition-all duration-300 focus:bg-white focus:border-brand-primary/60"
-          />
-          <div className="absolute bottom-3 right-3 text-[10px] text-brand-text-subtle font-mono">
-            {jd.length} chars
-          </div>
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-16 rounded-xl bg-brand-surface animate-pulse" />
+          ))}
         </div>
-
-        <motion.button
-          whileHover={canSubmit ? { y: -1 } : {}}
-          whileTap={canSubmit ? { scale: 0.985 } : {}}
-          transition={SPRING}
-          onClick={() => tailorMutation.mutate()}
-          disabled={!canSubmit}
-          className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-brand-primary text-white text-[13px] font-semibold cursor-pointer transition-all duration-300 hover:bg-brand-primary-hover disabled:opacity-40 disabled:cursor-default shadow-sm hover:shadow-lg hover:shadow-brand-primary/20"
-        >
-          {tailorMutation.isPending ? (
-            <>
-              <Spinner size="sm" /> Tailoring your resume…
-            </>
-          ) : (
-            <>
+      ) : tailored.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="size-14 rounded-2xl bg-brand-surface border border-brand-border flex items-center justify-center mb-4">
+            <Briefcase className="size-6 text-brand-text-subtle" />
+          </div>
+          <p className="text-[14px] font-semibold text-brand-text mb-1">No tailored resumes yet</p>
+          <p className="text-[12px] text-brand-text-muted mb-5 max-w-xs">
+            Paste a job description in the Tailor tab and AI will rewrite your resume to beat ATS filters.
+          </p>
+          {onTailor && (
+            <motion.button
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.97 }}
+              transition={SPRING}
+              onClick={onTailor}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-brand-primary text-white text-[12px] font-semibold cursor-pointer transition-all duration-300 hover:bg-brand-primary-hover shadow-sm"
+            >
               <WandSparkles className="size-3.5" />
-              Tailor my resume
-              <TrendingUp className="size-3.5 opacity-70" />
-            </>
-          )}
-        </motion.button>
-
-        {tailorMutation.isPending && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-[11px] text-brand-text-subtle text-center"
-          >
-            Reading the job description and rewriting your bullets. This takes ~15 seconds.
-          </motion.p>
-        )}
-      </div>
-
-      {/* Right — history */}
-      <div className="lg:col-span-2 flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Briefcase className="size-3.5 text-brand-text-subtle" />
-            <span className="text-[12px] font-semibold text-brand-text-muted uppercase tracking-wide">
-              Saved versions
-            </span>
-          </div>
-          {tailored.length > 0 && (
-            <span className="text-[11px] text-brand-text-subtle bg-brand-surface px-2 py-0.5 rounded-full border border-brand-border">
-              {tailored.length}
-            </span>
+              Go to Tailor
+            </motion.button>
           )}
         </div>
-
-        {listLoading ? (
-          <div className="space-y-2">
-            {[1, 2].map((i) => (
-              <div key={i} className="h-16 rounded-xl bg-brand-surface animate-pulse" />
+      ) : (
+        <div className="space-y-2">
+          <AnimatePresence>
+            {tailored.map((item) => (
+              <TailoredCard
+                key={item.id}
+                item={item}
+                expanded={expandedId === item.id}
+                onToggle={() => setExpandedId(expandedId === item.id ? null : item.id)}
+                onDelete={() => deleteMutation.mutate(item.id)}
+              />
             ))}
-          </div>
-        ) : tailored.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center py-12 text-center">
-            <div className="size-12 rounded-2xl bg-brand-surface border border-brand-border flex items-center justify-center mb-3">
-              <Briefcase className="size-5 text-brand-text-subtle" />
-            </div>
-            <p className="text-[13px] font-medium text-brand-text">No tailored resumes yet</p>
-            <p className="text-[11px] text-brand-text-subtle mt-1">
-              Paste a JD and tailor your first version
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-2 overflow-y-auto max-h-[520px] pr-0.5">
-            <AnimatePresence>
-              {tailored.map((item) => (
-                <TailoredCard
-                  key={item.id}
-                  item={item}
-                  expanded={expandedId === item.id}
-                  onToggle={() => setExpandedId(expandedId === item.id ? null : item.id)}
-                  onDelete={() => deleteMutation.mutate(item.id)}
-                />
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
-      </div>
+          </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }

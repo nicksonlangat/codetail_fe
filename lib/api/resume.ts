@@ -31,6 +31,7 @@ export interface ResumeData {
   id: string;
   file_name: string;
   template_id: string;
+  name: string;
   profile: string;
   email: string;
   phone: string;
