@@ -50,9 +50,8 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <Script
-          
-          src="http://localhost:3000/widget.js"
-  data-key="wid_daa8adb07adf453b4d9876410e6a6be8"
+            src="https://app.usecandor.cc/widget.js"
+  data-key="wid_76f22dba466919b80edb84b37fe8e5da"
           strategy="afterInteractive"
         />
         <QueryProvider>{children}</QueryProvider>
