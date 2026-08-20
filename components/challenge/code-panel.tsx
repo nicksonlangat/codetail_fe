@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FlaskConical, Lightbulb, WandSparkles, BookOpen, RotateCcw, Play, Send,
+  FlaskConical, Lightbulb, WandSparkles, BookOpen, RotateCcw, Play,
 } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { MonacoCodeEditor } from "@/components/editors/monaco-code-editor";
+import { toast } from "sonner";
 import { runCode } from "@/lib/api/submissions";
 import { saveProgress } from "@/lib/api/progress";
 import { getErrorMessage } from "@/lib/api/client";
@@ -17,7 +18,7 @@ import { ReviewPanel } from "./review-panel";
 import { SolutionPanel } from "./solution-panel";
 import type { ProblemDetail } from "@/lib/api/problems";
 import type { TestResult } from "@/lib/api/submissions";
-import type { ProblemProgress } from "@/lib/api/progress";
+import type { ProblemProgress, SavedHint } from "@/lib/api/progress";
 import type { ReviewDisplay } from "./review-panel";
 
 const TAB_SPRING = { type: "spring" as const, stiffness: 400, damping: 25 };
@@ -49,6 +50,9 @@ export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
   );
   const [runError, setRunError] = useState<string | null>(null);
   const [bottomTab, setBottomTab] = useState<BottomTab>("tests");
+  const [hints, setHints] = useState<SavedHint[]>(progress?.saved_hints ?? []);
+  const [review, setReview] = useState<ReviewDisplay | null>((progress?.last_review as ReviewDisplay | null) ?? null);
+  const [solution, setSolution] = useState<string | null>(progress?.last_solution ?? null);
 
   const isFirstRender = useRef(true);
   useEffect(() => {
@@ -73,12 +77,17 @@ export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
     try {
       const result = await runCode(problem.id, code);
       setTestResults(result.test_results);
-      if (result.passed && result.xp_earned > 0) {
-        onSolved(result.xp_earned, result.newly_earned_badges);
+      if (result.passed) {
+        toast.success("Challenge submitted successfully.");
+        if (result.xp_earned > 0) onSolved(result.xp_earned, result.newly_earned_badges);
+      } else {
+        toast.error("Some tests failed. Check the results below.");
       }
     } catch (err) {
-      setRunError(getErrorMessage(err, "Something went wrong running your code."));
+      const msg = getErrorMessage(err, "Failed to submit. Please try again.");
+      setRunError(msg);
       setTestResults(null);
+      toast.error(msg);
     } finally {
       setRunning(false);
     }
@@ -114,19 +123,10 @@ export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
                 type="button"
                 onClick={handleRun}
                 disabled={running}
-                className="inline-flex items-center gap-1 rounded-lg border border-brand-border-strong text-brand-text-muted text-[11px] font-medium px-2.5 py-1.5 cursor-pointer outline-none transition-all duration-500 hover:bg-brand-surface disabled:cursor-default disabled:opacity-60"
-              >
-                {running ? <Spinner size="xs" /> : <Play className="size-3" />}
-                Run
-              </button>
-              <button
-                type="button"
-                onClick={handleRun}
-                disabled={running}
                 className="inline-flex items-center gap-1 rounded-lg bg-brand-primary text-white text-[11px] font-medium px-2.5 py-1.5 cursor-pointer outline-none transition-all duration-500 hover:bg-brand-primary-hover disabled:cursor-default disabled:opacity-60"
               >
-                {running ? <Spinner size="xs" /> : <Send className="size-3" />}
-                Submit
+                {running ? <Spinner size="xs" /> : <Play className="size-3" />}
+                Run & Submit
               </button>
             </div>
           </div>
@@ -191,7 +191,8 @@ export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
                   <HintsPanel
                     problemId={problem.id}
                     code={code}
-                    initialHints={progress?.saved_hints ?? []}
+                    hints={hints}
+                    onHintAdded={(h) => setHints((prev) => [...prev, h])}
                   />
                 </motion.div>
               )}
@@ -206,7 +207,8 @@ export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
                   <ReviewPanel
                     problemId={problem.id}
                     code={code}
-                    initialReview={(progress?.last_review as ReviewDisplay | null) ?? null}
+                    review={review}
+                    onReviewReceived={setReview}
                     onSolved={onSolved}
                   />
                 </motion.div>
@@ -222,7 +224,8 @@ export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
                 >
                   <SolutionPanel
                     problemId={problem.id}
-                    initialSolution={progress?.last_solution ?? null}
+                    solution={solution}
+                    onSolutionReceived={setSolution}
                   />
                 </motion.div>
               )}

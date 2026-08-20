@@ -12,11 +12,11 @@ import { PROSE_CLASS } from "./prose-styles";
 
 interface SolutionPanelProps {
   problemId: string;
-  initialSolution: string | null;
+  solution: string | null;
+  onSolutionReceived: (html: string) => void;
 }
 
-export function SolutionPanel({ problemId, initialSolution }: SolutionPanelProps) {
-  const [html, setHtml] = useState(initialSolution);
+export function SolutionPanel({ problemId, solution, onSolutionReceived }: SolutionPanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -26,7 +26,7 @@ export function SolutionPanel({ problemId, initialSolution }: SolutionPanelProps
     setError("");
     try {
       const result = await getSolution(problemId);
-      setHtml(result.html);
+      onSolutionReceived(result.html);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 429) {
         setUpgradeOpen(true);
@@ -38,11 +38,11 @@ export function SolutionPanel({ problemId, initialSolution }: SolutionPanelProps
     }
   }
 
-  if (html) {
+  if (solution) {
     return (
       <div className="px-4 py-3">
         <p className="text-sm font-semibold text-brand-text mb-2">Reference solution</p>
-        <TipTapRenderer content={html} className={PROSE_CLASS} />
+        <TipTapRenderer content={solution} className={PROSE_CLASS} />
       </div>
     );
   }

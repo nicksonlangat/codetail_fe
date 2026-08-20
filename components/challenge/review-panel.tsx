@@ -37,12 +37,12 @@ const ATTRIBUTE_LABELS: Record<keyof ReviewAttributes, string> = {
 interface ReviewPanelProps {
   problemId: string;
   code: string;
-  initialReview: ReviewDisplay | null;
+  review: ReviewDisplay | null;
+  onReviewReceived: (review: ReviewDisplay) => void;
   onSolved: (xpEarned: number, badges: string[]) => void;
 }
 
-export function ReviewPanel({ problemId, code, initialReview, onSolved }: ReviewPanelProps) {
-  const [review, setReview] = useState<ReviewDisplay | null>(initialReview);
+export function ReviewPanel({ problemId, code, review, onReviewReceived, onSolved }: ReviewPanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -52,7 +52,7 @@ export function ReviewPanel({ problemId, code, initialReview, onSolved }: Review
     setError("");
     try {
       const result = await getReview(problemId, code);
-      setReview(result);
+      onReviewReceived(result);
       if (result.xp_earned > 0) {
         onSolved(result.xp_earned, result.newly_earned_badges);
       }

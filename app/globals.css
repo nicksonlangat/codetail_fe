@@ -20,6 +20,8 @@
 
   /* status */
   --brand-success: #16a34a;
+  --brand-success-tint: #f0fdf4;
+  --brand-success-soft: #bbf7d0;
   --brand-warning: #f59e0b;
   --brand-destructive: #ef4444;
   --brand-sky: #0ea5e9;
@@ -73,6 +75,8 @@
   --color-brand-primary-soft: var(--brand-primary-soft);
 
   --color-brand-success: var(--brand-success);
+  --color-brand-success-tint: var(--brand-success-tint);
+  --color-brand-success-soft: var(--brand-success-soft);
   --color-brand-warning: var(--brand-warning);
   --color-brand-destructive: var(--brand-destructive);
   --color-brand-sky: var(--brand-sky);
@@ -102,6 +106,16 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
+
+/* lowlight / highlight.js token colours — light mode, matches brand-syntax-* tokens */
+.hljs-keyword, .hljs-selector-tag { color: var(--brand-syntax-keyword); }
+.hljs-string, .hljs-meta-string, .hljs-attr, .hljs-attribute { color: var(--brand-syntax-string); }
+.hljs-number, .hljs-literal { color: var(--brand-syntax-number); }
+.hljs-built_in, .hljs-class .hljs-title { color: var(--brand-syntax-builtin); }
+.hljs-meta, .hljs-decorator { color: var(--brand-syntax-decorator); }
+.hljs-comment, .hljs-doctag { color: var(--brand-text-subtle); font-style: italic; }
+.hljs-title { color: var(--brand-text); }
+.hljs-params { color: var(--brand-text-muted); }
 
 html {
   scroll-behavior: smooth;
