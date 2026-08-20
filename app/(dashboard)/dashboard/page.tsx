@@ -12,6 +12,7 @@ import Link from "next/link";
 import { StreakCard } from "@/components/dashboard/streak-card";
 import { HeatmapCard } from "@/components/dashboard/heatmap-card";
 import { StackTile } from "@/components/dashboard/stack-tile";
+import { TrialBanner } from "@/components/dashboard/trial-banner";
 import { useAuthStore } from "@/stores/auth-store";
 import { getRank } from "@/lib/api/auth";
 import { getWeeklyLeaderboard } from "@/lib/api/leaderboard";
@@ -277,6 +278,8 @@ export default function DashboardPage() {
   }, [dashboardPaths]);
 
   return (
+    <>
+    <TrialBanner />
     <div className="w-full max-w-6xl px-6 py-8">
       <div className="flex items-start justify-between mb-8 gap-6">
         <div>
@@ -557,5 +560,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

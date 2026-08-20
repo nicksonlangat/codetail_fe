@@ -18,11 +18,11 @@ const LEVEL_STYLES: Record<string, string> = {
 interface HintsPanelProps {
   problemId: string;
   code: string;
-  initialHints: SavedHint[];
+  hints: SavedHint[];
+  onHintAdded: (hint: SavedHint) => void;
 }
 
-export function HintsPanel({ problemId, code, initialHints }: HintsPanelProps) {
-  const [hints, setHints] = useState<SavedHint[]>(initialHints);
+export function HintsPanel({ problemId, code, hints, onHintAdded }: HintsPanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -32,7 +32,7 @@ export function HintsPanel({ problemId, code, initialHints }: HintsPanelProps) {
     setError("");
     try {
       const result = await getHint(problemId, code);
-      setHints((prev) => [...prev, result]);
+      onHintAdded(result);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 429) {
         setUpgradeOpen(true);

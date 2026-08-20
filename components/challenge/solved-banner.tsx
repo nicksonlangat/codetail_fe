@@ -17,9 +17,9 @@ export function SolvedBanner({ xpEarned, badges, onDismiss }: SolvedBannerProps)
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -12 }}
       transition={SPRING}
-      className="flex items-center gap-3 px-5 py-2.5 bg-brand-success/8 border-b border-brand-success/25 shrink-0"
+      className="flex items-center gap-3 px-5 py-2.5 bg-brand-primary-tint border-y border-brand-primary-soft shrink-0"
     >
-      <PartyPopper className="size-4 text-brand-success shrink-0" />
+      <PartyPopper className="size-4 text-brand-primary shrink-0" />
       <p className="text-[13px] text-brand-text flex-1">
         Solved! <span className="font-semibold">+{xpEarned} XP</span>
         {badges.length > 0 && (
@@ -29,7 +29,7 @@ export function SolvedBanner({ xpEarned, badges, onDismiss }: SolvedBannerProps)
           </span>
         )}
       </p>
-      <Zap className="size-3.5 text-brand-success shrink-0" fill="currentColor" />
+      <Zap className="size-3.5 text-brand-primary shrink-0" fill="currentColor" />
       <button
         type="button"
         onClick={onDismiss}

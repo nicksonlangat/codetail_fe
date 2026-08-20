@@ -3,6 +3,12 @@
 import { useEffect } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { createLowlight } from "lowlight";
+import python from "highlight.js/lib/languages/python";
+
+const lowlight = createLowlight();
+lowlight.register("python", python);
 
 interface TipTapRendererProps {
   content: string;
@@ -16,7 +22,10 @@ interface TipTapRendererProps {
 // arbitrary user input.
 export function TipTapRenderer({ content, className = "" }: TipTapRendererProps) {
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit.configure({ codeBlock: false }),
+      CodeBlockLowlight.configure({ lowlight, defaultLanguage: "python" }),
+    ],
     content,
     editable: false,
     immediatelyRender: false,

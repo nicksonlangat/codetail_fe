@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { WandSparkles, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import { CommandPalette } from "./command-palette";
 import { UserMenu } from "./user-menu";
 import { NotificationsMenu } from "./notifications-menu";
@@ -64,15 +64,6 @@ export function AppTopbar() {
           <Link href="/dashboard" className="font-semibold text-lg text-brand-text cursor-pointer">
             Code<span className="text-brand-primary">tail</span>
           </Link>
-
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            transition={SP}
-            className="flex items-center gap-1.5 bg-brand-primary-tint text-brand-primary text-sm font-medium px-3 py-1.5 rounded-lg border border-brand-primary-soft/50 cursor-pointer transition-all duration-500 hover:bg-brand-primary-soft/30"
-          >
-            <WandSparkles className="size-3.5" /> Ask AI
-          </motion.button>
 
           <motion.button
             onClick={() => setPaletteOpen(true)}
