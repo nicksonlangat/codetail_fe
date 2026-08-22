@@ -104,7 +104,7 @@ export default function BillingPage() {
                 />
               )}
               <span className={`relative z-10 ${active ? "text-white" : "text-brand-text-muted"}`}>
-                {opt === "monthly" ? "Monthly" : "Yearly — save 17%"}
+                {opt === "monthly" ? "Monthly" : "Yearly — save 25%"}
               </span>
             </button>
           );
