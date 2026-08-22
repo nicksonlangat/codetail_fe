@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Crown, Rocket, WandSparkles, Zap } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
-import { createCheckout } from "@/lib/api/billing";
+import { createCheckout, getSubscription, upgradeSubscription, type SubscriptionInfo } from "@/lib/api/billing";
 import { getErrorMessage } from "@/lib/api/client";
 import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 
@@ -47,27 +47,36 @@ export default function BillingPage() {
   const [paddle, setPaddle] = useState<Paddle | null>(null);
 
   const currentTier = user?.tier ?? "free";
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
 
   useEffect(() => {
     initializePaddle({
       environment: (process.env.NEXT_PUBLIC_PADDLE_ENV ?? "sandbox") as "sandbox" | "production",
       token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "",
     }).then(setPaddle);
+    getSubscription().then(setSubscription).catch(() => {});
   }, []);
+
+  const hasActiveSub = subscription?.status === "active";
 
   async function handleUpgrade(planId: "pro" | "premium") {
     setError(null);
     setLoading(planId);
     try {
-      const { payment_id } = await createCheckout({
-        plan_id: planId,
-        billing_cycle: yearly ? "yearly" : "monthly",
-      });
-      if (paddle) {
-        paddle.Checkout.open({ transactionId: payment_id });
+      if (hasActiveSub) {
+        await upgradeSubscription({ plan_id: planId, billing_cycle: yearly ? "yearly" : "monthly" });
+        window.location.reload();
+      } else {
+        const { payment_id } = await createCheckout({
+          plan_id: planId,
+          billing_cycle: yearly ? "yearly" : "monthly",
+        });
+        if (paddle) {
+          paddle.Checkout.open({ transactionId: payment_id });
+        }
       }
     } catch (err) {
-      setError(getErrorMessage(err, "Could not start checkout. Please try again."));
+      setError(getErrorMessage(err, "Could not process upgrade. Please try again."));
     } finally {
       setLoading(null);
     }

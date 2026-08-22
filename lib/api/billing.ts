@@ -29,3 +29,8 @@ export async function getSubscription(): Promise<SubscriptionInfo> {
   const res = await apiClient.get<SubscriptionInfo>("/payments/subscription/");
   return res.data;
 }
+
+export async function upgradeSubscription(req: CheckoutRequest): Promise<{ status: string; plan: string }> {
+  const res = await apiClient.post("/payments/upgrade/", req);
+  return res.data;
+}
