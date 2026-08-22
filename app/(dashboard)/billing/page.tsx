@@ -157,7 +157,7 @@ export default function BillingPage() {
               className="flex items-center justify-center gap-1.5 w-full text-[13px] font-semibold text-white bg-brand-primary py-2.5 rounded-lg cursor-pointer outline-none transition-all duration-500 hover:bg-brand-primary-hover disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading === "pro" ? <Spinner /> : <Zap className="size-3.5" />}
-              {loading === "pro" ? "Redirecting..." : "Upgrade to Pro"}
+              {loading === "pro" ? "Processing..." : "Upgrade to Pro"}
             </motion.button>
           )}
 
@@ -210,7 +210,7 @@ export default function BillingPage() {
               className="flex items-center justify-center gap-1.5 w-full text-[13px] font-semibold text-brand-text border border-brand-border py-2.5 rounded-lg cursor-pointer outline-none transition-all duration-500 hover:bg-brand-surface disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading === "premium" ? <Spinner /> : <Rocket className="size-3.5" />}
-              {loading === "premium" ? "Redirecting..." : "Try Premium free"}
+              {loading === "premium" ? "Processing..." : "Try Premium free"}
             </motion.button>
           )}
 
