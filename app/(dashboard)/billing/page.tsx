@@ -7,6 +7,8 @@ import { useAuthStore } from "@/stores/auth-store";
 import { createCheckout, getSubscription, upgradeSubscription, type SubscriptionInfo } from "@/lib/api/billing";
 import { getErrorMessage } from "@/lib/api/client";
 import { initializePaddle, type Paddle } from "@paddle/paddle-js";
+import { getMe } from "@/lib/api/auth";
+import { toast } from "sonner";
 
 const SP = { type: "spring" as const, stiffness: 400, damping: 25 };
 
@@ -39,20 +41,55 @@ function Spinner() {
   );
 }
 
+async function pollUntilActive(maxAttempts = 15): Promise<boolean> {
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      const sub = await getSubscription();
+      if (sub.status === "active") return true;
+    } catch {}
+  }
+  return false;
+}
+
 export default function BillingPage() {
   const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser);
   const [yearly, setYearly] = useState(false);
   const [loading, setLoading] = useState<"pro" | "premium" | null>(null);
+  const [activating, setActivating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paddle, setPaddle] = useState<Paddle | null>(null);
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
 
   const currentTier = user?.tier ?? "free";
-  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+
+  async function syncUser() {
+    try {
+      const me = await getMe();
+      setUser(me as Parameters<typeof setUser>[0]);
+    } catch {}
+  }
 
   useEffect(() => {
     initializePaddle({
       environment: (process.env.NEXT_PUBLIC_PADDLE_ENV ?? "sandbox") as "sandbox" | "production",
       token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "",
+      eventCallback: async (event) => {
+        if (event.name === "checkout.completed") {
+          setActivating(true);
+          toast.loading("Activating your plan...", { id: "plan-activate" });
+          const activated = await pollUntilActive();
+          if (activated) {
+            await syncUser();
+            toast.success("You're all set! Your plan is now active.", { id: "plan-activate" });
+          } else {
+            toast.error("Payment received — plan update may take a moment. Refresh if needed.", { id: "plan-activate" });
+          }
+          setActivating(false);
+          setSubscription(await getSubscription().catch(() => null));
+        }
+      },
     }).then(setPaddle);
     getSubscription().then(setSubscription).catch(() => {});
   }, []);
@@ -64,8 +101,11 @@ export default function BillingPage() {
     setLoading(planId);
     try {
       if (hasActiveSub) {
+        toast.loading("Upgrading your plan...", { id: "plan-upgrade" });
         await upgradeSubscription({ plan_id: planId, billing_cycle: yearly ? "yearly" : "monthly" });
-        window.location.reload();
+        await syncUser();
+        setSubscription(await getSubscription().catch(() => null));
+        toast.success(`You're now on ${planId.charAt(0).toUpperCase() + planId.slice(1)}!`, { id: "plan-upgrade" });
       } else {
         const { payment_id } = await createCheckout({
           plan_id: planId,
@@ -76,6 +116,7 @@ export default function BillingPage() {
         }
       }
     } catch (err) {
+      toast.dismiss("plan-upgrade");
       setError(getErrorMessage(err, "Could not process upgrade. Please try again."));
     } finally {
       setLoading(null);
@@ -84,6 +125,13 @@ export default function BillingPage() {
 
   return (
     <div className="w-full max-w-4xl px-6 py-10">
+      {activating && (
+        <div className="mb-6 flex items-center gap-3 px-4 py-3 rounded-lg bg-brand-primary/5 border border-brand-primary/20 text-sm text-brand-primary">
+          <Spinner />
+          Activating your plan — hang tight...
+        </div>
+      )}
+
       <div className="mb-10">
         <p className="text-xs font-semibold uppercase tracking-wider text-brand-primary mb-1.5">
           Billing
