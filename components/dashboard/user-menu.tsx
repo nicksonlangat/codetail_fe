@@ -19,6 +19,13 @@ function initialsOf(name: string) {
     .toUpperCase();
 }
 
+function planLabel(user: User): string {
+  if (user.tier === "pro") return "Pro plan";
+  if (user.tier === "premium") return "Premium plan";
+  if (user.trial_ends_at && new Date(user.trial_ends_at) > new Date()) return "Free trial";
+  return "Free plan";
+}
+
 export function UserMenu({ user }: { user: User | null }) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -71,7 +78,7 @@ export function UserMenu({ user }: { user: User | null }) {
         </span>
         <div className="text-left">
           <p className="leading-tight text-brand-text text-sm font-medium">{user?.name ?? "Guest"}</p>
-          <p className="text-xs text-brand-text-muted">{isPro ? "Pro member" : (user?.email ?? "")}</p>
+          <p className="text-xs text-brand-text-muted">{user ? planLabel(user) : ""}</p>
         </div>
         <ChevronDown
           className={`size-4 text-brand-text-subtle transition-all duration-500 ${open ? "rotate-180" : ""}`}
@@ -94,6 +101,16 @@ export function UserMenu({ user }: { user: User | null }) {
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-brand-text truncate">{user.name}</p>
                 <p className="text-[12px] text-brand-text-muted truncate">{user.email}</p>
+                <span
+                  className={`inline-flex items-center gap-1 mt-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded-md border ${
+                    isPro
+                      ? "bg-brand-warning/10 text-brand-warning border-brand-warning/20"
+                      : "bg-brand-surface text-brand-text-subtle border-brand-border"
+                  }`}
+                >
+                  {isPro && <Crown className="size-2.5" fill="currentColor" />}
+                  {planLabel(user)}
+                </span>
               </div>
             </div>
 
@@ -105,7 +122,7 @@ export function UserMenu({ user }: { user: User | null }) {
                 </div>
               ) : (
                 <Link
-                  href="/#pricing"
+                  href="/billing"
                   className="group flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-brand-primary-tint cursor-pointer outline-none transition-all duration-500 hover:bg-brand-primary-soft/30"
                 >
                   <Crown className="size-4 text-brand-primary shrink-0" />
