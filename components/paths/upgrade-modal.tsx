@@ -80,10 +80,10 @@ export function UpgradeModal({ open, onClose, trigger }: UpgradeModalProps) {
             )}
 
             <div className="flex items-baseline gap-2 mt-4">
-              <span className="text-3xl font-bold font-mono text-brand-text">$9</span>
+              <span className="text-3xl font-bold font-mono text-brand-text">$10</span>
               <span className="text-sm text-brand-text-muted">/ month</span>
             </div>
-            <p className="text-[12px] text-brand-text-muted mt-1">or $90/year, save $18</p>
+            <p className="text-[12px] text-brand-text-muted mt-1">or $90/year, save $30</p>
 
             <Link
               href="/signup"

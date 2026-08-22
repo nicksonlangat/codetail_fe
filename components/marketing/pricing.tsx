@@ -137,12 +137,12 @@ export function Pricing() {
 
           <div className="flex items-baseline gap-2 mt-2">
             <span className="text-3xl font-bold font-mono text-brand-text">
-              ${yearly ? "7.50" : "9"}
+              ${yearly ? "7.50" : "10"}
             </span>
             <span className="text-sm text-brand-text-muted">/ month</span>
           </div>
           <p className="text-[12px] text-brand-text-muted mt-1">
-            {yearly ? "billed $90/year, save $18" : "or $90/year, save $18"}
+            {yearly ? "billed $90/year, save $30" : "or $90/year, save $30"}
           </p>
           <p className="text-[13px] text-brand-text-muted mt-2 mb-6">Unlimited everything</p>
 
@@ -185,12 +185,12 @@ export function Pricing() {
 
           <div className="flex items-baseline gap-2 mt-2">
             <span className="text-3xl font-bold font-mono text-brand-text">
-              ${yearly ? "15.83" : "19"}
+              ${yearly ? "15" : "20"}
             </span>
             <span className="text-sm text-brand-text-muted">/ month</span>
           </div>
           <p className="text-[12px] text-brand-text-muted mt-1">
-            {yearly ? "billed $190/year, save $38" : "or $190/year, save $38"}
+            {yearly ? "billed $180/year, save $60" : "or $180/year, save $60"}
           </p>
           <p className="text-[13px] text-brand-text-muted mt-2 mb-6">
             Pro plus career tools

@@ -133,12 +133,12 @@ export default function BillingPage() {
 
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-bold font-mono text-brand-text">
-              ${yearly ? "7.50" : "9"}
+              ${yearly ? "7.50" : "10"}
             </span>
             <span className="text-sm text-brand-text-muted">/ month</span>
           </div>
           <p className="text-[12px] text-brand-text-muted mt-0.5 mb-5">
-            {yearly ? "Billed $90/year" : "or $90/year, save $18"}
+            {yearly ? "Billed $90/year" : "or $90/year, save $30"}
           </p>
 
           {currentTier === "pro" ? (
@@ -186,12 +186,12 @@ export default function BillingPage() {
 
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-bold font-mono text-brand-text">
-              ${yearly ? "15.83" : "19"}
+              ${yearly ? "15" : "20"}
             </span>
             <span className="text-sm text-brand-text-muted">/ month</span>
           </div>
           <p className="text-[12px] text-brand-text-muted mt-0.5 mb-5">
-            {yearly ? "Billed $190/year" : "or $190/year, save $38"}
+            {yearly ? "Billed $180/year" : "or $180/year, save $60"}
           </p>
 
           {currentTier === "premium" ? (
