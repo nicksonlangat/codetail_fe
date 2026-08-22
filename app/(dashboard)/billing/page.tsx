@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Crown, Rocket, WandSparkles, Zap } from "lucide-react";
 import { useAuthStore } from "@/stores/auth-store";
 import { createCheckout } from "@/lib/api/billing";
 import { getErrorMessage } from "@/lib/api/client";
+import { initializePaddle, type Paddle } from "@paddle/paddle-js";
 
 const SP = { type: "spring" as const, stiffness: 400, damping: 25 };
 
@@ -43,20 +44,31 @@ export default function BillingPage() {
   const [yearly, setYearly] = useState(false);
   const [loading, setLoading] = useState<"pro" | "premium" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [paddle, setPaddle] = useState<Paddle | null>(null);
 
   const currentTier = user?.tier ?? "free";
+
+  useEffect(() => {
+    initializePaddle({
+      environment: (process.env.NEXT_PUBLIC_PADDLE_ENV ?? "sandbox") as "sandbox" | "production",
+      token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ?? "",
+    }).then(setPaddle);
+  }, []);
 
   async function handleUpgrade(planId: "pro" | "premium") {
     setError(null);
     setLoading(planId);
     try {
-      const { checkout_url } = await createCheckout({
+      const { payment_id } = await createCheckout({
         plan_id: planId,
         billing_cycle: yearly ? "yearly" : "monthly",
       });
-      window.location.href = checkout_url;
+      if (paddle) {
+        paddle.Checkout.open({ transactionId: payment_id });
+      }
     } catch (err) {
       setError(getErrorMessage(err, "Could not start checkout. Please try again."));
+    } finally {
       setLoading(null);
     }
   }
