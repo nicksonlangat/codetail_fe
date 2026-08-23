@@ -27,10 +27,14 @@ export function AppTopbar() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
+  const userFetchedAt = useAuthStore((s) => s.userFetchedAt);
   const pathname = usePathname();
 
   useEffect(() => {
-    getMe().then(setUser).catch(() => {});
+    const FIVE_MINUTES = 5 * 60 * 1000;
+    if (!userFetchedAt || Date.now() - userFetchedAt > FIVE_MINUTES) {
+      getMe().then(setUser).catch(() => {});
+    }
   }, []);
 
   // The challenge page (/paths/[slug]/[unit]/[problemId]) is a full-height
