@@ -230,9 +230,11 @@ export default function BillingPage() {
 
         {/* Premium */}
         <div className="relative rounded-xl border border-brand-border bg-gradient-to-b from-brand-surface to-transparent p-6">
-          <span className="absolute top-4 right-4 text-[9px] font-semibold uppercase tracking-wider text-brand-text-muted bg-brand-surface border border-brand-border px-2 py-0.5 rounded-full">
-            14-day free trial
-          </span>
+          {currentTier !== "pro" && (
+            <span className="absolute top-4 right-4 text-[9px] font-semibold uppercase tracking-wider text-brand-text-muted bg-brand-surface border border-brand-border px-2 py-0.5 rounded-full">
+              14-day free trial
+            </span>
+          )}
 
           <div className="flex items-center gap-2 mb-3">
             <span className="size-8 rounded-lg bg-brand-surface flex items-center justify-center shrink-0">
@@ -267,11 +269,13 @@ export default function BillingPage() {
               className="flex items-center justify-center gap-1.5 w-full text-[13px] font-semibold text-brand-text border border-brand-border py-2.5 rounded-lg cursor-pointer outline-none transition-all duration-500 hover:bg-brand-surface disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading === "premium" ? <Spinner /> : <Rocket className="size-3.5" />}
-              {loading === "premium" ? "Processing..." : "Try Premium free"}
+              {loading === "premium" ? "Processing..." : currentTier === "pro" ? "Upgrade to Premium" : "Try Premium free"}
             </motion.button>
           )}
 
-          <p className="text-[11px] text-brand-text-subtle text-center mt-2">No credit card required</p>
+          {currentTier !== "pro" && (
+            <p className="text-[11px] text-brand-text-subtle text-center mt-2">No credit card required</p>
+          )}
 
           <div className="mt-5 space-y-2.5">
             {PREMIUM_FEATURES.map((f) => (
