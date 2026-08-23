@@ -266,7 +266,11 @@ export default function BillingPage() {
               whileHover={{ scale: loading ? 1 : 1.02 }}
               whileTap={{ scale: loading ? 1 : 0.98 }}
               transition={SP}
-              className="flex items-center justify-center gap-1.5 w-full text-[13px] font-semibold text-brand-text border border-brand-border py-2.5 rounded-lg cursor-pointer outline-none transition-all duration-500 hover:bg-brand-surface disabled:opacity-60 disabled:cursor-not-allowed"
+              className={`flex items-center justify-center gap-1.5 w-full text-[13px] font-semibold py-2.5 rounded-lg cursor-pointer outline-none transition-all duration-500 disabled:opacity-60 disabled:cursor-not-allowed ${
+                currentTier === "pro"
+                  ? "text-white bg-brand-primary hover:bg-brand-primary-hover"
+                  : "text-brand-text border border-brand-border hover:bg-brand-surface"
+              }`}
             >
               {loading === "premium" ? <Spinner /> : <Rocket className="size-3.5" />}
               {loading === "premium" ? "Processing..." : currentTier === "pro" ? "Upgrade to Premium" : "Try Premium free"}
