@@ -90,7 +90,7 @@ export default function BillingPage() {
           setSubscription(await getSubscription().catch(() => null));
         }
       },
-    }).then(setPaddle);
+    }).then((p) => setPaddle(p ?? null));
     getSubscription().then(setSubscription).catch(() => {});
   }, []);
 
