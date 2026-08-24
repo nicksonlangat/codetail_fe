@@ -11,6 +11,8 @@ import { LeftPanel } from "@/components/challenge/left-panel";
 import { CodePanel } from "@/components/challenge/code-panel";
 import { McqPanel } from "@/components/challenge/mcq-panel";
 import { SolvedBanner } from "@/components/challenge/solved-banner";
+import { BadgeModal } from "@/components/challenge/badge-modal";
+import { useAuthStore } from "@/stores/auth-store";
 import { useProblem, useProgress } from "@/lib/queries/use-problem";
 import { usePath, usePathProblems } from "@/lib/queries/use-paths";
 import { pathKeys, progressKeys, userKeys, leaderboardKeys } from "@/lib/queries/keys";
@@ -114,8 +116,10 @@ function ChallengeContent({
   nextProblemId,
 }: ChallengeContentProps) {
   const queryClient = useQueryClient();
+  const allEarnedBadges = useAuthStore((s) => s.user?.badges ?? []);
   const [notes, setNotes] = useState(progress?.notes ?? "");
   const [solved, setSolved] = useState<{ xp: number; badges: string[] } | null>(null);
+  const [badgeModal, setBadgeModal] = useState<string[] | null>(null);
 
   const isFirstNotesRender = useRef(true);
   useEffect(() => {
@@ -133,6 +137,7 @@ function ChallengeContent({
 
   function handleSolved(xpEarned: number, badges: string[]) {
     setSolved({ xp: xpEarned, badges });
+    if (badges.length > 0) setBadgeModal(badges);
     // Solving this problem can move the ring on the unit page, the path
     // header, the dashboard, and the leaderboard/rank sidebar — all of
     // which have their own cached queries that are now stale.
@@ -169,6 +174,14 @@ function ChallengeContent({
           />
         )}
       </AnimatePresence>
+
+      {badgeModal && (
+        <BadgeModal
+          newBadges={badgeModal}
+          allEarned={[...allEarnedBadges, ...badgeModal]}
+          onDismiss={() => setBadgeModal(null)}
+        />
+      )}
 
       <ResizablePanelGroup orientation="horizontal" className="flex-1 min-h-0">
         <ResizablePanel defaultSize={45} minSize={28}>
