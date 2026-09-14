@@ -83,9 +83,12 @@ export function ChallengeHeader({
             Next <ChevronRight className="size-3.5" />
           </Link>
         ) : (
-          <span className="inline-flex items-center gap-0.5 rounded-lg border border-brand-border text-brand-text-subtle/50 text-xs font-medium px-2.5 py-1.5">
-            Next <ChevronRight className="size-3.5" />
-          </span>
+          <Link
+            href={`/paths/${pathSlug}/${unitSlug}`}
+            className="inline-flex items-center gap-1 rounded-lg bg-brand-text text-white text-xs font-semibold px-3 py-1.5 cursor-pointer outline-none transition-all duration-500 hover:opacity-85"
+          >
+            Back to unit
+          </Link>
         )}
       </div>
     </div>
