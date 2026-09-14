@@ -95,6 +95,28 @@ export async function getReview(problemId: string, code: string) {
   return res.data;
 }
 
+export interface SqlRunResult {
+  columns: string[];
+  rows: (string | number | boolean | null)[][];
+  row_count: number;
+  truncated: boolean;
+  error: string | null;
+  passed: boolean;
+  score: number;
+  expected_columns: string[];
+  expected_rows: (string | number | boolean | null)[][];
+  xp_earned: number;
+  newly_earned_badges: string[];
+}
+
+export async function runSql(problemId: string, query: string): Promise<SqlRunResult> {
+  const res = await apiClient.post<SqlRunResult>("/submissions/run-sql", {
+    problem_id: problemId,
+    query,
+  });
+  return res.data;
+}
+
 export interface SolutionResult {
   html: string;
 }

@@ -9,15 +9,16 @@ import { Spinner } from "@/components/ui/spinner";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { MonacoCodeEditor } from "@/components/editors/monaco-code-editor";
 import { toast } from "sonner";
-import { runCode } from "@/lib/api/submissions";
+import { runCode, runSql } from "@/lib/api/submissions";
 import { saveProgress } from "@/lib/api/progress";
 import { getErrorMessage } from "@/lib/api/client";
 import { TestCasesPanel } from "./test-cases-panel";
+import { SqlResultsPanel } from "./sql-results-panel";
 import { HintsPanel } from "./hints-panel";
 import { ReviewPanel } from "./review-panel";
 import { SolutionPanel } from "./solution-panel";
 import type { ProblemDetail } from "@/lib/api/problems";
-import type { TestResult } from "@/lib/api/submissions";
+import type { TestResult, SqlRunResult } from "@/lib/api/submissions";
 import type { ProblemProgress, SavedHint } from "@/lib/api/progress";
 import type { ReviewDisplay } from "./review-panel";
 
@@ -36,6 +37,18 @@ const BOTTOM_TABS = [
 
 type BottomTab = (typeof BOTTOM_TABS)[number]["id"];
 
+function editorLanguage(stack: string): string {
+  if (stack === "sql") return "sql";
+  if (stack === "go") return "go";
+  return "python";
+}
+
+function editorFilename(stack: string): string {
+  if (stack === "sql") return "query.sql";
+  if (stack === "go") return "main.go";
+  return "main.py";
+}
+
 interface CodePanelProps {
   problem: ProblemDetail;
   progress: ProblemProgress | null;
@@ -43,11 +56,17 @@ interface CodePanelProps {
 }
 
 export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
+  const isSql = problem.stack === "sql";
+  const visibleTabs = isSql
+    ? BOTTOM_TABS.map((t) => t.id === "tests" ? { ...t, label: "Results" } : t)
+    : BOTTOM_TABS;
+
   const [code, setCode] = useState(progress?.code ?? problem.starter_code);
   const [running, setRunning] = useState(false);
   const [testResults, setTestResults] = useState<TestResult[] | null>(
     progress?.last_run_results?.length ? progress.last_run_results : null
   );
+  const [sqlResult, setSqlResult] = useState<SqlRunResult | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
   const [bottomTab, setBottomTab] = useState<BottomTab>("tests");
   const [hints, setHints] = useState<SavedHint[]>(progress?.saved_hints ?? []);
@@ -74,6 +93,31 @@ export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
     setRunning(true);
     setRunError(null);
     setBottomTab("tests");
+
+    if (isSql) {
+      try {
+        const result = await runSql(problem.id, code);
+        setSqlResult(result);
+        if (result.error) {
+          toast.error(result.error);
+        } else if (result.passed) {
+          toast.success(result.xp_earned > 0 ? `Correct. +${result.xp_earned} XP` : "Correct.");
+          if (result.xp_earned > 0) onSolved(result.xp_earned, result.newly_earned_badges);
+        } else {
+          const label = result.row_count === 1 ? "1 row" : `${result.row_count} rows`;
+          toast.error(`Incorrect. ${label} returned, but output does not match.`);
+        }
+      } catch (err) {
+        const msg = getErrorMessage(err, "Failed to run query. Please try again.");
+        setRunError(msg);
+        setSqlResult(null);
+        toast.error(msg);
+      } finally {
+        setRunning(false);
+      }
+      return;
+    }
+
     try {
       const result = await runCode(problem.id, code);
       setTestResults(result.test_results);
@@ -108,7 +152,8 @@ export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
         <div className="flex flex-col h-full overflow-hidden">
           <div className="flex items-center justify-between h-11 px-4 border-b border-brand-border shrink-0">
             <span className="text-xs text-brand-text">
-              <span className="text-brand-text-muted capitalize">{problem.stack}</span> main.py
+              <span className="text-brand-text-muted capitalize">{problem.stack}</span>{" "}
+              {editorFilename(problem.stack)}
             </span>
             <div className="flex items-center gap-2">
               <button
@@ -132,7 +177,7 @@ export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
           </div>
 
           <div className="flex-1 min-h-0">
-            <MonacoCodeEditor value={code} onChange={setCode} language="python" />
+            <MonacoCodeEditor value={code} onChange={setCode} language={editorLanguage(problem.stack)} />
           </div>
         </div>
       </ResizablePanel>
@@ -142,7 +187,7 @@ export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
       <ResizablePanel defaultSize={45} minSize={20}>
         <div className="flex flex-col h-full overflow-hidden">
           <div className="flex items-center gap-5 h-10 px-4 border-b border-brand-border shrink-0">
-            {BOTTOM_TABS.map(({ id, label, icon: Icon }) => (
+            {visibleTabs.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 type="button"
@@ -173,11 +218,15 @@ export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
                   exit={{ opacity: 0, y: -4 }}
                   transition={TAB_SPRING}
                 >
-                  <TestCasesPanel
-                    testCases={problem.test_cases}
-                    results={testResults}
-                    error={runError}
-                  />
+                  {isSql ? (
+                    <SqlResultsPanel result={sqlResult} error={runError} isLoading={running} />
+                  ) : (
+                    <TestCasesPanel
+                      testCases={problem.test_cases}
+                      results={testResults}
+                      error={runError}
+                    />
+                  )}
                 </motion.div>
               )}
               {bottomTab === "hints" && (
