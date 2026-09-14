@@ -11,3 +11,8 @@ export type ProblemDifficulty = "easy" | "medium" | "hard";
 export type ProblemType = "write_code" | "mcq" | "fix_code" | "refactor";
 
 export type ProblemStatus = "not_started" | "attempted" | "solved";
+
+export type ProjectMode   = "build" | "fix" | "debug";
+export type ProjectTier   = "utility" | "component" | "system" | "incident";
+export type ProjectStatus = "in_progress" | "completed";
+export type ProjectGradingMode = "sandbox" | "ai_review";

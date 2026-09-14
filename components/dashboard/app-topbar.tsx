@@ -17,6 +17,7 @@ const TAB_SPRING = { type: "spring" as const, stiffness: 400, damping: 25 };
 const NAV_TABS = [
   { id: "dashboard", label: "Dashboard", href: "/dashboard" },
   { id: "paths", label: "Paths", href: "/paths" },
+  { id: "projects", label: "Projects", href: "/projects" },
   { id: "system-design", label: "System Design", href: "/system-design" },
   { id: "blog", label: "Blog", href: "/blog" },
   { id: "interviews", label: "Interviews", href: "/interviews" },
