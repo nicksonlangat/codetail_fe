@@ -26,3 +26,10 @@ export const userKeys = {
 export const leaderboardKeys = {
   weekly: ["leaderboard", "weekly"] as const,
 };
+
+export const projectKeys = {
+  all:    ["projects"] as const,
+  list:   (mode?: string, tier?: string) => [...projectKeys.all, "list", mode ?? "all", tier ?? "all"] as const,
+  detail: (id: string)                   => [...projectKeys.all, "detail", id] as const,
+  stats:  ()                             => [...projectKeys.all, "stats"] as const,
+};
