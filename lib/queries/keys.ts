@@ -27,6 +27,10 @@ export const leaderboardKeys = {
   weekly: ["leaderboard", "weekly"] as const,
 };
 
+export const unitNoteKeys = {
+  detail: (pathSlug: string, unitSlug: string) => ["unit-notes", pathSlug, unitSlug] as const,
+};
+
 export const projectKeys = {
   all:    ["projects"] as const,
   list:   (mode?: string, tier?: string) => [...projectKeys.all, "list", mode ?? "all", tier ?? "all"] as const,
