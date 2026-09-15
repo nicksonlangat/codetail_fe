@@ -161,8 +161,12 @@ function ReviewPanel({ review }: { review: Record<string, unknown> | null }) {
     );
   }
 
-  const score = review.score as number;
-  const passed = score >= 70;
+  const score       = review.score as number;
+  const summary     = review.summary as string | undefined;
+  const issues      = review.issues as string[] | undefined;
+  const suggestions = review.suggestions as string[] | undefined;
+  const strengths   = review.strengths as string[] | undefined;
+  const passed      = score >= 70;
 
   return (
     <div className="flex flex-col gap-0 h-full overflow-y-auto">
@@ -172,34 +176,34 @@ function ReviewPanel({ review }: { review: Record<string, unknown> | null }) {
         <span className="ml-auto text-brand-text-subtle font-normal">{score}/100</span>
       </div>
 
-      {review.summary && (
+      {summary && (
         <div className="px-4 py-3 border-b border-brand-border text-[12px] text-brand-text-muted italic">
-          {review.summary as string}
+          {summary}
         </div>
       )}
 
-      {(review.issues as string[] | undefined)?.length > 0 && (
+      {issues && issues.length > 0 && (
         <div className="px-4 py-3 border-b border-brand-border flex flex-col gap-1.5">
           <p className="text-[10px] font-semibold text-brand-destructive uppercase tracking-wider">Issues</p>
-          {(review.issues as string[]).map((issue, i) => (
+          {issues.map((issue, i) => (
             <p key={i} className="text-[12px] text-brand-text-muted">· {issue}</p>
           ))}
         </div>
       )}
 
-      {(review.suggestions as string[] | undefined)?.length > 0 && (
+      {suggestions && suggestions.length > 0 && (
         <div className="px-4 py-3 border-b border-brand-border flex flex-col gap-1.5">
           <p className="text-[10px] font-semibold text-brand-primary uppercase tracking-wider">Suggestions</p>
-          {(review.suggestions as string[]).map((s, i) => (
+          {suggestions.map((s, i) => (
             <p key={i} className="text-[12px] text-brand-text-muted">· {s}</p>
           ))}
         </div>
       )}
 
-      {(review.strengths as string[] | undefined)?.length > 0 && (
+      {strengths && strengths.length > 0 && (
         <div className="px-4 py-3 flex flex-col gap-1.5">
           <p className="text-[10px] font-semibold text-brand-success uppercase tracking-wider">Strengths</p>
-          {(review.strengths as string[]).map((s, i) => (
+          {strengths.map((s, i) => (
             <p key={i} className="text-[12px] text-brand-text-muted">· {s}</p>
           ))}
         </div>
