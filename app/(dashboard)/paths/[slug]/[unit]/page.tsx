@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -12,6 +12,7 @@ import { UnlockProCard } from "@/components/paths/unlock-pro-card";
 import { UnitStatsCard } from "@/components/paths/unit-stats-card";
 import { RankCard } from "@/components/paths/rank-card";
 import { RingProgress } from "@/components/ui/ring-progress";
+import { UnitGuide, hasUnitGuide } from "@/components/paths/unit-guide";
 import { usePath, usePathUnits, usePathProblems } from "@/lib/queries/use-paths";
 import { getErrorMessage } from "@/lib/api/client";
 
@@ -52,6 +53,8 @@ export default function UnitDetailPage() {
     : 0;
 
   const unitLabel = currentUnit?.label ?? unit.replace(/-/g, " ");
+  const guideAvailable = hasUnitGuide(slug, unit);
+  const [activeTab, setActiveTab] = useState<"challenges" | "guide">("challenges");
 
   if (isError) {
     return (
@@ -123,7 +126,27 @@ export default function UnitDetailPage() {
 
       <div className="grid grid-cols-4 gap-6 mt-8">
         <div className="col-span-4 lg:col-span-3">
-          {isLoading ? (
+          {guideAvailable && (
+            <div className="flex border-b border-brand-border mb-6">
+              {(["challenges", "guide"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-2.5 text-[12px] font-medium capitalize border-b-2 -mb-px cursor-pointer outline-none transition-all duration-500 ${
+                    activeTab === tab
+                      ? "border-brand-primary text-brand-primary"
+                      : "border-transparent text-brand-text-muted hover:text-brand-text"
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {activeTab === "guide" ? (
+            <UnitGuide pathSlug={slug} unitSlug={unit} />
+          ) : isLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, i) => (
                 <ProblemRowSkeleton key={i} />
