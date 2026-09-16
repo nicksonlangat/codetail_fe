@@ -6,6 +6,7 @@ import { Sparkles, X, Send, ShieldCheck, ChevronRight, Code2, BookOpen, Lock } f
 import { Spinner } from "@/components/ui/spinner";
 import { assistTutor } from "@/lib/api/ai-tutor";
 import { getErrorMessage } from "@/lib/api/client";
+import { TiptapViewer } from "@/components/editors/tiptap-viewer";
 import type { ProblemDetail } from "@/lib/api/problems";
 
 const PANEL_SPRING = { type: "spring" as const, stiffness: 340, damping: 28 };
@@ -146,15 +147,15 @@ export function AiTutorPanel({ problem, attempts, alreadySolved, getCode }: AiTu
                   transition={{ duration: 0.18 }}
                   className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  <div
-                    className={`max-w-[85%] px-3 py-2 text-[13px] leading-relaxed whitespace-pre-wrap ${
-                      msg.role === "user"
-                        ? "bg-brand-text text-white rounded-2xl rounded-br-sm"
-                        : "bg-brand-surface text-brand-text rounded-2xl rounded-bl-sm"
-                    }`}
-                  >
-                    {msg.text}
-                  </div>
+                  {msg.role === "user" ? (
+                    <div className="max-w-[85%] px-3 py-2 text-[13px] leading-relaxed bg-brand-text text-white rounded-2xl rounded-br-sm">
+                      {msg.text}
+                    </div>
+                  ) : (
+                    <div className="max-w-[92%] bg-brand-surface rounded-2xl rounded-bl-sm px-3 py-2.5">
+                      <TiptapViewer markdown={msg.text} />
+                    </div>
+                  )}
                 </motion.div>
               ))}
 

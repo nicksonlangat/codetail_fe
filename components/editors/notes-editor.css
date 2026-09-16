@@ -55,6 +55,13 @@
   margin: 8px 0;
 }
 
+/* Read-only viewer variant — tighter for chat bubbles */
+.tiptap-viewer { font-size: 13px; }
+.tiptap-viewer p { margin: 0.25em 0; }
+.tiptap-viewer h2 { font-size: 13px; font-weight: 600; margin-top: 0.6em; margin-bottom: 0.2em; }
+.tiptap-viewer ul, .tiptap-viewer ol { margin: 0.25em 0; }
+.tiptap-viewer pre { margin: 6px 0; }
+
 .notes-editor p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   color: var(--brand-text-subtle);
