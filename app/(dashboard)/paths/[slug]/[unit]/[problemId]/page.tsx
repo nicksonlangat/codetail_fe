@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import { LeftPanel } from "@/components/challenge/left-panel";
 import { CodePanel } from "@/components/challenge/code-panel";
 import { McqPanel } from "@/components/challenge/mcq-panel";
 import { SolvedModal } from "@/components/challenge/solved-modal";
+import { AiTutorPanel } from "@/components/challenge/ai-tutor-panel";
 import { useAuthStore } from "@/stores/auth-store";
 import { useProblem, useProgress } from "@/lib/queries/use-problem";
 import { usePath, usePathProblems } from "@/lib/queries/use-paths";
@@ -118,6 +119,10 @@ function ChallengeContent({
   const [notes, setNotes] = useState(progress?.notes ?? "");
   const [solved, setSolved] = useState<{ xp: number; newTotal: number; badges: string[] } | null>(null);
 
+  // Tracks current editor code for the AI tutor without causing re-renders on every keystroke.
+  const currentCodeRef = useRef(progress?.code ?? problem.starter_code);
+  const handleCodeChange = useCallback((code: string) => { currentCodeRef.current = code; }, []);
+
   const isFirstNotesRender = useRef(true);
   useEffect(() => {
     if (isFirstNotesRender.current) {
@@ -188,10 +193,24 @@ function ChallengeContent({
               onSolved={handleSolved}
             />
           ) : (
-            <CodePanel problem={problem} progress={progress} onSolved={handleSolved} />
+            <CodePanel
+              problem={problem}
+              progress={progress}
+              onSolved={handleSolved}
+              onCodeChange={handleCodeChange}
+            />
           )}
         </ResizablePanel>
       </ResizablePanelGroup>
+
+      {problem.type !== "mcq" && (
+        <AiTutorPanel
+          problem={problem}
+          attempts={progress?.attempts ?? 0}
+          alreadySolved={progress?.status === "solved"}
+          getCode={() => currentCodeRef.current}
+        />
+      )}
     </div>
   );
 }

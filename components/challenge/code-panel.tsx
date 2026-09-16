@@ -53,9 +53,10 @@ interface CodePanelProps {
   problem: ProblemDetail;
   progress: ProblemProgress | null;
   onSolved: (xpEarned: number, badges: string[]) => void;
+  onCodeChange?: (code: string) => void;
 }
 
-export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
+export function CodePanel({ problem, progress, onSolved, onCodeChange }: CodePanelProps) {
   const isSql = problem.stack === "sql";
   const visibleTabs = isSql
     ? BOTTOM_TABS.map((t) => t.id === "tests" ? { ...t, label: "Results" } : t)
@@ -142,6 +143,7 @@ export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
       return;
     }
     setCode(problem.starter_code);
+    onCodeChange?.(problem.starter_code);
     setTestResults(null);
     setRunError(null);
   }
@@ -177,7 +179,11 @@ export function CodePanel({ problem, progress, onSolved }: CodePanelProps) {
           </div>
 
           <div className="flex-1 min-h-0">
-            <MonacoCodeEditor value={code} onChange={setCode} language={editorLanguage(problem.stack)} />
+            <MonacoCodeEditor
+              value={code}
+              onChange={(v) => { setCode(v); onCodeChange?.(v); }}
+              language={editorLanguage(problem.stack)}
+            />
           </div>
         </div>
       </ResizablePanel>
