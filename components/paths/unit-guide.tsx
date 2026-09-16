@@ -3,18 +3,26 @@
 import type { ComponentType } from "react";
 import dynamic from "next/dynamic";
 
+const loadingFallback = (
+  <div className="space-y-4 mt-6">
+    {Array.from({ length: 5 }).map((_, i) => (
+      <div key={i} className="h-4 bg-brand-surface rounded animate-pulse" style={{ width: `${75 + (i % 3) * 10}%` }} />
+    ))}
+  </div>
+);
+
+const SqlReadsGuide = dynamic(() => import("@/content/sql/reads"), {
+  ssr: false,
+  loading: () => loadingFallback,
+});
+
 const SqlJoinsGuide = dynamic(() => import("@/content/sql/joins"), {
   ssr: false,
-  loading: () => (
-    <div className="space-y-4 mt-6">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="h-4 bg-brand-surface rounded animate-pulse" style={{ width: `${75 + (i % 3) * 10}%` }} />
-      ))}
-    </div>
-  ),
+  loading: () => loadingFallback,
 });
 
 const GUIDES: Record<string, ComponentType> = {
+  "sql/reads": SqlReadsGuide,
   "sql/joins": SqlJoinsGuide,
 };
 
